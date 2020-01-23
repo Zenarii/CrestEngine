@@ -17,6 +17,33 @@ typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
 
+//XINPUT stubs
+#define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
+X_INPUT_GET_STATE(XInputGetStateStub) {
+    return 0;
+}
+typedef X_INPUT_GET_STATE(x_input_get_state);
+global_variable x_input_get_state* XInputGetState_ = XInputGetStateStub;
+#define XInputGetState XInputGetState_
+
+#define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
+typedef X_INPUT_SET_STATE(x_input_set_state);
+X_INPUT_SET_STATE(XInputSetStateStub) {
+    return 0;
+}
+global_variable x_input_set_state* XInputSetState_ = XInputSetStateStub;
+#define XInputSetState XInputSetState_
+
+//attempt to load XInput
+internal void
+Win32LoadXInput() {
+    HMODULE XInputLibrary = LoadLibrary("xinput1_3.dll");
+    if(XInputLibrary) {
+        XInputGetState = (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputGetState");
+        XInputSetState = (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputSetState");
+    }
+}
+
 global_variable bool running;
 
 
@@ -36,7 +63,8 @@ struct win32_window_dimension {
     int Height;
 };
 
-win32_window_dimension Win32GetWindowDimension(HWND windowHandle) {
+internal win32_window_dimension
+Win32GetWindowDimension(HWND windowHandle) {
     win32_window_dimension Result;
 
     RECT clientRect;
@@ -133,6 +161,12 @@ LRESULT CALLBACK Win32MainWindowCallback(
 
             EndPaint(windowHandle, &Paint);
         } break;
+        case WM_SYSKEYDOWN: {} break;
+        case WM_SYSKEYUP: {} break;
+        case WM_KEYDOWN: {} break;
+        case WM_KEYUP: {
+            uint32 VirtualKeyCode = WParam;
+        } break;
         default: {
             result = DefWindowProc(windowHandle, message, WParam, LParam);
         } break;
@@ -148,7 +182,7 @@ int CALLBACK WinMain(
     int cmdShow)
 {
     Win32ResizeDIBSection(&GlobalBackBuffer, 1280, 720);
-
+    Win32LoadXInput();
 
     WNDCLASS windowClass = {};
     windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -184,8 +218,9 @@ int CALLBACK WinMain(
                     BOOL messageResult = GetMessage(&message, 0, 0, 0);
 
                     TranslateMessage(&message);
-                    DispatchMessage(&message);
+                    DispatchMessageA(&message);
                 }
+
                 //Process Controller Input
                 for(int i = 0; i < XUSER_MAX_COUNT; ++i) {
                     XINPUT_STATE ControllerState;
@@ -209,6 +244,7 @@ int CALLBACK WinMain(
                     else {
                         //Controller not plugged in
                     }
+
                 }
                 RenderWeirdGradient(GlobalBackBuffer, xOffset, yOffset);
 
