@@ -2,6 +2,8 @@
 #include <windows.h>
 #include <stdint.h>
 #include <xinput.h>
+#include <dsound.h>
+
 
 #define local_persist static
 #define global_variable static
@@ -19,17 +21,17 @@ typedef int64_t int64;
 
 //XINPUT stubs
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
-X_INPUT_GET_STATE(XInputGetStateStub) {
-    return 0;
-}
 typedef X_INPUT_GET_STATE(x_input_get_state);
+X_INPUT_GET_STATE(XInputGetStateStub) {
+    return ERROR_DEVICE_NOT_CONNECTED;
+}
 global_variable x_input_get_state* XInputGetState_ = XInputGetStateStub;
 #define XInputGetState XInputGetState_
 
 #define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
 typedef X_INPUT_SET_STATE(x_input_set_state);
 X_INPUT_SET_STATE(XInputSetStateStub) {
-    return 0;
+    return ERROR_DEVICE_NOT_CONNECTED;
 }
 global_variable x_input_set_state* XInputSetState_ = XInputSetStateStub;
 #define XInputSetState XInputSetState_
@@ -37,12 +39,51 @@ global_variable x_input_set_state* XInputSetState_ = XInputSetStateStub;
 //attempt to load XInput
 internal void
 Win32LoadXInput() {
-    HMODULE XInputLibrary = LoadLibrary("xinput1_3.dll");
+    HMODULE XInputLibrary = LoadLibraryA("xinput1_4.dll");
+    if(!XInputLibrary) {
+        XInputLibrary = LoadLibraryA("xinput1_3.dll");
+    }
+    //TODO inform which xinput library is being used
     if(XInputLibrary) {
         XInputGetState = (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputGetState");
+        if(!XInputGetState) XInputGetState = XInputGetStateStub;
         XInputSetState = (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputSetState");
+        if(!XInputSetState) XInputSetState = XInputSetStateStub;
     }
 }
+
+#define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
+typedef DIRECT_SOUND_CREATE(direct_sound_create);
+
+internal void
+Win32InitDirectSound(HWND windowHandle) {
+    //load the library
+    HMODULE DirectSoundLibrary = LoadLibraryA("dsound.dll");
+
+    if(DirectSoundLibrary) {
+        //get a directsound object
+        direct_sound_create * DirectSoundCreate = (direct_sound_create *)
+            GetProcAddress(DirectSoundLibrary, "DirectSoundCreate");
+
+
+        LPDIRECTSOUND DirectSound;
+        if(DirectSoundCreate && SUCCEEDED(DirectSoundCreate(0, &DirectSound, 0))) {
+            DirectSound->SetCooperativeLevel(windowHandle, DSSCL_PRIORITY);
+            //create primary buffer
+
+            //create a secondary buffer
+
+            //start it playing
+        }
+        else {
+            //TODO diagnostic
+        }
+    }
+    else {
+        //TODO: log this
+    }
+}
+
 
 global_variable bool running;
 
@@ -74,14 +115,13 @@ Win32GetWindowDimension(HWND windowHandle) {
     return Result;
 }
 
-
 internal void
-RenderWeirdGradient(win32_offscreen_buffer buffer, int xOffset, int yOffset) {
-    int pitch = buffer.Width * buffer.bytesPerPixel;
-    uint8 *row = (uint8 *)buffer.Memory;
-    for(int y = 0; y < buffer.Height; ++y) {
+RenderWeirdGradient(win32_offscreen_buffer * buffer, int xOffset, int yOffset) {
+    int pitch = buffer->Width * buffer->bytesPerPixel;
+    uint8 *row = (uint8 *)buffer->Memory;
+    for(int y = 0; y < buffer->Height; ++y) {
         uint32 *pixel = (uint32 *)row;
-        for(int x = 0; x < buffer.Width; ++x) {
+        for(int x = 0; x < buffer->Width; ++x) {
             uint8 r = (y+yOffset);
             uint8 g = 0;
             uint8 b = (x+xOffset);
@@ -117,12 +157,12 @@ Win32ResizeDIBSection(win32_offscreen_buffer *buffer, int width, int height) {
 
 internal void
 Win32DisplayBufferToWindow(HDC deviceContext, int WindowWidth, int WindowHeight,
-                           win32_offscreen_buffer buffer) {
+                           win32_offscreen_buffer * buffer) {
     StretchDIBits(deviceContext,
                   0, 0, WindowWidth, WindowHeight,
-                  0, 0, buffer.Width, buffer.Height,
-                  buffer.Memory,
-                  &buffer.Info,
+                  0, 0, buffer->Width, buffer->Height,
+                  buffer->Memory,
+                  &buffer->Info,
                   DIB_RGB_COLORS, SRCCOPY);
 
 
@@ -157,15 +197,27 @@ LRESULT CALLBACK Win32MainWindowCallback(
             win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
 
             Win32DisplayBufferToWindow(deviceContext, WindowDimension.Width,
-                WindowDimension.Height, GlobalBackBuffer);
+                WindowDimension.Height, &GlobalBackBuffer);
 
             EndPaint(windowHandle, &Paint);
         } break;
         case WM_SYSKEYDOWN: {} break;
-        case WM_SYSKEYUP: {} break;
+        case WM_SYSKEYUP: {
+        } break;
         case WM_KEYDOWN: {} break;
         case WM_KEYUP: {
             uint32 VirtualKeyCode = WParam;
+            //30th bit of lParam shows whether down before
+            bool wasDown = ((LParam & (1<<30)) != 0);
+            bool isDown = ((LParam & (1<<31)) == 0);
+
+            if (VirtualKeyCode == 'A') {
+                OutputDebugStringA("A");
+            }
+            else if (VirtualKeyCode == 'W') {
+
+            }
+
         } break;
         default: {
             result = DefWindowProc(windowHandle, message, WParam, LParam);
@@ -184,12 +236,14 @@ int CALLBACK WinMain(
     Win32ResizeDIBSection(&GlobalBackBuffer, 1280, 720);
     Win32LoadXInput();
 
-    WNDCLASS windowClass = {};
+    WNDCLASSA windowClass = {};
     windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     windowClass.lpfnWndProc = Win32MainWindowCallback;
     windowClass.hInstance = instance;
     //windowClass.hIcon;
     windowClass.lpszClassName = "CrestWindowClass";
+
+    //Create the window
     if(RegisterClass(&windowClass)) {
         HWND windowHandle = CreateWindowEx(
                 0,
@@ -204,10 +258,14 @@ int CALLBACK WinMain(
                 0,
                 instance,
                 0);
+        int xOffset = 0;
+        int yOffset = 0;
+
         if(windowHandle) {
+
+            Win32InitDirectSound(windowHandle);
+
             running = true;
-            int xOffset = 0;
-            int yOffset = 0;
             HDC deviceContext = GetDC(windowHandle);
             while(running){
                 //Process Windows Messages
@@ -246,12 +304,13 @@ int CALLBACK WinMain(
                     }
 
                 }
-                RenderWeirdGradient(GlobalBackBuffer, xOffset, yOffset);
+
+                RenderWeirdGradient(&GlobalBackBuffer, xOffset, yOffset);
 
                 win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
 
                 Win32DisplayBufferToWindow(deviceContext, WindowDimension.Width,
-                    WindowDimension.Height, GlobalBackBuffer);
+                    WindowDimension.Height, &GlobalBackBuffer);
 
 
             }
