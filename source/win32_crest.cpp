@@ -56,7 +56,7 @@ Win32LoadXInput() {
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
 internal void
-Win32InitDirectSound(HWND windowHandle) {
+Win32InitDirectSound(HWND windowHandle, int32 SamplesPerSecond, int32 BufferSize) {
     //load the library
     HMODULE DirectSoundLibrary = LoadLibraryA("dsound.dll");
 
@@ -68,12 +68,49 @@ Win32InitDirectSound(HWND windowHandle) {
 
         LPDIRECTSOUND DirectSound;
         if(DirectSoundCreate && SUCCEEDED(DirectSoundCreate(0, &DirectSound, 0))) {
-            DirectSound->SetCooperativeLevel(windowHandle, DSSCL_PRIORITY);
-            //create primary buffer
 
-            //create a secondary buffer
+            WAVEFORMATEX WaveFormat = {};
+            WaveFormat.wFormatTag = WAVE_FORMAT_PCM;
+            WaveFormat.nChannels = 2;
+            WaveFormat.nSamplesPerSec = SamplesPerSecond;
+            WaveFormat.wBitsPerSample = 16;
+            WaveFormat.nBlockAlign = (WaveFormat.nChannels * WaveFormat.wBitsPerSample)/8;
+            WaveFormat.nAvgBytesPerSec = WaveFormat.nSamplesPerSec * WaveFormat.nBlockAlign;
+            WaveFormat.cbSize = 0;
 
-            //start it playing
+            if(SUCCEEDED(DirectSound->SetCooperativeLevel(windowHandle, DSSCL_PRIORITY))) {
+                //Create Primary Buffer
+                DSBUFFERDESC BufferDescription = {};
+                //should game sound keep playing? DSBCAPS_GLOBALFOCUS
+                BufferDescription.dwSize = sizeof(BufferDescription);
+                BufferDescription.dwFlags = DSBCAPS_PRIMARYBUFFER;
+
+                LPDIRECTSOUNDBUFFER PrimaryBuffer;
+                if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDescription, &PrimaryBuffer, 0))) {
+
+                    HRESULT Error = PrimaryBuffer->SetFormat(&WaveFormat);
+
+                    if(SUCCEEDED(Error)) {
+                        OutputDebugStringA("Primary Buffer Format Set");
+                    }
+                    else {
+                        OutputDebugStringA("Failed to set primary Buffer Format Set");
+                    }
+                }
+            }
+            else {
+
+            }
+            DSBUFFERDESC BufferDescription = {};
+            BufferDescription.dwSize = sizeof(BufferDescription);
+            //BufferDescription.dwFlags = DS  ;
+            BufferDescription.dwBufferBytes = BufferSize;
+            BufferDescription.lpwfxFormat = &WaveFormat;
+            //create secondary buffer
+            LPDIRECTSOUNDBUFFER SecondaryBuffer;
+            if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDescription, &SecondaryBuffer, 0))) {
+                OutputDebugStringA("Secondary Buffer Format Set");
+            }
         }
         else {
             //TODO diagnostic
@@ -263,7 +300,7 @@ int CALLBACK WinMain(
 
         if(windowHandle) {
 
-            Win32InitDirectSound(windowHandle);
+            Win32InitDirectSound(windowHandle, 48000, 48000 * sizeof(int16) * 16);
 
             running = true;
             HDC deviceContext = GetDC(windowHandle);
