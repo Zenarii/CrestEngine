@@ -162,6 +162,16 @@ RenderWeirdGradient(win32_offscreen_buffer * buffer, int xOffset, int yOffset) {
             uint8 r = (y+yOffset);
             uint8 g = 0;
             uint8 b = (x+xOffset);
+            if(y > buffer->Height/2) {
+                r = 200;
+                g = 254;
+                b = 255;
+            }
+            else {
+                r = 255;
+                g = 220;
+                b = 252;
+            }
             //writes, then increments
             *pixel++ = ((r<<16)|(g<<8)|b);
         }
@@ -303,9 +313,10 @@ int CALLBACK WinMain(
             HDC deviceContext = GetDC(windowHandle);
 
             int SamplesPerSecond = 48000;
-            int Hz = 256;
+            int ToneHz = 256;
             uint32 RunningSampleIndex = 0;
-            int SquareWavePeriod = SamplesPerSecond/Hz;
+            int16 ToneVolume = 8000;
+            int SquareWavePeriod = SamplesPerSecond/ToneHz;
             int HalfSquareWavePeriod = SquareWavePeriod/2;
             int BytesPerSample = sizeof(int16) * 2;
             int SecondaryBufferSize = SamplesPerSecond * BytesPerSample;
@@ -375,28 +386,29 @@ int CALLBACK WinMain(
                         BytesToWrite = PlayCursor - ByteToLock;
                     }
 
-                    GlobalSecondaryBuffer->Lock(ByteToLock, BytesToWrite,
+                    if(SUCCEEDED(GlobalSecondaryBuffer->Lock(ByteToLock, BytesToWrite,
                                                 &Region1, &Region1Size,
                                                 &Region2, &Region2Size,
-                                                0);
+                                                0))){
 
-                    DWORD Region1SampleCount = Region1Size/BytesPerSample;
-                    DWORD Region2SampleCount = Region2Size/BytesPerSample;
-                    int16 * SampleOut = (int16 *)Region1;
-                    for(DWORD SampleIndex = 0; SampleIndex < Region1Size; ++SampleIndex) {
-                        int16 SampleValue = ((RunningSampleIndex / HalfSquareWavePeriod)%2) ? 16000 : -16000;
-                        *SampleOut++ = SampleValue;
-                        *SampleOut++ = SampleValue;
-                        ++RunningSampleIndex;
+                        DWORD Region1SampleCount = Region1Size/BytesPerSample;
+                        DWORD Region2SampleCount = Region2Size/BytesPerSample;
+                        int16 * SampleOut = (int16 *)Region1;
+                        for(DWORD SampleIndex = 0; SampleIndex < Region1SampleCount; ++SampleIndex) {
+                            int16 SampleValue = ((RunningSampleIndex / HalfSquareWavePeriod)%2) ? ToneVolume : -ToneVolume;
+                            *SampleOut++ = SampleValue;
+                            *SampleOut++ = SampleValue;
+                            ++RunningSampleIndex;
+                        }
+                        SampleOut = (int16 *)Region2;
+                        for(DWORD SampleIndex = 0; SampleIndex < Region2SampleCount; ++SampleIndex) {
+                            int16 SampleValue = ((RunningSampleIndex / HalfSquareWavePeriod)%2) ? ToneVolume : -ToneVolume;
+                            *SampleOut++ = SampleValue;
+                            *SampleOut++ = SampleValue;
+                            ++RunningSampleIndex;
+                        }
+                        GlobalSecondaryBuffer->Unlock(Region1, Region1Size, Region2, Region2Size);
                     }
-                    SampleOut = (int16 *)Region2;
-                    for(DWORD SampleIndex = 0; SampleIndex < Region2Size; ++SampleIndex) {
-                        int16 SampleValue = ((RunningSampleIndex / HalfSquareWavePeriod)%2) ? 16000 : -16000;
-                        *SampleOut++ = SampleValue;
-                        *SampleOut++ = SampleValue;
-                        ++RunningSampleIndex;
-                    }
-
                 }
                 win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
 
