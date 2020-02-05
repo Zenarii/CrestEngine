@@ -1,5 +1,4 @@
 //Zenarii 2020
-
 /*
 What is required for a full platform layer
 
@@ -16,37 +15,20 @@ What is required for a full platform layer
   - WM_ACTIVATEAPP app for when not active application
   - faster screen writing
   - hardware acceleration (opengl/DirectX)
-  - get keyboard layouts
+  - get keyboard layouts`
 
   THIS ISN'T EVERYTHING
 
 */
-
-
+#include "crest_core.h"
+#include "crest.cpp"
 #include <windows.h>
-#include <stdint.h>
+
 #include <xinput.h>
 #include <dsound.h>
 #include <math.h>
 
-#define local_persist static
-#define global_variable static
-#define internal static
 
-#define PI 3.14159265359f
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-
-typedef float real32;
-typedef double real64;
 
 global_variable bool running;
 global_variable LPDIRECTSOUNDBUFFER GlobalSecondaryBuffer;
@@ -153,10 +135,6 @@ Win32InitDirectSound(HWND windowHandle, int32 SamplesPerSecond, int32 BufferSize
     }
 }
 
-
-
-
-
 struct win32_offscreen_buffer {
     BITMAPINFO Info;
     void * Memory;
@@ -183,35 +161,6 @@ Win32GetWindowDimension(HWND windowHandle) {
     Result.Height = clientRect.bottom - clientRect.top;
     return Result;
 }
-
-internal void
-RenderWeirdGradient(win32_offscreen_buffer * buffer, int xOffset, int yOffset) {
-    int pitch = buffer->Width * buffer->bytesPerPixel;
-    uint8 *row = (uint8 *)buffer->Memory;
-    for(int y = 0; y < buffer->Height; ++y) {
-        uint32 *pixel = (uint32 *)row;
-        for(int x = 0; x < buffer->Width; ++x) {
-            uint8 r = 0;
-            uint8 g = 56;
-            uint8 b = 168;
-
-            if (y > (buffer->Height)/2) {
-                r = 214;
-                g = 200;
-                b = 112;
-            }
-            else {
-                r = 155;
-                g = 79;
-                b = 150;
-            }
-            //writes, then increments
-            *pixel++ = ((r<<16)|(g<<8)|b);
-        }
-        row += pitch;
-    }
-}
-
 
 internal void
 Win32ResizeDIBSection(win32_offscreen_buffer *buffer, int width, int height) {
@@ -461,7 +410,15 @@ int CALLBACK WinMain(
 
                 }
 
-                RenderWeirdGradient(&GlobalBackBuffer, xOffset, yOffset);
+                game_offscreen_buffer buffer;
+                buffer.Memory = GlobalBackBuffer.Memory;
+                buffer.Height = GlobalBackBuffer.Height;
+                buffer.Width = GlobalBackBuffer.Width;
+                buffer.Pitch = GlobalBackBuffer.Pitch;
+                buffer.BytesPerPixel = GlobalBackBuffer.bytesPerPixel;
+                GameUpdateAndRender(&buffer);
+
+
                 DWORD PlayCursor;
                 DWORD WriteCursor;
                 if(SUCCEEDED(GlobalSecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor))) {
