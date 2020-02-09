@@ -3,7 +3,7 @@
 //################
 
 
-struct game_offscreen_buffer {
+struct crest_offscreen_buffer {
     void* Memory;
     int Width;
     int Height;
@@ -11,8 +11,6 @@ struct game_offscreen_buffer {
     int BytesPerPixel;
 };
 
-
-
 //needs the timing, Controller/Keyboard, bitmap buffer, sound buffer
 internal void
-GameUpdateAndRender(game_offscreen_buffer* buffer);
+GameUpdateAndRender(crest_offscreen_buffer* ScreenBuffer);

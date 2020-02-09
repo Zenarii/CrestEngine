@@ -4,8 +4,9 @@
 
 #include "crest.h"
 
+
 internal void
-RenderWeirdGradient(game_offscreen_buffer * buffer) {
+RenderWeirdGradient(crest_offscreen_buffer * buffer) {
     int pitch = buffer->Width * buffer->BytesPerPixel;
     uint8 *row = (uint8 *)buffer->Memory;
     for(int y = 0; y < buffer->Height; ++y) {
@@ -35,6 +36,6 @@ RenderWeirdGradient(game_offscreen_buffer * buffer) {
 
 
 internal void
-GameUpdateAndRender(game_offscreen_buffer* Buffer) {
-    RenderWeirdGradient(Buffer);
+GameUpdateAndRender(crest_offscreen_buffer* ScreenBuffer) {
+    RenderWeirdGradient(ScreenBuffer);
 }
