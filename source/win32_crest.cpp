@@ -30,7 +30,7 @@ Win32OpenGLLoadFunction(const char* name) {
     return p;
 }
 
-internal void
+internal bool
 Win32OpenGLInit(HDC DeviceContext) {
     bool success = false;
     PIXELFORMATDESCRIPTOR DummyPixelFormatDesc = {
