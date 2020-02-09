@@ -30,9 +30,8 @@ Win32OpenGLLoadFunction(const char* name) {
     return p;
 }
 
-internal bool
+internal void
 Win32OpenGLInit(HDC DeviceContext) {
-    bool success = false;
     PIXELFORMATDESCRIPTOR DummyPixelFormatDesc = {
         sizeof(PIXELFORMATDESCRIPTOR),
         1, //version
@@ -60,7 +59,7 @@ Win32OpenGLInit(HDC DeviceContext) {
     //Note(Zen): load the opengl functions
     wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)Win32OpenGLLoadFunction("wglChoosePixelFormatARB");
     wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)Win32OpenGLLoadFunction("wglCreateContextAttribsARB");
-    wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)Win32OpenGLLoadFunction;
+    wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)Win32OpenGLLoadFunction("wglSwapIntervalEXT");
 
     //Note(Zen): create the real pixel format
     {
@@ -87,16 +86,15 @@ Win32OpenGLInit(HDC DeviceContext) {
         };
 
         GlobalOpenGLContext = wglCreateContextAttribsARB(DeviceContext, DummyOpenGLContext, ContextAttributes);
+
         if(GlobalOpenGLContext) {
             wglMakeCurrent(DeviceContext, 0);
             wglDeleteContext(DummyOpenGLContext);
             wglMakeCurrent(DeviceContext, GlobalOpenGLContext);
             wglSwapIntervalEXT(0);
-            success = true;
         }
-    }
 
-    return success;
+    }
 }
 
 internal void
