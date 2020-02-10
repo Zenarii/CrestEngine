@@ -8,6 +8,7 @@
 #include "crest.cpp"
 
 global_variable bool running;
+global_variable bool OpenGLHasLoaded;
 
 //Window Buffer
 //~
@@ -44,12 +45,14 @@ LRESULT CALLBACK Win32MainWindowCallback(
             running = false;
         } break;
         case WM_ACTIVATEAPP: {} break;
-
         case WM_SIZE: {
-            win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
-            Win32OpenGLResize(WindowDimension.Width, WindowDimension.Height);
-            HDC DeviceContext = GetDC(windowHandle);
-            SwapBuffers(DeviceContext);
+            if(OpenGLHasLoaded) {
+                win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
+                Win32OpenGLResize(WindowDimension.Width, WindowDimension.Height);
+                HDC DeviceContext = GetDC(windowHandle);
+                GameUpdateAndRender();
+                SwapBuffers(DeviceContext);
+            }
         } break;
         case WM_SYSKEYDOWN: {} break;
         case WM_SYSKEYUP: {} break;
@@ -97,7 +100,7 @@ int CALLBACK WinMain(
             int64 ClockFrequency = ClockFrequencyResult.QuadPart;
 
             HDC deviceContext = GetDC(windowHandle);
-            Win32OpenGLInit(deviceContext);
+            OpenGLHasLoaded = Win32OpenGLInit(deviceContext);
             Win32OpenGlLoadAllFunctions();
 
             LARGE_INTEGER LastCounter;

@@ -36,8 +36,9 @@ Win32OpenGlLoadAllFunctions() {
     #include "OpenGLProcedures.h"
 }
 
-internal void
+internal bool
 Win32OpenGLInit(HDC DeviceContext) {
+    bool success = false;
     PIXELFORMATDESCRIPTOR DummyPixelFormatDesc = {
         sizeof(PIXELFORMATDESCRIPTOR),
         1, //version
@@ -98,14 +99,16 @@ Win32OpenGLInit(HDC DeviceContext) {
             wglDeleteContext(DummyOpenGLContext);
             wglMakeCurrent(DeviceContext, GlobalOpenGLContext);
             wglSwapIntervalEXT(0);
+            success = true;
         }
 
     }
+    return success;
 }
 
 internal void
 Win32OpenGLResize(int width, int height) {
-    glViewport(0, 0, width, height);   
+    glViewport(0, 0, width, height);
 }
 
 internal void
@@ -131,72 +134,100 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}";
 
+const char *fragmentShaderSource2 = "#version 330 core\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "FragColor = vec4(0.2f, 0.2f, 0.2f, 1.0f);\n"
+    "}";
+
 
 internal void RenderTriangle() {
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
-    };
-
-    unsigned int VBO;
-    glGenBuffers(1, &VBO);
-
-    unsigned int VertexShader = 0;
-    VertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(VertexShader, 1, &vertexShaderSource, 0);
-    glCompileShader(VertexShader);
-
+    // build and compile our shader program
+    // ------------------------------------
+    // vertex shader
+    int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    // check for shader compile errors
     int success;
     char infoLog[512];
-
-    glGetShaderiv(VertexShader, GL_COMPILE_STATUS, &success);
-    if(!success)
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
     {
-        glGetShaderInfoLog(VertexShader, 512, NULL, infoLog);
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
         OutputDebugStringA(infoLog);
     }
+    // fragment shader
+    int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
 
-    unsigned int FragmentShader = 0;
-    FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(FragmentShader, 1, &fragmentShaderSource, 0);
-    glCompileShader(FragmentShader);
-
-    glGetShaderiv(FragmentShader, GL_COMPILE_STATUS, &success);
-    if(!success) {
-        glGetShaderInfoLog(FragmentShader, 512, NULL, infoLog);
+    int fragmentShader2 = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader2, 1, &fragmentShaderSource2, NULL);
+    glCompileShader(fragmentShader2);
+    // check for shader compile errors
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
         OutputDebugStringA(infoLog);
     }
+    // link shaders
+    int shaderProgram = glCreateProgram();
+    int shaderProgram2 = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
 
-    unsigned int ShaderProgram = 0;
-    ShaderProgram = glCreateProgram();
-    glAttachShader(ShaderProgram, VertexShader);
-    glAttachShader(ShaderProgram, FragmentShader);
-    glLinkProgram(ShaderProgram);
+    glLinkProgram(shaderProgram);
 
-    glGetProgramiv(ShaderProgram, GL_LINK_STATUS, &success);
-    if(!success) {
-        glGetProgramInfoLog(ShaderProgram, 512, NULL, infoLog);
+    // check for linking errors
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         OutputDebugStringA(infoLog);
     }
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    glDeleteShader(fragmentShader2);
 
-    glUseProgram(ShaderProgram);
-    glDeleteShader(VertexShader);
-    glDeleteShader(FragmentShader);
+    float vertices[] = {
+     0.5f,  0.5f, 0.0f,  // top right
+     0.5f, -0.5f, 0.0f,  // bottom right
+    -0.5f, -0.5f, 0.0f,  // bottom left
+    -0.5f,  0.5f, 0.0f   // top left
+    };
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
 
-    unsigned int VAO;
+    unsigned int indices[] = {
+    0, 1, 3,  // first Triangle
+    1, 2, 3   // second Triangle
+    };
+    unsigned int VBO, VAO, EBO, VBO2, VAO2, EBO2;
     glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glGenVertexArrays(1, &VAO2);
+    glGenBuffers(1, &VBO2);
+    glGenBuffers(1, &EBO2);
 
     glBindVertexArray(VAO);
+
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
 
-    glUseProgram(ShaderProgram);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    //would be actual render loop
+    glBindVertexArray(0);
+    glUseProgram(shaderProgram);
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
