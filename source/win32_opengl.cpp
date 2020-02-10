@@ -119,6 +119,12 @@ const char *vertexShaderSource = "#version 330 core\n"
     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
     "}\0";
 
+const char *fragmentShaderSource = "#version 330 core\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "}";
 
 
 internal void RenderTriangle() {
@@ -130,22 +136,62 @@ internal void RenderTriangle() {
 
     unsigned int VBO;
     glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     unsigned int VertexShader = 0;
     VertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(VertexShader, 1, &vertexShaderSource, 0);
     glCompileShader(VertexShader);
 
-
-    int  success;
+    int success;
     char infoLog[512];
-    glGetShaderiv(VertexShader, GL_COMPILE_STATUS, &success);
 
+    glGetShaderiv(VertexShader, GL_COMPILE_STATUS, &success);
     if(!success)
     {
         glGetShaderInfoLog(VertexShader, 512, NULL, infoLog);
         OutputDebugStringA(infoLog);
     }
+
+    unsigned int FragmentShader = 0;
+    FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(FragmentShader, 1, &fragmentShaderSource, 0);
+    glCompileShader(FragmentShader);
+
+    glGetShaderiv(FragmentShader, GL_COMPILE_STATUS, &success);
+    if(!success) {
+        glGetShaderInfoLog(FragmentShader, 512, NULL, infoLog);
+        OutputDebugStringA(infoLog);
+    }
+
+    unsigned int ShaderProgram = 0;
+    ShaderProgram = glCreateProgram();
+    glAttachShader(ShaderProgram, VertexShader);
+    glAttachShader(ShaderProgram, FragmentShader);
+    glLinkProgram(ShaderProgram);
+
+    glGetProgramiv(ShaderProgram, GL_LINK_STATUS, &success);
+    if(!success) {
+        glGetProgramInfoLog(ShaderProgram, 512, NULL, infoLog);
+        OutputDebugStringA(infoLog);
+    }
+
+    glUseProgram(ShaderProgram);
+    glDeleteShader(VertexShader);
+    glDeleteShader(FragmentShader);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glUseProgram(ShaderProgram);
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 }

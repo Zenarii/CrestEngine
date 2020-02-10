@@ -92,9 +92,7 @@ LRESULT CALLBACK Win32MainWindowCallback(
             int height = Paint.rcPaint.bottom - Paint.rcPaint.top;
 
             win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
-
-            Win32DisplayBufferToWindow(deviceContext, WindowDimension.Width,
-                WindowDimension.Height, &GlobalBackBuffer);
+            SwapBuffers(deviceContext);
 
             EndPaint(windowHandle, &Paint);
             ValidateRect(windowHandle, NULL);
@@ -186,18 +184,8 @@ int CALLBACK WinMain(
                 }
 
                 win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
-
-                crest_offscreen_buffer CrestScreenBuffer = {};
-                CrestScreenBuffer.Memory = GlobalBackBuffer.Memory;
-                CrestScreenBuffer.Width = GlobalBackBuffer.Width;
-                CrestScreenBuffer.Height = GlobalBackBuffer.Height;
-                CrestScreenBuffer.Pitch = GlobalBackBuffer.Pitch;
-                CrestScreenBuffer.BytesPerPixel = GlobalBackBuffer.bytesPerPixel;
-
-                GameUpdateAndRender(&CrestScreenBuffer);
-                Win32DisplayBufferToWindow(deviceContext, WindowDimension.Width,
-                    WindowDimension.Height, &GlobalBackBuffer);
-
+                GameUpdateAndRender();
+                SwapBuffers(deviceContext);
                 int64 EndCycleCount;
                 EndCycleCount = __rdtsc();
 

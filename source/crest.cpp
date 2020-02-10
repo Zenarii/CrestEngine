@@ -35,13 +35,8 @@ RenderWeirdGradient(crest_offscreen_buffer * buffer) {
 
 
 internal void
-GameUpdateAndRender(crest_offscreen_buffer* ScreenBuffer) {
-    local_persist bool started = false;
-    if(!started) {
-        glClearColor(0.1f, 0.1f, 0.1f, 1);
-        glClear(GL_COLOR_BUFFER_BIT);
-        RenderTriangle();
-        started = true;
-    }
-
+GameUpdateAndRender() {
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    RenderTriangle();
 }
