@@ -120,29 +120,29 @@ Win32OpenGLCleanUp(HDC DeviceContext) {
 
 //Temp/test code
 //~
+#include <math.h>
+
 const char *vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
+    "out vec4 vertexColour;\n"
     "void main()\n"
     "{\n"
     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "   vertexColour = vec4(aPos, 1.0);\n"
     "}\0";
 
 const char *fragmentShaderSource = "#version 330 core\n"
+    "uniform vec4 Colour;"
     "out vec4 FragColor;\n"
     "void main()\n"
     "{\n"
-    "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "   FragColor = Colour;\n"
     "}";
 
-const char *fragmentShaderSource2 = "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "FragColor = vec4(0.2f, 0.2f, 0.2f, 1.0f);\n"
-    "}";
+global_variable int shaderProgram;
+global_variable unsigned int VAO;
 
-
-internal void RenderTriangle() {
+internal void InitTriangle() {
     // build and compile our shader program
     // ------------------------------------
     // vertex shader
@@ -163,9 +163,6 @@ internal void RenderTriangle() {
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
 
-    int fragmentShader2 = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader2, 1, &fragmentShaderSource2, NULL);
-    glCompileShader(fragmentShader2);
     // check for shader compile errors
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success)
@@ -174,8 +171,8 @@ internal void RenderTriangle() {
         OutputDebugStringA(infoLog);
     }
     // link shaders
-    int shaderProgram = glCreateProgram();
-    int shaderProgram2 = glCreateProgram();
+    shaderProgram = glCreateProgram();
+
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
 
@@ -189,7 +186,7 @@ internal void RenderTriangle() {
     }
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
-    glDeleteShader(fragmentShader2);
+
 
     float vertices[] = {
      0.5f,  0.5f, 0.0f,  // top right
@@ -203,14 +200,11 @@ internal void RenderTriangle() {
     0, 1, 3,  // first Triangle
     1, 2, 3   // second Triangle
     };
-    unsigned int VBO, VAO, EBO, VBO2, VAO2, EBO2;
+
+    unsigned int VBO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
-
-    glGenVertexArrays(1, &VAO2);
-    glGenBuffers(1, &VBO2);
-    glGenBuffers(1, &EBO2);
 
     glBindVertexArray(VAO);
 
@@ -223,10 +217,18 @@ internal void RenderTriangle() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
 
-    //would be actual render loop
+internal void RenderTriangle(real32 Time) {
     glBindVertexArray(0);
+
+    //set colour
+    real32 SineValue = sinf(Time/1000.0f);
+    real32 GreenValue = (SineValue/2.0f)+0.5f;
+    int vertexColourLocation = glGetUniformLocation(shaderProgram, "Colour");
+
     glUseProgram(shaderProgram);
+    glUniform4f(vertexColourLocation, 0.0f, GreenValue, 0.0f, 1.0f);
     glBindVertexArray(VAO);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

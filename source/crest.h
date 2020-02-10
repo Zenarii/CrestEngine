@@ -13,4 +13,4 @@ struct crest_offscreen_buffer {
 
 //needs the timing, Controller/Keyboard, bitmap buffer, sound buffer
 internal void
-GameUpdateAndRender(crest_offscreen_buffer* ScreenBuffer);
+GameUpdateAndRender(platform *Platform);

@@ -17,5 +17,9 @@ OpenGLProc(VertexAttribPointer, VERTEXATTRIBPOINTER)
 OpenGLProc(EnableVertexAttribArray, ENABLEVERTEXATTRIBARRAY)
 OpenGLProc(GenVertexArrays, GENVERTEXARRAYS)
 OpenGLProc(BindVertexArray, BINDVERTEXARRAY)
+OpenGLProc(GetUniformLocation, GETUNIFORMLOCATION)
+
+//get uniform overloads
+OpenGLProc(Uniform4f, UNIFORM4F)
 
 #undef OpenGLProc

@@ -2,8 +2,9 @@
 
 #include <windows.h>
 #include "win32_opengl.cpp"
-//own headers
 #include "crest_core.h"
+#include "platform.cpp"
+//own headers
 #include "win32_crest.h"
 #include "crest.cpp"
 
@@ -46,13 +47,16 @@ LRESULT CALLBACK Win32MainWindowCallback(
         } break;
         case WM_ACTIVATEAPP: {} break;
         case WM_SIZE: {
+            win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
+            Win32OpenGLResize(WindowDimension.Width, WindowDimension.Height);
+            /*
             if(OpenGLHasLoaded) {
                 win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
                 Win32OpenGLResize(WindowDimension.Width, WindowDimension.Height);
                 HDC DeviceContext = GetDC(windowHandle);
                 GameUpdateAndRender();
                 SwapBuffers(DeviceContext);
-            }
+            }*/
         } break;
         case WM_SYSKEYDOWN: {} break;
         case WM_SYSKEYUP: {} break;
@@ -77,7 +81,7 @@ int CALLBACK WinMain(
     windowClass.hInstance = instance;
     //windowClass.hIcon;
     windowClass.lpszClassName = "CrestWindowClass";
-
+    platform Platform = {};
     //Create the window
     if(RegisterClass(&windowClass)) {
         HWND windowHandle = CreateWindowEx(
@@ -102,6 +106,8 @@ int CALLBACK WinMain(
             HDC deviceContext = GetDC(windowHandle);
             OpenGLHasLoaded = Win32OpenGLInit(deviceContext);
             Win32OpenGlLoadAllFunctions();
+            //TEMP
+            InitTriangle();
 
             LARGE_INTEGER LastCounter;
             QueryPerformanceCounter(&LastCounter);
@@ -121,7 +127,7 @@ int CALLBACK WinMain(
                     DispatchMessageA(&message);
                 }
 
-                GameUpdateAndRender();
+                GameUpdateAndRender(&Platform);
                 SwapBuffers(deviceContext);
 
                 int64 EndCycleCount;
@@ -131,11 +137,15 @@ int CALLBACK WinMain(
                 QueryPerformanceCounter(&EndCounter);
                 if(running) {
                     int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
-                    int32 msPerFrame = (int32)((1000*CounterElapsed) / ClockFrequency);
+                    real32 msPerFrame = ((1000*CounterElapsed) / ClockFrequency);
+                    int32 imsPerFrame = (int32) ((1000*CounterElapsed) / ClockFrequency);
                     int32 FPS = ClockFrequency/CounterElapsed;
                     char windowTitle[32];
-                    wsprintf(windowTitle, "Crest ms/frame: %d | FPS: %d", msPerFrame, FPS);
+                    wsprintf(windowTitle, "Crest ms/frame: %d | FPS: %d", imsPerFrame, FPS);
                     SetWindowTextA(windowHandle, windowTitle);
+
+                    Platform.Delta = msPerFrame;
+                    Platform.TotalTime += msPerFrame;
                 }
                 LastCounter = EndCounter;
             }
