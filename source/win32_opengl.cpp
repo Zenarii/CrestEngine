@@ -6,8 +6,9 @@
 #include <gl/gl.h>
 #include "gl/glext.h"
 #include "gl/wglext.h"
+#include "win32_opengl.h"
 #include "crest_core.h"
-
+#include "graphics/CrestShader.cpp"
 //OpenGL
 //~
 global_variable HGLRC GlobalOpenGLContext;
@@ -27,14 +28,15 @@ Win32OpenGLLoadFunction(const char* name) {
     return p;
 }
 
-#define OpenGLProc(name, type) PFNGL##type##PROC gl##name;
-#include "OpenGLProcedures.h"
+
 
 internal void
 Win32OpenGlLoadAllFunctions() {
     #define OpenGLProc(name, type) gl##name = (PFNGL##type##PROC)Win32OpenGLLoadFunction("gl" #name);
     #include "OpenGLProcedures.h"
 }
+
+
 
 internal bool
 Win32OpenGLInit(HDC DeviceContext) {
@@ -118,75 +120,18 @@ Win32OpenGLCleanUp(HDC DeviceContext) {
 }
 
 
-//Temp/test code
+//Temp/test code (Not platform specific)
 //~
 #include <math.h>
 
-const char *vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "out vec4 vertexColour;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "   vertexColour = vec4(aPos, 1.0);\n"
-    "}\0";
 
-const char *fragmentShaderSource = "#version 330 core\n"
-    "uniform vec4 Colour;"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = Colour;\n"
-    "}";
 
-global_variable int shaderProgram;
+global_variable CrestShader shaderProgram;
 global_variable unsigned int VAO;
 
 internal void InitTriangle() {
-    // build and compile our shader program
-    // ------------------------------------
-    // vertex shader
-    int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        OutputDebugStringA(infoLog);
-    }
-    // fragment shader
-    int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    // check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        OutputDebugStringA(infoLog);
-    }
-    // link shaders
-    shaderProgram = glCreateProgram();
-
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-
-    glLinkProgram(shaderProgram);
-
-    // check for linking errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        OutputDebugStringA(infoLog);
-    }
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
+    shaderProgram = CrestShaderInit("C:/Dev/Crest/source/VertexShader.vs",
+                                    "C:/Dev/Crest/source/FragmentShader.fs");
 
     float vertices[] = {
      0.5f,  0.5f, 0.0f,  // top right

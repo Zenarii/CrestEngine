@@ -8,5 +8,5 @@ struct win32_window_dimension {
 };
 
 
-internal void
-PlatformLoadFile(const char* Path);
+internal char *
+CrestLoadFileAsString(const char* Path);

@@ -14,25 +14,24 @@ global_variable bool OpenGLHasLoaded;
 //~
 //TODO better error handling, i.e if file doesn't exist etc.
 //NOTE(Zen): Currently needs absolute path
+//NOTE(Zen): Must free output
 internal char *
-PlatformLoadFileAsString(const char* Path) {
+CrestLoadFileAsString(const char* Path) {
     //TODO(Zen): Check if need to change security attributes
-    DWORD error;
+    const int MAXFILESIZE = 1024;
+    char * Buffer = (char *)malloc(MAXFILESIZE);
     HANDLE FileHandle = CreateFile(Path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if(FileHandle != INVALID_HANDLE_VALUE) {
-        const int MAXFILESIZE = 256;
-        char Buffer[MAXFILESIZE];
         DWORD BytesRead = 0;
-        ReadFile(FileHandle, &Buffer, MAXFILESIZE, &BytesRead, NULL);
-        OutputDebugStringA(Buffer);
+        ReadFile(FileHandle, Buffer, MAXFILESIZE-1, &BytesRead, NULL);
     }
     else {
-        error = GetLastError();
+        DWORD error = GetLastError();
         //TODO(Zen): Read file and log issue
         OutputDebugStringA("Failed To load file");
     }
     CloseHandle(FileHandle);
-
+    return Buffer;
 }
 
 //Window Buffer
