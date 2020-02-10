@@ -1,0 +1,9 @@
+OpenGLProc(GenBuffers, GENBUFFERS)
+OpenGLProc(BindBuffer, BINDBUFFER)
+OpenGLProc(BufferData, BUFFERDATA)
+OpenGLProc(CreateShader, CREATESHADER)
+OpenGLProc(ShaderSource, SHADERSOURCE)
+OpenGLProc(CompileShader, COMPILESHADER)
+OpenGLProc(GetShaderiv, GETSHADERIV)
+OpenGLProc(GetShaderInfoLog, GETSHADERINFOLOG)
+#undef OpenGLProc
