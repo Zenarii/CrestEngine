@@ -8,8 +8,6 @@
 #include "crest.cpp"
 
 global_variable bool running;
-global_variable win32_offscreen_buffer GlobalBackBuffer;
-
 
 //Window Buffer
 //~
@@ -22,41 +20,6 @@ Win32GetWindowDimension(HWND windowHandle) {
     Result.Width = clientRect.right - clientRect.left;
     Result.Height = clientRect.bottom - clientRect.top;
     return Result;
-}
-
-internal void
-Win32ResizeDIBSection(win32_offscreen_buffer *buffer, int width, int height) {
-    if(buffer->Memory) {
-        VirtualFree(buffer->Memory, 0, MEM_RELEASE);
-    }
-
-    buffer->Width = width;
-    buffer->Height = height;
-    buffer->bytesPerPixel = 4;
-
-    buffer->Info.bmiHeader.biSize = sizeof(buffer->Info.bmiHeader);
-    buffer->Info.bmiHeader.biWidth = buffer->Width;
-    buffer->Info.bmiHeader.biHeight = -buffer->Height;
-    buffer->Info.bmiHeader.biPlanes = 1;
-    buffer->Info.bmiHeader.biBitCount = 32;
-    buffer->Info.bmiHeader.biCompression = BI_RGB;
-
-    int bitmapMemorySize = buffer->bytesPerPixel * (buffer->Width * buffer->Height);
-    buffer->Memory = VirtualAlloc(0, bitmapMemorySize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-    buffer->Pitch = buffer->Width * buffer->bytesPerPixel;
-}
-
-internal void
-Win32DisplayBufferToWindow(HDC deviceContext, int WindowWidth, int WindowHeight,
-                           win32_offscreen_buffer * buffer) {
-    StretchDIBits(deviceContext,
-                  0, 0, WindowWidth, WindowHeight,
-                  0, 0, buffer->Width, buffer->Height,
-                  buffer->Memory,
-                  &buffer->Info,
-                  DIB_RGB_COLORS, SRCCOPY);
-
-
 }
 
 //Windows Callbacks
@@ -80,41 +43,18 @@ LRESULT CALLBACK Win32MainWindowCallback(
         case WM_QUIT: {
             running = false;
         } break;
-        case WM_ACTIVATEAPP: {
-            OutputDebugStringA("WM_ACTIVATEAPP\n");
-        } break;
-        case WM_PAINT: {
-            PAINTSTRUCT Paint;
-            HDC deviceContext = BeginPaint(windowHandle, &Paint);
-            int x = Paint.rcPaint.left;
-            int y = Paint.rcPaint.bottom;
-            int width = Paint.rcPaint.right - Paint.rcPaint.left;
-            int height = Paint.rcPaint.bottom - Paint.rcPaint.top;
+        case WM_ACTIVATEAPP: {} break;
 
+        case WM_SIZE: {
             win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
-            SwapBuffers(deviceContext);
-
-            EndPaint(windowHandle, &Paint);
-            ValidateRect(windowHandle, NULL);
+            Win32OpenGLResize(WindowDimension.Width, WindowDimension.Height);
+            HDC DeviceContext = GetDC(windowHandle);
+            SwapBuffers(DeviceContext);
         } break;
         case WM_SYSKEYDOWN: {} break;
-        case WM_SYSKEYUP: {
-        } break;
+        case WM_SYSKEYUP: {} break;
         case WM_KEYDOWN: {} break;
-        case WM_KEYUP: {
-            uint32 VirtualKeyCode = WParam;
-            //30th bit of lParam shows whether down before
-            bool wasDown = ((LParam & (1<<30)) != 0);
-            bool isDown = ((LParam & (1<<31)) == 0);
-
-            if (VirtualKeyCode == 'A') {
-                OutputDebugStringA("A");
-            }
-            else if (VirtualKeyCode == 'W') {
-
-            }
-
-        } break;
+        case WM_KEYUP: {} break;
         default: {
             result = DefWindowProc(windowHandle, message, WParam, LParam);
         } break;
@@ -128,8 +68,6 @@ int CALLBACK WinMain(
     LPSTR commandLine,
     int cmdShow)
 {
-    Win32ResizeDIBSection(&GlobalBackBuffer, 1280, 720);
-
     WNDCLASSA windowClass = {};
     windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     windowClass.lpfnWndProc = Win32MainWindowCallback;
@@ -152,9 +90,6 @@ int CALLBACK WinMain(
                 0,
                 instance,
                 0);
-        int xOffset = 0;
-        int yOffset = 30;
-
 
         if(windowHandle) {
             LARGE_INTEGER ClockFrequencyResult;
@@ -183,9 +118,9 @@ int CALLBACK WinMain(
                     DispatchMessageA(&message);
                 }
 
-                win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
                 GameUpdateAndRender();
                 SwapBuffers(deviceContext);
+
                 int64 EndCycleCount;
                 EndCycleCount = __rdtsc();
 

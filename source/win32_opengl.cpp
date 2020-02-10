@@ -104,6 +104,11 @@ Win32OpenGLInit(HDC DeviceContext) {
 }
 
 internal void
+Win32OpenGLResize(int width, int height) {
+    glViewport(0, 0, width, height);   
+}
+
+internal void
 Win32OpenGLCleanUp(HDC DeviceContext) {
     wglMakeCurrent(DeviceContext, 0);
     wglDeleteContext(GlobalOpenGLContext);
