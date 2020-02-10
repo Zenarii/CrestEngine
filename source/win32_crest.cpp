@@ -1,15 +1,39 @@
 //Zenarii 2020
 
 #include <windows.h>
-#include "win32_opengl.cpp"
 #include "crest_core.h"
-#include "platform.cpp"
-//own headers
 #include "win32_crest.h"
+#include "win32_opengl.cpp"
+#include "platform.cpp"
 #include "crest.cpp"
 
 global_variable bool running;
 global_variable bool OpenGLHasLoaded;
+
+//FileIO
+//~
+//TODO better error handling, i.e if file doesn't exist etc.
+//NOTE(Zen): Currently needs absolute path
+internal char *
+PlatformLoadFileAsString(const char* Path) {
+    //TODO(Zen): Check if need to change security attributes
+    DWORD error;
+    HANDLE FileHandle = CreateFile(Path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if(FileHandle != INVALID_HANDLE_VALUE) {
+        const int MAXFILESIZE = 256;
+        char Buffer[MAXFILESIZE];
+        DWORD BytesRead = 0;
+        ReadFile(FileHandle, &Buffer, MAXFILESIZE, &BytesRead, NULL);
+        OutputDebugStringA(Buffer);
+    }
+    else {
+        error = GetLastError();
+        //TODO(Zen): Read file and log issue
+        OutputDebugStringA("Failed To load file");
+    }
+    CloseHandle(FileHandle);
+
+}
 
 //Window Buffer
 //~
@@ -47,16 +71,14 @@ LRESULT CALLBACK Win32MainWindowCallback(
         } break;
         case WM_ACTIVATEAPP: {} break;
         case WM_SIZE: {
-            win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
-            Win32OpenGLResize(WindowDimension.Width, WindowDimension.Height);
-            /*
             if(OpenGLHasLoaded) {
                 win32_window_dimension WindowDimension = Win32GetWindowDimension(windowHandle);
                 Win32OpenGLResize(WindowDimension.Width, WindowDimension.Height);
                 HDC DeviceContext = GetDC(windowHandle);
-                GameUpdateAndRender();
+                platform Platform = {};
+                GameUpdateAndRender(&Platform);
                 SwapBuffers(DeviceContext);
-            }*/
+            }
         } break;
         case WM_SYSKEYDOWN: {} break;
         case WM_SYSKEYUP: {} break;
@@ -81,6 +103,7 @@ int CALLBACK WinMain(
     windowClass.hInstance = instance;
     //windowClass.hIcon;
     windowClass.lpszClassName = "CrestWindowClass";
+
     platform Platform = {};
     //Create the window
     if(RegisterClass(&windowClass)) {
