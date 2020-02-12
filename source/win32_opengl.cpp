@@ -9,8 +9,8 @@
 #include "win32_opengl.h"
 #include "crest_core.h"
 #include "graphics/CrestShader.cpp"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb/stb_image.h"
+#include "graphics/CrestTexture.cpp"
+
 
 //Temp
 #include <stdio.h>
@@ -127,23 +127,18 @@ Win32OpenGLCleanUp(HDC DeviceContext) {
 
 //Temp/test code (Won't be platform specific)
 //~
-#include <math.h>
-
-
 
 global_variable CrestShader shaderProgram;
 global_variable unsigned int VAO;
 global_variable unsigned int Texture;
 
 internal void InitTriangle() {
+    //Note(Zen): Enables transparency
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable( GL_BLEND );
 
-
     shaderProgram = CrestShaderInit("C:/Dev/Crest/source/VertexShader.vs",
                                     "C:/Dev/Crest/source/FragmentShader.fs");
-//~
-
     float vertices[] = {
         // positions         // texture coords
          0.5f,  0.5f, 0.0f,  1.0f, 1.0f, // top right
@@ -156,8 +151,6 @@ internal void InitTriangle() {
     0, 1, 3,  // first Triangle
     1, 2, 3   // second Triangle
     };
-
-
 
     unsigned int VBO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -172,37 +165,12 @@ internal void InitTriangle() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+    Texture = CrestTextureInit("../data/PeaceBig.png");
 
-    //load texture
-
-    glGenTextures(1, &Texture);
-    glBindTexture(GL_TEXTURE_2D, Texture);
-
-    //Set Texture Parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char * data = stbi_load("../data/PeaceBig.png", &width, &height, &nrChannels, 0);
-    if(data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-
-        OutputDebugStringA("Data loaded:\n");
-        char buffer[64];
-        sprintf(buffer, "%d %d %d\n", width, height, nrChannels);
-        OutputDebugStringA(buffer);
-    }
-    stbi_image_free(data);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
-
-//~
-
 }
 
 internal void RenderTriangle(real32 Time) {

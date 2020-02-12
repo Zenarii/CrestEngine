@@ -9,4 +9,7 @@ struct win32_window_dimension {
 
 
 internal char *
-CrestLoadFileAsString(const char* Path);
+CrestLoadFileAsString(const char * Path);
+
+internal void
+CrestLog(const char * Path);

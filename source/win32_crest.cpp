@@ -10,6 +10,14 @@
 global_variable bool running;
 global_variable bool OpenGLHasLoaded;
 
+//Logging
+//~
+
+internal void
+CrestLog(const char* Out) {
+    OutputDebugStringA(Out);
+}
+
 //FileIO
 //~
 //TODO better error handling, i.e if file doesn't exist etc.
