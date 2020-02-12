@@ -18,8 +18,9 @@ OpenGLProc(EnableVertexAttribArray, ENABLEVERTEXATTRIBARRAY)
 OpenGLProc(GenVertexArrays, GENVERTEXARRAYS)
 OpenGLProc(BindVertexArray, BINDVERTEXARRAY)
 OpenGLProc(GetUniformLocation, GETUNIFORMLOCATION)
+OpenGLProc(GenerateMipmap, GENERATEMIPMAP)
 
 //get uniform overloads
 OpenGLProc(Uniform4f, UNIFORM4F)
-
+OpenGLProc(Uniform1f, UNIFORM1F)
 #undef OpenGLProc

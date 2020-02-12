@@ -1,3 +1,5 @@
+//TODO remove platform specific output
+
 typedef unsigned int CrestShader;
 
 CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
@@ -18,7 +20,7 @@ CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
     glGetShaderiv(Vertex, GL_COMPILE_STATUS, &Success);
     if(!Success) {
         glGetShaderInfoLog(Vertex, 512, 0, InfoLog);
-        //TODO remove platform specific output
+
         OutputDebugStringA("\nFailed to compile vertex shader: ");
         OutputDebugStringA(InfoLog);
     }
@@ -31,7 +33,7 @@ CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
     glGetShaderiv(Fragment, GL_COMPILE_STATUS, &Success);
     if(!Success) {
         glGetShaderInfoLog(Fragment, 512, 0, InfoLog);
-        //TODO remove platform specific output
+
         OutputDebugStringA("\nFailed to compile Fragment shader: ");
         OutputDebugStringA(InfoLog);
     }
@@ -56,4 +58,10 @@ CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
     free(FragmentSource);
 
     return Result;
+}
+
+void CrestShaderSetFloat(CrestShader Shader, const char * UniformName, real32 Value) {
+    glUseProgram(Shader);
+    int Location = glGetUniformLocation(Shader, UniformName);
+    glUniform1f(Location, Value);
 }

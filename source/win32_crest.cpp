@@ -160,6 +160,7 @@ int CALLBACK WinMain(
                 if(running) {
                     int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
                     real32 msPerFrame = ((1000*CounterElapsed) / ClockFrequency);
+
                     int32 imsPerFrame = (int32) ((1000*CounterElapsed) / ClockFrequency);
                     int32 FPS = ClockFrequency/CounterElapsed;
                     char windowTitle[32];

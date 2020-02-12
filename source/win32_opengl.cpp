@@ -1,7 +1,7 @@
 //################
 //# Zenarii 2020 #
 //################
-
+//TODO move texture generation code into single file
 //opengl headers
 #include <gl/gl.h>
 #include "gl/glext.h"
@@ -9,6 +9,11 @@
 #include "win32_opengl.h"
 #include "crest_core.h"
 #include "graphics/CrestShader.cpp"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
+//Temp
+#include <stdio.h>
 //OpenGL
 //~
 global_variable HGLRC GlobalOpenGLContext;
@@ -120,7 +125,7 @@ Win32OpenGLCleanUp(HDC DeviceContext) {
 }
 
 
-//Temp/test code (Not platform specific)
+//Temp/test code (Won't be platform specific)
 //~
 #include <math.h>
 
@@ -128,23 +133,27 @@ Win32OpenGLCleanUp(HDC DeviceContext) {
 
 global_variable CrestShader shaderProgram;
 global_variable unsigned int VAO;
+global_variable unsigned int Texture;
 
 internal void InitTriangle() {
     shaderProgram = CrestShaderInit("C:/Dev/Crest/source/VertexShader.vs",
                                     "C:/Dev/Crest/source/FragmentShader.fs");
+//~
 
     float vertices[] = {
-     0.5f,  0.5f, 0.0f,  // top right
-     0.5f, -0.5f, 0.0f,  // bottom right
-    -0.5f, -0.5f, 0.0f,  // bottom left
-    -0.5f,  0.5f, 0.0f   // top left
+        // positions         // texture coords
+         0.5f,  0.5f, 0.0f,  1.0f, 1.0f, // top right
+         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f  // top left
     };
-
 
     unsigned int indices[] = {
     0, 1, 3,  // first Triangle
     1, 2, 3   // second Triangle
     };
+
+
 
     unsigned int VBO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -159,22 +168,45 @@ internal void InitTriangle() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    //load texture
+
+    glGenTextures(1, &Texture);
+    glBindTexture(GL_TEXTURE_2D, Texture);
+
+    //Set Texture Parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char * data = stbi_load("../data/TestImg.png", &width, &height, &nrChannels, 0);
+    if(data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+        OutputDebugStringA("Data loaded");
+        char buffer[64];
+        sprintf(buffer, "%d %d %d", width, height, nrChannels);
+        OutputDebugStringA(buffer);
+    }
+    stbi_image_free(data);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+//~
+
 }
 
 internal void RenderTriangle(real32 Time) {
     glBindVertexArray(0);
 
-    //set colour
-    real32 SineValue = sinf(Time/1000.0f);
-    real32 GreenValue = (SineValue/2.0f)+0.5f;
-    int vertexColourLocation = glGetUniformLocation(shaderProgram, "Colour");
-
+    glBindTexture(GL_TEXTURE_2D, Texture);
     glUseProgram(shaderProgram);
-    glUniform4f(vertexColourLocation, 0.0f, GreenValue, 0.0f, 1.0f);
     glBindVertexArray(VAO);
-
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 }
