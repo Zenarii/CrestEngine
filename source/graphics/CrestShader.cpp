@@ -65,3 +65,9 @@ void CrestShaderSetFloat(CrestShader Shader, const char * UniformName, real32 Va
     int Location = glGetUniformLocation(Shader, UniformName);
     glUniform1f(Location, Value);
 }
+
+void CrestShaderSetV3(CrestShader Shader, const char * UniformName, vector3 Value) {
+    glUseProgram(Shader);
+    int Location = glGetUniformLocation(Shader, UniformName);
+    glUniform3f(Location, Value.x, Value.y, Value.z);
+}

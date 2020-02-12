@@ -22,5 +22,6 @@ OpenGLProc(GenerateMipmap, GENERATEMIPMAP)
 
 //get uniform overloads
 OpenGLProc(Uniform4f, UNIFORM4F)
+OpenGLProc(Uniform3f, UNIFORM3F)
 OpenGLProc(Uniform1f, UNIFORM1F)
 #undef OpenGLProc
