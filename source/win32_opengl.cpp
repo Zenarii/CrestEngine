@@ -136,6 +136,10 @@ global_variable unsigned int VAO;
 global_variable unsigned int Texture;
 
 internal void InitTriangle() {
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable( GL_BLEND );
+
+
     shaderProgram = CrestShaderInit("C:/Dev/Crest/source/VertexShader.vs",
                                     "C:/Dev/Crest/source/FragmentShader.fs");
 //~
@@ -182,13 +186,13 @@ internal void InitTriangle() {
 
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char * data = stbi_load("../data/TestImg.png", &width, &height, &nrChannels, 0);
+    unsigned char * data = stbi_load("../data/PeaceBig.png", &width, &height, &nrChannels, 0);
     if(data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-        OutputDebugStringA("Data loaded");
+        OutputDebugStringA("Data loaded:\n");
         char buffer[64];
-        sprintf(buffer, "%d %d %d", width, height, nrChannels);
+        sprintf(buffer, "%d %d %d\n", width, height, nrChannels);
         OutputDebugStringA(buffer);
     }
     stbi_image_free(data);
