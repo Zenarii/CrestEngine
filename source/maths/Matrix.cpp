@@ -1,3 +1,5 @@
+//Note(Zen): This matrix is row-major
+//so need to set transpose true for OpenGL functions
 typedef union matrix4 {
     struct {
         vector4 Row1;
@@ -5,6 +7,7 @@ typedef union matrix4 {
         vector4 Row3;
         vector4 Row4;
     };
+    real32 First;
     real32 elements[16];
 } matrix4;
 
@@ -13,10 +16,17 @@ matrix4index(int n, int m) {
   return 4*n + m;
 }
 
+enum crest_axis {
+    CREST_AXIS_X,
+    CREST_AXIS_Y,
+    CREST_AXIS_Z,
+};
+
+//Matrix Creation
+//~
 //Note(Zen): initialise as diagonal matrix
 internal matrix4
 CrestMatrix4InitF(real32 value) {
-    matrix4 Result = {};
     matrix4 result = {};
     for(int i = 0; i < 4; ++i) {
         int index = matrix4index(i, i);
@@ -33,6 +43,45 @@ CrestTranslationMatrix(real32 dx, real32 dy, real32 dz) {
   result.elements[7] = dy;
   result.elements[11] = dz;
   return result;
+}
+
+internal matrix4
+CrestScaleMatrix(real32 ScaleFactor) {
+    matrix4 result = {};
+    for(int i = 0; i < 3; ++i) {
+        int index = matrix4index(i, i);
+        result.elements[index] = ScaleFactor;
+    }
+    return result;
+}
+
+//TODO(Zen): Improve this
+internal matrix4
+CrestRotationMatrix(real32 radians, crest_axis axis) {
+    matrix4 Result = {};
+    switch(axis) {
+        case CREST_AXIS_X: {
+            Result.Row1 = {1, 0, 0, 0};
+            Result.Row2 = {0, cosf(radians), -sinf(radians), 0};
+            Result.Row3 = {0, sinf(radians),  cosf(radians), 0};
+            Result.Row4 = {0, 0, 0, 1};
+        } break;
+
+        case CREST_AXIS_Y: {
+            Result.Row1 = {cosf(radians), 0, sinf(radians), 0};
+            Result.Row2 = {0, 1, 0, 0};
+            Result.Row3 = {-sinf(radians), 0, cosf(radians), 0};
+            Result.Row4 = {0, 0, 0, 1};
+        } break;
+
+        case CREST_AXIS_Z: {
+            Result.Row1 = {cosf(radians), -sinf(radians), 0, 0};
+            Result.Row2 = {sinf(radians),  cosf(radians), 0, 0};
+            Result.Row3 = {0, 0, 1, 0};
+            Result.Row4 = {0, 0, 0, 1};
+        }
+    }
+    return Result;
 }
 
 //Matrix operations
@@ -72,12 +121,6 @@ M4Sub(matrix4 m1, matrix4 m2) {
 internal vector4
 CrestM4MultV4(matrix4 m, vector4 v) {
     vector4 result = {};
-    /*for(int i = 0; i < 4; ++i) {
-    for(int j = 0; j < 4; ++j) {
-    int index = matrix4index(i, j);
-    result.elements[i] += m.elements[index] * v.elements[j];
-    }
-    }*/
     result.x = CrestV4Dot(m.Row1, v);
     result.y = CrestV4Dot(m.Row2, v);
     result.z = CrestV4Dot(m.Row3, v);

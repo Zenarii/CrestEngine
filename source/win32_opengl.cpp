@@ -167,7 +167,7 @@ internal void InitTriangle() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    Texture = CrestTextureInit("../data/PeaceBig.png");
+    Texture = CrestTextureInit("../data/TestImg.png");
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -180,9 +180,19 @@ internal void RenderTriangle(real32 Time) {
 
     glBindTexture(GL_TEXTURE_2D, Texture);
     glUseProgram(shaderProgram);
-    matrix4 offset = CrestTranslationMatrix(0.5f, 0.5f, 0.0f);
 
-    CrestShaderSetM4(shaderProgram, "scale", &offset.Row1.x);
+    matrix4 Rotation1 = CrestRotationMatrix(Time*0.001f, CREST_AXIS_Z);
+    matrix4 Translation1 = CrestTranslationMatrix(0.5f, 0.0f, 0.0f);
+    matrix4 Transform = CrestM4MultM4(Translation1, Rotation1);
+    CrestShaderSetM4(shaderProgram, "Transform", &Transform.First);
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    glBindTexture(GL_TEXTURE_2D, Texture);
+    glUseProgram(shaderProgram);
+
+    matrix4 Translation2 = CrestTranslationMatrix(-0.5f, 0.5f, 0.0f);
+    CrestShaderSetM4(shaderProgram, "Transform", &Translation2.First);
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
