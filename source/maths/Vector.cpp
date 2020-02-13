@@ -48,5 +48,20 @@ vector4 CrestV4Init(real32 x, real32 y, real32 z, real32 w) {
     return v;
 };
 
-#define vector4(x, y, z, w) CrestV4Init(x, y, z, w)
-#define colour4(x, y, z, w) CrestV4Init(x, y, z, w)
+#define Vector4(x, y, z, w) CrestV4Init(x, y, z, w)
+#define Colour4(x, y, z, w) CrestV4Init(x, y, z, w)
+
+vector4 CrestV4Add(vector4 v1, vector4 v2) {
+    vector4 v = {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z, v1.w + v2.w};
+    return v;
+}
+
+real32 CrestV4Dot(vector4 v1, vector4 v2) {
+    real32 result = (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z) + (v1.w * v2.w);
+    return result;
+}
+
+vector4 CrestV4Sub(vector4 v1, vector4 v2) {
+    vector4 result = {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z, v1.w - v2.w};
+    return result;
+}

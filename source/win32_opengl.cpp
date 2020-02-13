@@ -8,6 +8,7 @@
 #include "gl/wglext.h"
 #include "win32_opengl.h"
 #include "crest_core.h"
+
 #include "CrestMaths.cpp"
 #include "graphics/CrestShader.cpp"
 #include "graphics/CrestTexture.cpp"
@@ -173,15 +174,15 @@ internal void InitTriangle() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
 }
-#include <math.h>
 
 internal void RenderTriangle(real32 Time) {
     glBindVertexArray(0);
 
     glBindTexture(GL_TEXTURE_2D, Texture);
     glUseProgram(shaderProgram);
-    vector3 offset = vector3(sinf(Time * 0.001f), cosf(Time  * 0.001f), 0.0f);
-    CrestShaderSetV3(shaderProgram, "Offset", offset);
+    matrix4 offset = CrestTranslationMatrix(0.5f, 0.5f, 0.0f);
+
+    CrestShaderSetM4(shaderProgram, "scale", &offset.Row1.x);
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
