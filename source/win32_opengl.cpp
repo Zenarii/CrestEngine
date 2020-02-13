@@ -137,7 +137,8 @@ global_variable unsigned int Texture;
 internal void InitTriangle() {
     //Note(Zen): Enables transparency
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable( GL_BLEND );
+    glEnable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
 
     shaderProgram = CrestShaderInit("C:/Dev/Crest/source/VertexShader.vs",
                                     "C:/Dev/Crest/source/FragmentShader.fs");
@@ -167,13 +168,24 @@ internal void InitTriangle() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    Texture = CrestTextureInit("../data/TestImg.png");
+    Texture = CrestTextureInit("../data/PeaceBig.png");
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
 }
+
+global_variable vector3 SpritePositions[] = {
+    {0.0f, -0.1f, -3.2f},
+    {1.0f, -0.2f, -3.0f},
+    {0.8f, 0.3f, -3.0f},
+    {0.0f, 2.0f, -8.0f},
+};
+
+global_variable real32 SpriteScale[] = {
+    1.2f, 1.3f, 0.8f, 2.0f
+};
 
 internal void RenderTriangle(platform * Platform) {
     glBindVertexArray(0);
@@ -183,13 +195,14 @@ internal void RenderTriangle(platform * Platform) {
 
     real32 Ratio = ((real32)Platform->ScreenWidth)/((real32)Platform->ScreenHeight);
     matrix4 Projection = CrestProjectionMatrix(PI/2.0f, Ratio, 0.1f, 100.0f);
-
-    matrix4 Model = CrestRotationMatrix(CrestDegToRad(-55.0f), CREST_AXIS_X);
     matrix4 View = CrestTranslationMatrix(0.0f, 0.0f, -3.0f);
+    matrix4 Model = Matrix4(1.0f);
 
     CrestShaderSetM4(shaderProgram, "Projection", &Projection);
-    CrestShaderSetM4(shaderProgram, "Model", &Model);
+
     CrestShaderSetM4(shaderProgram, "View", &View);
+    CrestShaderSetM4(shaderProgram, "Model", &Model);
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 }

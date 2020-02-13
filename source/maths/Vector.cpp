@@ -14,8 +14,8 @@ vector3 CrestV3Init(real32 x, real32 y, real32 z) {
     vector3 v = {x, y, z};
     return v;
 };
-#define vector3(x, y, z) CrestV3Init(x, y, z)
-#define colour3(x, y, z) CrestV3Init(x, y, z)
+#define Vector3(x, y, z) CrestV3Init(x, y, z)
+#define Colour3(x, y, z) CrestV3Init(x, y, z)
 
 vector3 CrestV3Add(vector3 v1, vector3 v2) {
     vector3 v = {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
