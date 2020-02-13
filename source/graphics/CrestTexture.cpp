@@ -18,8 +18,11 @@ CrestTextureInit(const char * Path) {
     int Width, Height, Channels;
     stbi_set_flip_vertically_on_load(true);
     unsigned char * data = stbi_load(Path, &Width, &Height, &Channels, 0);
-    if(data) {
+    if(data && (Channels == 4)) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    }
+    else if(data && (Channels == 3)) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Width, Height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     }
     else {
         CrestLog("Failed to load image from: ");
