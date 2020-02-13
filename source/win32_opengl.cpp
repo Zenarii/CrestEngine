@@ -15,7 +15,7 @@
 
 
 //Temp
-#include <stdio.h>
+#include "Sandbox/Camera.cpp"
 //OpenGL
 //~
 global_variable HGLRC GlobalOpenGLContext;
@@ -143,16 +143,24 @@ internal void InitTriangle() {
     shaderProgram = CrestShaderInit("C:/Dev/Crest/source/VertexShader.vs",
                                     "C:/Dev/Crest/source/FragmentShader.fs");
     float vertices[] = {
-        // positions         // texture coords
-         0.5f,  0.5f, 0.0f,  1.0f, 1.0f, // top right
-         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f  // top left
+        // positions         // Colour
+         0.5f,  0.5f, 0.0f,  1.0f, 1.0f, 0.5f, // top right front
+         0.5f, -0.5f, 0.0f,  1.0f, 1.0f, 0.5f, // bottom right front
+        -0.5f, -0.5f, 0.0f,  1.0f, 1.0f, 0.5f, // bottom left front
+        -0.5f,  0.5f, 0.0f,  1.0f, 1.0f, 0.5f,  // top left front
+
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.5f, // top right back
+        0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.5f, // bottom right Back
+       -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.5f, // bottom left back
+       -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.5f  // top left back
     };
 
     unsigned int indices[] = {
-    0, 1, 3,  // first Triangle
-    1, 2, 3   // second Triangle
+        0, 1, 3,  // first Triangle
+        1, 2, 3,   // second Triangle
+
+        4, 5, 7,
+        5, 6, 7
     };
 
     unsigned int VBO, EBO;
@@ -168,38 +176,31 @@ internal void InitTriangle() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    Texture = CrestTextureInit("../data/PeaceBig.png");
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3*sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
 }
-
-global_variable vector3 SpritePositions[] = {
-    {0.0f, -0.1f, -3.2f},
-    {1.0f, -0.2f, -3.0f},
-    {0.8f, 0.3f, -3.0f},
-    {0.0f, 2.0f, -8.0f},
-};
-
-global_variable real32 SpriteScale[] = {
-    1.2f, 1.3f, 0.8f, 2.0f
-};
 
 internal void RenderTriangle(platform * Platform) {
     glBindVertexArray(0);
 
-    glBindTexture(GL_TEXTURE_2D, Texture);
+
     glUseProgram(shaderProgram);
 
     real32 Ratio = ((real32)Platform->ScreenWidth)/((real32)Platform->ScreenHeight);
-    matrix4 Projection = CrestProjectionMatrix(PI/2.0f, Ratio, 0.1f, 100.0f);
-    matrix4 View = CrestTranslationMatrix(0.0f, 0.0f, -3.0f);
-    matrix4 Model = Matrix4(1.0f);
+    matrix4 Projection = CrestProjectionMatrix(PI/3.0f, Ratio, 0.1f, 100.0f);
+    //matrix4 Projection = Matrix4(1.0f);
+    real32 radius = 10.0f;
+    vector3 Position = {sinf(Platform->TotalTime) * radius, 0.0f, cosf(Platform->TotalTime) * radius};
+    matrix4 View = LookAt(Position,
+                          Vector3(0.0f, 0.0f,  0.0f),
+                          Vector3(0.0f, 1.0f,  0.0f));
+    //matrix4 View = Matrix4(1.0f);
+    matrix4 Model = CrestTranslationMatrix(0.0f, 0.0f, 0.0f);
 
     CrestShaderSetM4(shaderProgram, "Projection", &Projection);
-
     CrestShaderSetM4(shaderProgram, "View", &View);
     CrestShaderSetM4(shaderProgram, "Model", &Model);
     glBindVertexArray(VAO);
