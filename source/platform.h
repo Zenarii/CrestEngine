@@ -3,6 +3,9 @@
 //################
 
 struct platform {
+    //screen
+    int ScreenWidth;
+    int ScreenHeight;
     //time
     real32 Delta;
     real32 TotalTime;

@@ -84,6 +84,23 @@ CrestRotationMatrix(real32 radians, crest_axis axis) {
     return Result;
 }
 
+//Note(Zen): Adapted from https://www.songho.ca/opengl/gl_projectionmatrix.html
+//Ratio is width/height
+internal matrix4
+CrestProjectionMatrix(real32 Theta, real32 Ratio, real32 Near, real32 Far) {
+    matrix4 Result = {};
+
+    real32 HalfWidth = tan(Theta * 0.5f) * Near;
+    real32 HalfHeight = HalfWidth / Ratio;
+
+    Result.Row1 = {Near / HalfWidth , 0.0f, 0.0f, 0.0f};
+    Result.Row2 = {0.0f, 2.0f*(Near/HalfHeight), 0.0f, 0.0f};
+    Result.Row3 = {0.0f, 0.0f, -(Far+Near)/(Far-Near), -(2*Far*Near)/(Far-Near)};
+    Result.Row4 = {0.0f, 0.0f, -1.0f, 0.0f};
+
+    return Result;
+}
+
 //Matrix operations
 //~
 internal matrix4

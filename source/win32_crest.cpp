@@ -2,9 +2,9 @@
 
 #include <windows.h>
 #include "crest_core.h"
+#include "platform.cpp"
 #include "win32_crest.h"
 #include "win32_opengl.cpp"
-#include "platform.cpp"
 #include "crest.cpp"
 
 global_variable bool running;
@@ -44,6 +44,7 @@ CrestLoadFileAsString(const char* Path) {
 
 //Window Buffer
 //~
+
 internal win32_window_dimension
 Win32GetWindowDimension(HWND windowHandle) {
     win32_window_dimension Result;
@@ -160,25 +161,31 @@ int CALLBACK WinMain(
                 GameUpdateAndRender(&Platform);
                 SwapBuffers(deviceContext);
 
+                //Note(Zen): Timing
                 int64 EndCycleCount;
                 EndCycleCount = __rdtsc();
 
                 LARGE_INTEGER EndCounter;
                 QueryPerformanceCounter(&EndCounter);
-                if(running) {
-                    int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
-                    real32 msPerFrame = ((1000*CounterElapsed) / ClockFrequency);
 
-                    int32 imsPerFrame = (int32) ((1000*CounterElapsed) / ClockFrequency);
-                    int32 FPS = ClockFrequency/CounterElapsed;
-                    char windowTitle[32];
-                    wsprintf(windowTitle, "Crest ms/frame: %d | FPS: %d", imsPerFrame, FPS);
-                    SetWindowTextA(windowHandle, windowTitle);
+                int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
+                real32 msPerFrame = ((1000*CounterElapsed) / ClockFrequency);
 
-                    Platform.Delta = msPerFrame;
-                    Platform.TotalTime += msPerFrame;
-                }
+                int32 imsPerFrame = (int32) ((1000*CounterElapsed) / ClockFrequency);
+                int32 FPS = ClockFrequency/CounterElapsed;
+                char windowTitle[32];
+                wsprintf(windowTitle, "Crest ms/frame: %d | FPS: %d", imsPerFrame, FPS);
+                SetWindowTextA(windowHandle, windowTitle);
+
                 LastCounter = EndCounter;
+
+                //Note(Zen): Copy important info to platform struct
+                win32_window_dimension Dimensions = Win32GetWindowDimension(windowHandle);
+                Platform.ScreenWidth = Dimensions.Width;
+                Platform.ScreenHeight = Dimensions.Height;
+                Platform.Delta = msPerFrame;
+                Platform.TotalTime += msPerFrame;
+
             }
         } else {
             //TODO log failure

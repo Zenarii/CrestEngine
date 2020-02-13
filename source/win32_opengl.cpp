@@ -175,24 +175,21 @@ internal void InitTriangle() {
     glEnableVertexAttribArray(1);
 }
 
-internal void RenderTriangle(real32 Time) {
+internal void RenderTriangle(platform * Platform) {
     glBindVertexArray(0);
 
     glBindTexture(GL_TEXTURE_2D, Texture);
     glUseProgram(shaderProgram);
 
-    matrix4 Rotation1 = CrestRotationMatrix(Time*0.001f, CREST_AXIS_Z);
-    matrix4 Translation1 = CrestTranslationMatrix(0.5f, 0.0f, 0.0f);
-    matrix4 Transform = CrestM4MultM4(Translation1, Rotation1);
-    CrestShaderSetM4(shaderProgram, "Transform", &Transform.First);
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    real32 Ratio = ((real32)Platform->ScreenWidth)/((real32)Platform->ScreenHeight);
+    matrix4 Projection = CrestProjectionMatrix(PI/2.0f, Ratio, 0.1f, 100.0f);
 
-    glBindTexture(GL_TEXTURE_2D, Texture);
-    glUseProgram(shaderProgram);
+    matrix4 Model = CrestRotationMatrix(CrestDegToRad(-55.0f), CREST_AXIS_X);
+    matrix4 View = CrestTranslationMatrix(0.0f, 0.0f, -3.0f);
 
-    matrix4 Translation2 = CrestTranslationMatrix(-0.5f, 0.5f, 0.0f);
-    CrestShaderSetM4(shaderProgram, "Transform", &Translation2.First);
+    CrestShaderSetM4(shaderProgram, "Projection", &Projection);
+    CrestShaderSetM4(shaderProgram, "Model", &Model);
+    CrestShaderSetM4(shaderProgram, "View", &View);
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
