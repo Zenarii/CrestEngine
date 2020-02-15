@@ -148,7 +148,7 @@ int CALLBACK WinMain(
             int64 LastCycleCount;
             LastCycleCount = __rdtsc();
 
-            CrestInit()
+            CrestInit();
 
             running = true;
             while(running){

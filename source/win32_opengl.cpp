@@ -12,10 +12,7 @@
 #include "CrestMaths.cpp"
 #include "graphics/CrestShader.cpp"
 #include "graphics/CrestTexture.cpp"
-
-
-//Temp
-#include "Sandbox/Camera.cpp"
+#include "graphics/Mesh.cpp"
 //OpenGL
 //~
 global_variable HGLRC GlobalOpenGLContext;
@@ -135,10 +132,7 @@ global_variable unsigned int VAO;
 global_variable unsigned int Texture;
 
 internal void InitTriangle() {
-    //Note(Zen): Enables transparency
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
+
 
     shaderProgram = CrestShaderInit("C:/Dev/Crest/source/VertexShader.vs",
                                     "C:/Dev/Crest/source/FragmentShader.fs");
@@ -193,6 +187,8 @@ internal void RenderTriangle(platform * Platform) {
     real32 Ratio = ((real32)Platform->ScreenWidth)/((real32)Platform->ScreenHeight);
     matrix4 Projection = CrestProjectionMatrix(PI/2.0f, Ratio, 0.1f, 100.0f);
     matrix4 View = CrestTranslationMatrix(0.0f, 0.0f, -3.0f);
+
+
     CrestShaderSetM4(shaderProgram, "Projection", &Projection);
     CrestShaderSetM4(shaderProgram, "View", &View);
     matrix4 Model = CrestRotationMatrix(Angle, CREST_AXIS_X);

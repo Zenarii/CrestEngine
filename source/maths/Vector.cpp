@@ -98,3 +98,11 @@ vector4 CrestV4Sub(vector4 v1, vector4 v2) {
     vector4 result = {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z, v1.w - v2.w};
     return result;
 }
+
+//Vector2
+//~
+typedef union {
+    struct {
+        real32 x, y;
+    };
+} vector2;
