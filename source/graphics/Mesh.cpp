@@ -57,8 +57,10 @@ CrestLoadMesh(const char * Path) {
 
     vector3 TempVertices[16];
     vector3 TempNormals[16];
+    vector2 TempTextures[16];
     int UsedVertices = 0;
     int UsedNormals = 0;
+    int UsedTextures = 0;
 
     char * MeshSource = CrestLoadFileAsString(Path);
     char * CurrentLine = MeshSource;
@@ -79,20 +81,40 @@ CrestLoadMesh(const char * Path) {
             Chunk[0] = Token;
             int i = 1;
             while(Token) {
-                
                 Token = strtok(NULL, " ");
                 Chunk[i] = Token;
                 ++i;
             }
             i = 27;
             //Note(Zen): Act on chunks
-            if(CrestCompareStrings(Chunk[0], "v", 1)) {
+            if(CrestCompareStrings(Chunk[0], "#", 1)) {
+
+            }
+            else if(CrestCompareStrings(Chunk[0], "o", 1)) {
+                CrestLog("Opening: ");
+                CrestLog(Chunk[1]);
+                CrestLog(" Mesh.\n");
+            }
+            else if(CrestCompareStrings(Chunk[0], "vn", 2)) {
+                TempNormals[UsedNormals].x = strtof(Chunk[1], NULL);
+                TempNormals[UsedNormals].y = strtof(Chunk[2], NULL);
+                TempNormals[UsedNormals].z = strtof(Chunk[3], NULL);
+                ++UsedNormals;
+            }
+            else if(CrestCompareStrings(Chunk[0], "vt", 2)) {
+                TempTextures[UsedTextures].x = strtof(Chunk[1], NULL);
+                TempTextures[UsedTextures].y = strtof(Chunk[2], NULL);
+                ++UsedTextures;
+            }
+            else if(CrestCompareStrings(Chunk[0], "v", 1)) {
                 TempVertices[UsedVertices].x = strtof(Chunk[1], NULL);
                 TempVertices[UsedVertices].y = strtof(Chunk[2], NULL);
                 TempVertices[UsedVertices].z = strtof(Chunk[3], NULL);
                 ++UsedVertices;
             }
-
+            else if(CrestCompareStrings(Chunk[0], "f", 1)) {
+                CrestLog("f");
+            }
             free(TempString);
         }
         else {
