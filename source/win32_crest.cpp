@@ -26,12 +26,16 @@ CrestLog(const char* Out) {
 internal char *
 CrestLoadFileAsString(const char* Path) {
     //TODO(Zen): Check if need to change security attributes
-    const int MAXFILESIZE = 1024;
-    char * Buffer = (char *)malloc(MAXFILESIZE);
     HANDLE FileHandle = CreateFile(Path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    char * Buffer;
     if(FileHandle != INVALID_HANDLE_VALUE) {
+        LARGE_INTEGER FileSize;
+        GetFileSizeEx(FileHandle, &FileSize);
+
+        Buffer = (char *)malloc(FileSize.QuadPart);
         DWORD BytesRead = 0;
-        ReadFile(FileHandle, Buffer, MAXFILESIZE-1, &BytesRead, NULL);
+        ReadFile(FileHandle, Buffer, FileSize.QuadPart-1, &BytesRead, NULL);
     }
     else {
         DWORD error = GetLastError();
@@ -137,13 +141,14 @@ int CALLBACK WinMain(
             HDC deviceContext = GetDC(windowHandle);
             OpenGLHasLoaded = Win32OpenGLInit(deviceContext);
             Win32OpenGlLoadAllFunctions();
-            //TEMP
-            InitTriangle();
+
 
             LARGE_INTEGER LastCounter;
             QueryPerformanceCounter(&LastCounter);
             int64 LastCycleCount;
             LastCycleCount = __rdtsc();
+
+            CrestInit()
 
             running = true;
             while(running){
