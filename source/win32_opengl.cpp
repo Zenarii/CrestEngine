@@ -144,15 +144,24 @@ internal void InitTriangle() {
                                     "C:/Dev/Crest/source/FragmentShader.fs");
     float vertices[] = {
         // positions
-         0.5f,  0.5f, 0.0f,  1.0f, 1.0f, // top right front
-         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, // bottom right front
-        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, // bottom left front
-        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f, // top left front
+         0.5f,  0.5f, 0.5f,  1.0f, 1.0f, // top right front
+         0.5f, -0.5f, 0.5f,  1.0f, 0.0f, // bottom right front
+        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, // bottom left front
+        -0.5f,  0.5f, 0.5f,  0.0f, 1.0f, // top left front
+
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top right front
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom right front
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom left front
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top left front
     };
 
     unsigned int indices[] = {
-        0, 1, 3,  // first Triangle
-        1, 2, 3,   // second Triangle
+        0,2,1,  0,3,2, //front
+        3,7,4,  0,3,4,//4,3,0,  4,7,3,
+        1,0,4,  5,1,4,//4,1,5,  4,0,1,
+        6,7,3,  2,6,3,//3,6,2,  3,7,6,
+        6,2,1,  1,6,5,//1,6,5,  1,2,6,
+        7,5,6,  7,4,5 //back
     };
 
     unsigned int VBO, EBO;
@@ -178,20 +187,18 @@ internal void InitTriangle() {
 
 internal void RenderTriangle(platform * Platform) {
     glBindVertexArray(0);
-
+    real32 Angle = Platform->TotalTime/1000.0f * PI;
     glUseProgram(shaderProgram);
 
     real32 Ratio = ((real32)Platform->ScreenWidth)/((real32)Platform->ScreenHeight);
     matrix4 Projection = CrestProjectionMatrix(PI/2.0f, Ratio, 0.1f, 100.0f);
-    //matrix4 Projection = Matrix4(1.0f);
     matrix4 View = CrestTranslationMatrix(0.0f, 0.0f, -3.0f);
-
     CrestShaderSetM4(shaderProgram, "Projection", &Projection);
     CrestShaderSetM4(shaderProgram, "View", &View);
-    matrix4 Model = CrestRotationMatrix(CrestDegToRad(-55.0f), CREST_AXIS_X);
+    matrix4 Model = CrestRotationMatrix(Angle, CREST_AXIS_X);
     CrestShaderSetM4(shaderProgram, "Model", &Model);
 
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
 }
