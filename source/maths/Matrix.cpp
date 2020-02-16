@@ -84,20 +84,7 @@ CrestRotationMatrix(real32 radians, crest_axis axis) {
     return Result;
 }
 
-//Note(Zen): Adapted from https://www.codersblock.org/blog/multiplayer-fps-part-7
-//Ratio is width/height
-/*
-internal matrix4
-CrestProjectionMatrix(real32 Theta, real32 Ratio, real32 Near, real32 Far) {
-    matrix4 Result = {
-        1.0f/(tanf(Theta)*Ratio), 0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, -1.0f/(tanf(Theta)), 0.0f,
-        0.0f, Far/(Far-Near), 0.0f, (Near*Far)/(Near-Far),
-        0.0f, 1.0f, 0.0f, 1.0f
-    };
-    return Result;
-}
-*/
+
 internal matrix4
 CrestProjectionMatrix(real32 Theta, real32 Ratio, real32 Near, real32 Far) {
     matrix4 Result = {};
@@ -109,6 +96,42 @@ CrestProjectionMatrix(real32 Theta, real32 Ratio, real32 Near, real32 Far) {
     Result.Row2 = {0.0f, (Near/HalfHeight), 0.0f, 0.0f};
     Result.Row3 = {0.0f, 0.0f, -(Far+Near)/(Far-Near), -(2*Far*Near)/(Far-Near)};
     Result.Row4 = {0.0f, 0.0f, -1.0f, 0.0f};
+
+    return Result;
+}
+
+internal matrix4
+CrestLookAt(vector3 Position, vector3 Centre) {
+    /*
+    matrix4 Result = {};
+    vector3 Up = Vector3(0.0f, 1.0f, 0.0f);
+    vector3 x, y, z;
+    z = CrestV3Sub(Position, Centre);
+    z = CrestV3Normalise(z);
+    x = CrestV3Cross(Up, z);
+    y = CrestV3Cross(z, x);
+    x = CrestV3Normalise(x);
+    y = CrestV3Normalise(y);
+    Result.Row1 = {x.x, x.y, x.z, -CrestV3Dot(x, Position)};
+    Result.Row2 = {y.x, y.y, y.z, -CrestV3Dot(y, Position)};
+    Result.Row3 = {z.x, z.y, z.z, -CrestV3Dot(x, Position)};
+    Result.Row4 = {0.0f, 0.0f, 0.0f, 1.0f};
+    return Result;
+
+    */
+
+
+    vector3 Forward = CrestV3Normalise(CrestV3Sub(Centre, Position)); //may need to switch this around
+    vector3 Right = CrestV3Cross(Vector3(0.0f, 1.0f, 0.0f), Forward);
+    vector3 Up = CrestV3Cross(Forward, Right);
+
+    matrix4 Result = {};
+    Result.Row1 = CrestV4FromV3(Right, CrestV3Dot(Position, Right));
+    Result.Row2 = CrestV4FromV3(Up, CrestV3Dot(Position, Up));
+    Result.Row3 = CrestV4FromV3(Forward, CrestV3Dot(Position, Forward));
+    Result.Row4 = {0.0f, 0.0f, 0.0f, 1.0f};
+    //Note(Zen): I think i need to transpose this matrix to make it work
+
 
     return Result;
 }
@@ -130,7 +153,7 @@ CrestM4MultM4(matrix4 m1, matrix4 m2) {
 }
 
 internal matrix4
-M4Add(matrix4 m1, matrix4 m2) {
+CrestM4Add(matrix4 m1, matrix4 m2) {
   matrix4 Result = {};
   for(int i = 0; i < 16; ++i) {
     Result.elements[i] = m1.elements[i] + m2.elements[i];
@@ -139,7 +162,7 @@ M4Add(matrix4 m1, matrix4 m2) {
 }
 
 internal matrix4
-M4Sub(matrix4 m1, matrix4 m2) {
+CrestM4Sub(matrix4 m1, matrix4 m2) {
   matrix4 Result = {};
   for(int i = 0; i < 16; ++i) {
     Result.elements[i] = m1.elements[i] - m2.elements[i];
@@ -156,4 +179,9 @@ CrestM4MultV4(matrix4 m, vector4 v) {
     result.w = CrestV4Dot(m.Row4, v);
 
     return result;
+}
+
+internal matrix4
+CrestM4Transpose(matrix4 m) {
+
 }

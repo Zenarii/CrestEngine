@@ -40,6 +40,10 @@ vector3 CrestV3Normalise(vector3 v) {
     return CrestV3DivideF(v, CrestV3Magnitude(v));
 }
 
+real32 CrestV3Dot(vector3 v1, vector3 v2) {
+    return ((v1.x*v2.x)+(v1.y*v2.y)+(v1.z * v2.z));
+}
+
 //Note(Zen): https://en.wikipedia.org/wiki/Cross_product#Coordinate_notation
 vector3 CrestV3Cross(vector3 a, vector3 b) {
     vector3 result = {};

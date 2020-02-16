@@ -23,6 +23,7 @@ CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
 
         OutputDebugStringA("\nFailed to compile vertex shader: ");
         OutputDebugStringA(InfoLog);
+        OutputDebugStringA(VertexSource);
     }
 
     //Note(Zen): Compile Fragment Shader
@@ -36,6 +37,7 @@ CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
 
         OutputDebugStringA("\nFailed to compile Fragment shader: ");
         OutputDebugStringA(InfoLog);
+        OutputDebugStringA(FragmentSource);
     }
 
     //Note(Zen): Link Shader Program

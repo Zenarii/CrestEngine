@@ -8,9 +8,8 @@ typedef struct vertex {
 } vertex;
 
 typedef struct mesh {
-    vertex Vertices[1000];
+    vertex Vertices[1024];
     int VerticesCount;
-    unsigned int Indices[500];
     CrestTexture Texture;
     unsigned int VAO, VBO;
 
@@ -53,20 +52,22 @@ CrestCompareStrings(const char * s1, const char * s2, int count) {
     return true;
 }
 
+#define CREST_LOAD_MESH_MAX_VERTICES 1024
+
 //Note(Zen): Only works for objs atm
 internal mesh
 CrestLoadMesh(const char * Path) {
 
-    vector3 TempVertices[64] = {};
-    vector3 TempNormals[64] = {};
-    vector2 TempTextures[64] = {};
+    vector3 TempVertices[CREST_LOAD_MESH_MAX_VERTICES] = {};
+    vector3 TempNormals[CREST_LOAD_MESH_MAX_VERTICES] = {};
+    vector2 TempTextures[CREST_LOAD_MESH_MAX_VERTICES] = {};
     int UsedVertices = 0;
     int UsedNormals = 0;
     int UsedTextures = 0;
 
     mesh Mesh = {};
 
-    vertex FinalVertices[64] = {};
+    vertex FinalVertices[CREST_LOAD_MESH_MAX_VERTICES] = {};
     int FinalVerticesCount = 0;
 
     char * MeshSource = CrestLoadFileAsString(Path);
@@ -182,20 +183,24 @@ CrestLoadMesh(const char * Path) {
 }
 
 internal void
-RenderMesh(mesh * MeshToDraw, CrestShader shaderProgram, platform * Platform) {
+CrestRenderMesh(mesh * MeshToDraw, CrestShader shaderProgram, platform * Platform) {
+
+    
     glBindTexture(GL_TEXTURE_2D, MeshToDraw->Texture);
     glBindVertexArray(MeshToDraw->VAO);
     glUseProgram(shaderProgram);
 
+    const real32 radius = 10.0f;
+    real32 camX = sinf(Platform->TotalTime * 0.001f) * radius;
+    real32 camZ = cosf(Platform->TotalTime * 0.001f) * radius;
     real32 Ratio = ((real32)Platform->ScreenWidth)/((real32)Platform->ScreenHeight);
     matrix4 Projection = CrestProjectionMatrix(PI/2.0f, Ratio, 0.1f, 100.0f);
-    matrix4 View = CrestTranslationMatrix(0.0f, 0.0f, -4.0f);
+    matrix4 View = CrestLookAt(Vector3(camX, 0.0f, camZ), Vector3(0.0f, 0.0f, 0.0f));
 
-    real32 Angle = Platform->TotalTime * 0.001f * PI;
 
     CrestShaderSetM4(shaderProgram, "Projection", &Projection);
     CrestShaderSetM4(shaderProgram, "View", &View);
-    matrix4 Model = CrestRotationMatrix(Angle, CREST_AXIS_Y);
+    matrix4 Model = Matrix4(1.0f);
     CrestShaderSetM4(shaderProgram, "Model", &Model);
 
     glDrawArrays(GL_TRIANGLES, 0, MeshToDraw->VerticesCount);

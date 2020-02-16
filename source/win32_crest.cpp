@@ -33,7 +33,7 @@ CrestLoadFileAsString(const char* Path) {
         LARGE_INTEGER FileSize;
         GetFileSizeEx(FileHandle, &FileSize);
 
-        Buffer = (char *)malloc(FileSize.QuadPart);
+        Buffer = (char *)malloc(FileSize.QuadPart + 16);
         DWORD BytesRead = 0;
         ReadFile(FileHandle, Buffer, FileSize.QuadPart-1, &BytesRead, NULL);
     }
