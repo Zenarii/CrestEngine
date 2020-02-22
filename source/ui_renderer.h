@@ -8,10 +8,10 @@ typedef struct vertex {
     v4 colour;
 } vertex;
 
-typedef struct renderer {
+typedef struct ui_renderer {
     r32 Width, Height;
     i32 BufferIndex;
     vertex Vertices[MAX_VERTICES_SIZE];
     u32 VAO, VBO;
     CrestShader shader;
-} renderer;
+} ui_renderer;

@@ -1,11 +1,12 @@
 #include "shader.c"
-#include "renderer.c"
+#include "ui_renderer.c"
 
 typedef struct app {
     b32 Initialised;
     r32 Delta;
-    renderer Renderer;
+    ui_renderer UIRenderer;
 } app;
+
 
 internal b32
 AppUpdate(Platform * platform) {
@@ -14,7 +15,7 @@ AppUpdate(Platform * platform) {
 
     if(!App->Initialised) {
         App->Initialised = 1;
-        CrestRendererInit(&App->Renderer);
+        CrestUIRendererInit(&App->UIRenderer);
     }
 
     //Note(Zen): Per-Frame initialisation
@@ -22,16 +23,16 @@ AppUpdate(Platform * platform) {
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        App->Renderer.Width = platform->ScreenWidth;
-        App->Renderer.Height = platform->ScreenHeight;
+        App->UIRenderer.Width = platform->ScreenWidth;
+        App->UIRenderer.Height = platform->ScreenHeight;
     }
 
 
-    CrestRendererStartFrame(&App->Renderer);
+    CrestUIRendererStartFrame(&App->UIRenderer);
     {
-        CrestPushFilledRect(&App->Renderer, v4(1.0f, 1.0f, 1.0f, 1.0f), v2(0.0f, 0.0f), v2(App->Renderer.Width, App->Renderer.Height));
+        CrestPushFilledRect(&App->UIRenderer, v4(1.0f, 1.0f, 1.0f, 1.0f), v2(0.0f, 0.0f), v2(10.0f, 10.0f));
     }
-    CrestRender(&App->Renderer);
+    CrestRender(&App->UIRenderer);
 
 
 
