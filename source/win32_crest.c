@@ -2,7 +2,7 @@
 //# Zenarii 2020 #
 //################
 #include <windows.h>
-
+#include <stdio.h>
 #include "program_options.h"
 #include "language_layer.h"
 
@@ -131,6 +131,18 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
             }
         }
 
+        //Note(Zen): Get mouse coordinates
+        {
+            POINT MousePosition = {0};
+            GetCursorPos(&MousePosition);
+            ScreenToClient(window, &MousePosition);
+            //Note(Zen): Using bottom-left of screen as (0,0) so need to flip y coordinate of mouse
+            MousePosition.y = GlobalPlatform.ScreenHeight - MousePosition.y;
+            GlobalPlatform.MouseStartX = GlobalPlatform.MouseEndX;
+            GlobalPlatform.MouseStartY = GlobalPlatform.MouseEndY;
+            GlobalPlatform.MouseEndX = MousePosition.x;
+            GlobalPlatform.MouseEndY = MousePosition.y;
+        }
 
         if(AppUpdate(&GlobalPlatform)) {
             GlobalPlatform.ShouldQuit = 1;

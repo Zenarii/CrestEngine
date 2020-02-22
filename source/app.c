@@ -4,6 +4,8 @@
 typedef struct app {
     b32 Initialised;
     r32 Delta;
+
+    CrestUI UI;
     ui_renderer UIRenderer;
 } app;
 
@@ -25,6 +27,7 @@ AppUpdate(Platform * platform) {
 
         App->UIRenderer.Width = platform->ScreenWidth;
         App->UIRenderer.Height = platform->ScreenHeight;
+
     }
 
 
