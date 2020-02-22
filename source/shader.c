@@ -1,5 +1,3 @@
-//TODO remove platform specific output
-
 typedef unsigned int CrestShader;
 
 CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
@@ -60,22 +58,4 @@ CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
     free(FragmentSource);
 
     return Result;
-}
-
-void CrestShaderSetFloat(CrestShader Shader, const char * UniformName, real32 Value) {
-    glUseProgram(Shader);
-    int Location = glGetUniformLocation(Shader, UniformName);
-    glUniform1f(Location, Value);
-}
-
-void CrestShaderSetV3(CrestShader Shader, const char * UniformName, vector3 * v) {
-    glUseProgram(Shader);
-    int Location = glGetUniformLocation(Shader, UniformName);
-    glUniform3fv(Location, 1, &(v->x));
-}
-
-void CrestShaderSetM4(CrestShader Shader, const char * UniformName, matrix4 * m) {
-    glUseProgram(Shader);
-    int Location = glGetUniformLocation(Shader, UniformName);
-    glUniformMatrix4fv(Location, 1, GL_TRUE, &(m->First));
 }

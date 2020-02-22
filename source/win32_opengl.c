@@ -1,25 +1,19 @@
-//################
-//# Zenarii 2020 #
-//################
-//TODO move texture generation code into single file
-//opengl headers
 #include <gl/gl.h>
 #include "gl/glext.h"
 #include "gl/wglext.h"
-#include "win32_opengl.h"
-#include "crest_core.h"
 
-#include "CrestMaths.cpp"
-#include "graphics/CrestShader.cpp"
-#include "graphics/CrestTexture.cpp"
-#include "graphics/Mesh.cpp"
+
 //OpenGL
 //~
-global_variable HGLRC GlobalOpenGLContext;
+global HGLRC GlobalOpenGLContext;
 //function pointers
-global_variable PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
-global_variable PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
-global_variable PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
+global PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
+global PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
+global PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
+
+#define OpenGLProc(name, type) PFNGL##type##PROC gl##name;
+#include "OpenGLProcedures.inc"
+
 
 internal void *
 Win32OpenGLLoadFunction(const char* name) {
@@ -35,16 +29,15 @@ Win32OpenGLLoadFunction(const char* name) {
 
 
 internal void
-Win32OpenGlLoadAllFunctions() {
+Win32OpenGlLoadAllFunctions(void) {
     #define OpenGLProc(name, type) gl##name = (PFNGL##type##PROC)Win32OpenGLLoadFunction("gl" #name);
-    #include "OpenGLProcedures.h"
+    #include "OpenGLProcedures.inc"
 }
 
 
-
-internal bool
+internal b32
 Win32OpenGLInit(HDC DeviceContext) {
-    bool success = false;
+    b32 success = 0;
     PIXELFORMATDESCRIPTOR DummyPixelFormatDesc = {
         sizeof(PIXELFORMATDESCRIPTOR),
         1, //version
@@ -105,7 +98,7 @@ Win32OpenGLInit(HDC DeviceContext) {
             wglDeleteContext(DummyOpenGLContext);
             wglMakeCurrent(DeviceContext, GlobalOpenGLContext);
             wglSwapIntervalEXT(0);
-            success = true;
+            success = 1;
         }
 
     }
