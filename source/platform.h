@@ -9,6 +9,7 @@ enum {
 typedef struct Platform {
     void * PermenantStorage;
     u32 PermenantStorageSize;
+    r32 ScreenHeight, ScreenWidth;
     b32 ShouldQuit;
     b32 KeyDown[CREST_KEY_MAX];
 } Platform;

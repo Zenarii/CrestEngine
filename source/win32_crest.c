@@ -63,6 +63,8 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         i32 width = ClientRect.right - ClientRect.left;
         i32 height = ClientRect.bottom - ClientRect.top;
         Win32OpenGLResize(width, height);
+        GlobalPlatform.ScreenWidth = (r32)width;
+        GlobalPlatform.ScreenHeight = (r32)height;
     }
     else {
         // We don't handle this message. Use the default handler.
@@ -85,7 +87,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
 
     // Create and show the actual window.
     HWND window = CreateWindow(windowClass.lpszClassName, WINDOW_TITLE, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 400, 200, NULL, NULL, instance, NULL);
+        CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720, NULL, NULL, instance, NULL);
 
     if(!window) {
         DWORD error = GetLastError();
@@ -134,7 +136,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
             GlobalPlatform.ShouldQuit = 1;
         }
         SwapBuffers(DeviceContext);
-
     }
 
     quit:;

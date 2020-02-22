@@ -59,3 +59,9 @@ CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
 
     return Result;
 }
+
+internal void
+CrestShaderSetFloat(CrestShader Shader, const char * UniformName, float Value) {
+    i32 Location = glGetUniformLocation(Shader, UniformName);
+    glUniform1f(Location, Value);
+}

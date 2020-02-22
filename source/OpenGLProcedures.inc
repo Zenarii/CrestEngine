@@ -18,4 +18,6 @@ OpenGLProc(UseProgram, USEPROGRAM)
 OpenGLProc(BufferData, BUFFERDATA)
 OpenGLProc(EnableVertexAttribArray, ENABLEVERTEXATTRIBARRAY)
 OpenGLProc(BufferSubData, BUFFERSUBDATA)
+OpenGLProc(GetUniformLocation, GETUNIFORMLOCATION)
+OpenGLProc(Uniform1f, UNIFORM1F)
 #undef OpenGLProc

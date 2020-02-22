@@ -1,41 +1,39 @@
 #include "shader.c"
 #include "renderer.c"
 
-typedef struct App {
+typedef struct app {
     b32 Initialised;
-} App;
+    r32 Delta;
+    renderer Renderer;
+} app;
 
 internal b32
 AppUpdate(Platform * platform) {
-    b32 appShouldQuit = 0;
-    App * app = platform->PermenantStorage;
+    b32 AppShouldQuit = 0;
+    app * App = platform->PermenantStorage;
 
-    if(!app->Initialised) {
-        app->Initialised = 1;
-        CrestRendererInit();
+    if(!App->Initialised) {
+        App->Initialised = 1;
+        CrestRendererInit(&App->Renderer);
     }
 
     //Note(Zen): Per-Frame initialisation
     {
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        App->Renderer.Width = platform->ScreenWidth;
+        App->Renderer.Height = platform->ScreenHeight;
     }
 
 
-    CrestRendererStartFrame();
+    CrestRendererStartFrame(&App->Renderer);
     {
-        if(!platform->KeyDown[KEY_A]) {
-            CrestPushFilledRect(v4(1.0f, 1.0f, 1.0f, 1.0f), v2(0.0f, 0.0f), v2(1.0f, 1.0f));
-            CrestPushFilledRect(v4(0.5f, 0.5f, 1.0f, 1.0f), v2(0.0f, 0.0f), v2(-1.0f, -1.0f));
-            CrestPushFilledRect(v4(0.5f, 0.5f, 0.5f, 1.0f), v2(0.0f, 0.0f), v2(-1.0f, 1.0f));
-        }
-        else {
-            CrestPushFilledRect(v4(0.0f, 0.8f, 0.8f, 1.0f), v2(-0.5f, -0.5), v2(1.0f, 1.0f));
-        }
+        CrestPushFilledRect(&App->Renderer, v4(1.0f, 1.0f, 1.0f, 1.0f), v2(0.0f, 0.0f), v2(App->Renderer.Width, App->Renderer.Height));
     }
-    CrestRender();
+    CrestRender(&App->Renderer);
 
 
 
-    return appShouldQuit;
+    return AppShouldQuit;
 }
