@@ -1,5 +1,6 @@
 #include "shader.c"
-#include "ui_renderer.c"
+#include "ui/ui_renderer.c"
+#include "ui/ui.c"
 
 typedef struct app {
     b32 Initialised;
@@ -18,6 +19,8 @@ AppUpdate(Platform * platform) {
     if(!App->Initialised) {
         App->Initialised = 1;
         CrestUIRendererInit(&App->UIRenderer);
+
+        glEnable (GL_BLEND); glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
     //Note(Zen): Per-Frame initialisation
@@ -27,15 +30,23 @@ AppUpdate(Platform * platform) {
 
         App->UIRenderer.Width = platform->ScreenWidth;
         App->UIRenderer.Height = platform->ScreenHeight;
-
     }
 
+    //Note(Zen): Copy across UI Input
+    CrestUIInput UIIn = {0};
+    {
+        UIIn.MouseX = platform->MouseEndX;
+        UIIn.MouseY = platform->MouseEndY;
+    }
 
+    CrestUIBegin(&App->UI, &UIIn);
     CrestUIRendererStartFrame(&App->UIRenderer);
     {
-        CrestPushFilledRect(&App->UIRenderer, v4(1.0f, 1.0f, 1.0f, 1.0f), v2(0.0f, 0.0f), v2(10.0f, 10.0f));
+        v2 position = v2(platform->MouseEndX - 50.0f, platform->MouseEndY - 50.0f);
+        v4 colour = platform->LeftMouseDown ? v4(1.0f, 1.0f, 1.0f, 0.0f) : v4(0.5f, 1.0f, 1.0f, 1.0f);
+        CrestPushFilledRect(&App->UIRenderer, colour, position, v2(100.0f, 100.0f));
     }
-    CrestRender(&App->UIRenderer);
+    CrestUIRender(&App->UIRenderer);
 
 
 

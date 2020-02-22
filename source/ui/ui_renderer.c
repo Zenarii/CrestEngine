@@ -5,7 +5,6 @@ CrestVertexInit(v3 position, v4 colour) {
     vertex result = {position, colour};
     return result;
 }
-#define vertex(pos, col) CrestVertexInit(pos, col)
 
 internal void
 CrestUIRendererInit(ui_renderer * UIRenderer) {
@@ -43,7 +42,7 @@ CrestPushFilledRect(ui_renderer * UIRenderer, v4 colour, v2 position, v2 size) {
 }
 
 internal void
-CrestRender(ui_renderer * UIRenderer) {
+CrestUIRender(ui_renderer * UIRenderer) {
     glUseProgram(UIRenderer->shader);
     CrestShaderSetFloat(UIRenderer->shader, "RendererWidth", UIRenderer->Width);
     CrestShaderSetFloat(UIRenderer->shader, "RendererHeight", UIRenderer->Height);

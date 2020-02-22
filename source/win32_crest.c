@@ -26,7 +26,7 @@ CrestLoadFileAsString(const char* Path) {
         LARGE_INTEGER FileSize;
         GetFileSizeEx(FileHandle, &FileSize);
 
-        Buffer = (char *)malloc(FileSize.QuadPart + 16);
+        Buffer = (char *)malloc(FileSize.QuadPart);
         DWORD BytesRead = 0;
         ReadFile(FileHandle, Buffer, FileSize.QuadPart-1, &BytesRead, NULL);
     }
@@ -56,6 +56,14 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
             KeyIndex = KEY_A;
         }
         GlobalPlatform.KeyDown[KeyIndex] = IsDown;
+    }
+    else if(message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {
+        b32 IsDown = (message == WM_LBUTTONDOWN);
+        GlobalPlatform.LeftMouseDown = IsDown;
+    }
+    else if(message == WM_RBUTTONDOWN || message == WM_RBUTTONUP) {
+        b32 IsDown = (message == WM_RBUTTONDOWN);
+        GlobalPlatform.RightMouseDown = IsDown;
     }
     else if(message == WM_SIZE) {
         RECT ClientRect = {0};

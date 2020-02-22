@@ -1,21 +1,23 @@
+#include "ui.h"
+
 
 //Note(Zen): UI id
 //~
 internal CrestUIID
 CrestUIIDInit(u32 Primary, u32 Secondary) {
-    CrestUIID id = {Primary, Seconday};
+    CrestUIID id = {Primary, Secondary};
     return id;
 }
 
 internal CrestUIID
 CrestUIIDNull(void) {
-    CrestUIID id = {0, 0}
+    CrestUIID id = {0, 0};
     return id;
 }
 
 internal b32
 CrestUIEquals(CrestUIID ID1, CrestUIID ID2) {
-    return ((ID1.Primary == ID2.Primary) && (ID2.Seconday == ID1.Secondary));
+    return ((ID1.Primary == ID2.Primary) && (ID2.Secondary == ID1.Secondary));
 }
 
 
@@ -33,19 +35,19 @@ CrestUIBegin(CrestUI * ui, CrestUIInput * input) {
 }
 
 internal void
-CrestUIEnd(CrestUI *ui) {
+CrestUIEnd(CrestUI *ui, ui_renderer * Renderer) {
     for(u32 i = 0; i < ui->Count; ++i) {
         CrestUIWidget * Widget = ui->Widgets + i;
-        switch (Widget->type) {
+        switch (Widget->Type) {
             case CREST_UI_BUTTON: {
-                PushFilledRect(v4(1.0f, 1.0f, 1.0f, 1.0f), v2(Widget->rect.x, Widget->rect.y), v2(widget->rect.width, widget->rect.height));
+                CrestPushFilledRect(Renderer, v4(1.0f, 1.0f, 1.0f, 1.0f), v2(Widget->rect.x, Widget->rect.y), v2(Widget->rect.width, Widget->rect.height));
             } break;
         }
     }
 }
 
 internal b32
-CrestUIButton(UI *ui, CrestUIID ID, v4 rect, const char * Text) {
+CrestUIButton(CrestUI *ui, CrestUIID ID, v4 rect, const char * Text) {
     b32 Pressed = 0;
 
     b32 MouseOver = (ui->MouseX >= rect.x &&
