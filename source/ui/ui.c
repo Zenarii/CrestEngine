@@ -40,22 +40,17 @@ CrestUIEnd(CrestUI *ui, ui_renderer * Renderer) {
         CrestUIWidget * Widget = ui->Widgets + i;
         switch (Widget->Type) {
             case CREST_UI_BUTTON: {
-                v4 colour = {
-                    0.6f + CrestUIIDEquals(ui->hot, Widget->id) * 0.4f,
-                        0.6f + CrestUIIDEquals(ui->hot, Widget->id) * 0.4f,
-                    0.6f + CrestUIIDEquals(ui->hot, Widget->id) * 0.4f,
-                        0.6f + CrestUIIDEquals(ui->hot, Widget->id) * 0.4f
-                };
+                v4 colour = CrestUIIDEquals(ui->hot, Widget->id) ? BUTTON_HOVER_COLOUR : BUTTON_COLOUR;
 
                 CrestPushFilledRect(Renderer, colour, v2(Widget->rect.x, Widget->rect.y), v2(Widget->rect.width, Widget->rect.height));
-
+                CrestPushText(Renderer, v2(Widget->rect.x, Widget->rect.y + Widget->rect.height), Widget->Text);
             } break;
         }
     }
 }
 
 internal b32
-CrestUIButton(CrestUI *ui, CrestUIID ID, v4 rect, const char * Text) {
+CrestUIButton(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
     b32 Pressed = 0;
 
     b32 MouseOver = (ui->MouseX >= rect.x &&
@@ -89,7 +84,7 @@ CrestUIButton(CrestUI *ui, CrestUIID ID, v4 rect, const char * Text) {
     Widget->id = ID;
     Widget->Type = CREST_UI_BUTTON;
     Widget->rect = rect;
-
+    strcpy(Widget->Text, Text);
 
     return Pressed;
 }

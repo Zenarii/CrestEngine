@@ -12,11 +12,12 @@ typedef struct CrestUIID {
     u32 Secondary;
 } CrestUIID;
 
-//Note(Zen): For maintaining state in between frames.
+
 typedef struct CrestUIWidget {
     CrestUIID id;
     CrestUIType Type;
     v4 rect;
+    char Text[32];
 } CrestUIWidget;
 
 typedef struct CrestUIInput {

@@ -144,8 +144,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
             POINT MousePosition = {0};
             GetCursorPos(&MousePosition);
             ScreenToClient(window, &MousePosition);
-            //Note(Zen): Using bottom-left of screen as (0,0) so need to flip y coordinate of mouse
-            MousePosition.y = GlobalPlatform.ScreenHeight - MousePosition.y;
+
             GlobalPlatform.MouseStartX = GlobalPlatform.MouseEndX;
             GlobalPlatform.MouseStartY = GlobalPlatform.MouseEndY;
             GlobalPlatform.MouseEndX = MousePosition.x;
