@@ -1,20 +1,23 @@
 #define CREST_UI_MAX 256
-
+#define GENERIC_ID(x) CrestUIIDInit(__LINE__, x)
 
 typedef enum CrestUIType {
-    CREST_UI_BUTTON
+    CREST_UI_BUTTON,
+    CREST_UI_SLIDER,
 } CrestUIType;
 
-//Note(Zen): For maintaining state in between frames.
-typedef struct CrestUIWidget {
-    CrestUIType Type;
-    v4 rect;
-} CrestUIWidget;
 
 typedef struct CrestUIID {
     u32 Primary;
     u32 Secondary;
 } CrestUIID;
+
+//Note(Zen): For maintaining state in between frames.
+typedef struct CrestUIWidget {
+    CrestUIID id;
+    CrestUIType Type;
+    v4 rect;
+} CrestUIWidget;
 
 typedef struct CrestUIInput {
     r32 MouseX;

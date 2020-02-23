@@ -16,7 +16,7 @@ CrestUIIDNull(void) {
 }
 
 internal b32
-CrestUIEquals(CrestUIID ID1, CrestUIID ID2) {
+CrestUIIDEquals(CrestUIID ID1, CrestUIID ID2) {
     return ((ID1.Primary == ID2.Primary) && (ID2.Secondary == ID1.Secondary));
 }
 
@@ -40,7 +40,15 @@ CrestUIEnd(CrestUI *ui, ui_renderer * Renderer) {
         CrestUIWidget * Widget = ui->Widgets + i;
         switch (Widget->Type) {
             case CREST_UI_BUTTON: {
-                CrestPushFilledRect(Renderer, v4(1.0f, 1.0f, 1.0f, 1.0f), v2(Widget->rect.x, Widget->rect.y), v2(Widget->rect.width, Widget->rect.height));
+                v4 colour = {
+                    0.6f + CrestUIIDEquals(ui->hot, Widget->id) * 0.4f,
+                        0.6f + CrestUIIDEquals(ui->hot, Widget->id) * 0.4f,
+                    0.6f + CrestUIIDEquals(ui->hot, Widget->id) * 0.4f,
+                        0.6f + CrestUIIDEquals(ui->hot, Widget->id) * 0.4f
+                };
+
+                CrestPushFilledRect(Renderer, colour, v2(Widget->rect.x, Widget->rect.y), v2(Widget->rect.width, Widget->rect.height));
+
             } break;
         }
     }
@@ -51,19 +59,34 @@ CrestUIButton(CrestUI *ui, CrestUIID ID, v4 rect, const char * Text) {
     b32 Pressed = 0;
 
     b32 MouseOver = (ui->MouseX >= rect.x &&
-                       ui->MouseY >= rect.x + rect.width &&
-                       ui->MouseX >= rect.y &&
-                       ui->MouseX >= rect.y + rect.height);
+                       ui->MouseY >= rect.y &&
+                       ui->MouseX <= rect.x + rect.x + rect.width&&
+                       ui->MouseY <= rect.y + rect.height);
 
-    if(!CrestUIIDEqual(ui->hot, ID) && MouseOver) {
+    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver) {
         ui->hot = ID;
     }
-    else if(!CrestUIIDEqual(ui->hot, ID) && !MouseOver) {
+    else if(CrestUIIDEquals(ui->hot, ID) && !MouseOver) {
         ui->hot = CrestUIIDNull();
     }
 
+    if(CrestUIIDEquals(ui->active, ID)) {
+        if(!ui->LeftMouseDown) {
+            Pressed = CrestUIIDEquals(ui->hot, ID);
+            ui->active = CrestUIIDNull();
+        }
+        if(!CrestUIIDEquals(ui->hot, ID)) {
+            ui->active = CrestUIIDNull();
+        }
+    }
+    else {
+        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown) {
+            ui->active = ID;
+        }
+    }
 
     CrestUIWidget *Widget = ui->Widgets + ui->Count++;
+    Widget->id = ID;
     Widget->Type = CREST_UI_BUTTON;
     Widget->rect = rect;
 
