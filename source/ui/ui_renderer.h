@@ -7,6 +7,7 @@
 
 #define BUTTON_COLOUR v4(75.f/255.f, 75.f/255.f, 75.f/255.f, 1.f)
 #define BUTTON_HOVER_COLOUR v4(95.f/255.f, 95.f/255.f, 95.f/255.f,  1.f)
+#define BORDER_COLOUR v4(1.0f, 1.0f, 1.0f, 1.0f)
 
 typedef struct vertex {
     v3 position;

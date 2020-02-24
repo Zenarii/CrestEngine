@@ -18,6 +18,11 @@ typedef struct CrestUIWidget {
     CrestUIType Type;
     v4 rect;
     char Text[32];
+
+    union {
+        r32 Value;
+    }; //slider
+
 } CrestUIWidget;
 
 typedef struct CrestUIInput {

@@ -65,7 +65,7 @@ internal void
 CrestUIRendererLoadFont(ui_renderer * UIRenderer, const char * FontPath) {
     char * TTFBuffer = CrestLoadFileAsString(FontPath);
     unsigned char TempBitmap[512*512];
-    stbtt_BakeFontBitmap(TTFBuffer, 0, 32.0, TempBitmap, 512, 512, 32, 96, UIRenderer->CharacterData);
+    stbtt_BakeFontBitmap(TTFBuffer, 0, 20.0, TempBitmap, 512, 512, 32, 96, UIRenderer->CharacterData);
 
 
     glGenTextures(1, &UIRenderer->FontTex);
@@ -119,6 +119,52 @@ CrestPushFilledRect(ui_renderer * UIRenderer, v4 colour, v2 position, v2 size) {
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y + size.y, 0.0f), colour);
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y, 0.0f), colour);
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x, position.y + size.y, 0.0f), colour);
+}
+
+internal void
+CrestPushBorder(ui_renderer * UIRenderer, v4 colour, v2 position, v2 size) {
+    //Note(Zen): Top Border
+    {
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x - 0.5f, position.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x - 0.5f, position.y + 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y - 0.5f, 0.0f), colour);
+
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x - 0.5f, position.y + 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y + 0.5f, 0.0f), colour);
+    }
+    //Note(Zen): Bottom Border
+    {
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x - 0.5f, position.y + size.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x - 0.5f, position.y + size.y + 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y + size.y - 0.5f, 0.0f), colour);
+
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x - 0.5f, position.y + size.y + 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y + size.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y + size.y + 0.5f, 0.0f), colour);
+    }
+    //Note(Zen): Left Border
+    {
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x - 0.5f, position.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + 0.5f, position.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x - 0.5f, position.y + size.y + 0.5f, 0.0f), colour);
+
+
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + 0.5f, position.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x - 0.5f, position.y + size.y + 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + 0.5f, position.y + size.y + 0.5f, 0.0f), colour);
+    }
+    //Note(Zen): Right Border
+    {
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 1.5f, position.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y + size.y + 0.5f, 0.0f), colour);
+
+
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 1.5f, position.y - 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y + size.y + 0.5f, 0.0f), colour);
+        UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 1.5f, position.y + size.y + 0.5f, 0.0f), colour);
+    }
 }
 
 internal void
