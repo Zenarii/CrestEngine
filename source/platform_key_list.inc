@@ -1,3 +1,9 @@
 key(Invalid, "InvalidKey")
 key(A, "A")
+key(B, "B")
+key(C, "C")
+key(D, "D")
+key(E, "E")
+key(S, "S")
+key(W, "W")
 #undef key

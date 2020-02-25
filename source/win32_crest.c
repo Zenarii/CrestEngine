@@ -55,6 +55,15 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         if(KeyCode == 'A') {
             KeyIndex = KEY_A;
         }
+        else if(KeyCode == 'W') {
+            KeyIndex = KEY_W;
+        }
+        else if(KeyCode == 'S') {
+            KeyIndex = KEY_S;
+        }
+        else if(KeyCode == 'D') {
+            KeyIndex = KEY_D;
+        }
         GlobalPlatform.KeyDown[KeyIndex] = IsDown;
     }
     else if(message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {
@@ -123,10 +132,21 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
         }
     }
 
+    //Note(Zen): Graphics initialisation
     HDC DeviceContext = GetDC(window);
     OpenGLHasLoaded = Win32OpenGLInit(DeviceContext);
     Win32OpenGlLoadAllFunctions();
 
+
+
+    //Note(Zen): Setup timing
+    UINT DesiredSleepGranularity = 1;
+    BOOL SetSleepGranular = (timeBeginPeriod(DesiredSleepGranularity) == TIMERR_NOERROR);
+    LARGE_INTEGER ClockFrequency;
+    QueryPerformanceCounter(&ClockFrequency);
+
+    LARGE_INTEGER StartTime = {0};
+    QueryPerformanceCounter(&StartTime);
     while(!GlobalPlatform.ShouldQuit) {
         // Process window messages.
         MSG message;
@@ -155,6 +175,27 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
             GlobalPlatform.ShouldQuit = 1;
         }
         SwapBuffers(DeviceContext);
+
+        //Note(Zen): Timing
+        LARGE_INTEGER EndTime;
+        QueryPerformanceCounter(&EndTime);
+
+        r64 TimeTaken = ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)ClockFrequency.QuadPart);
+
+        while (TimeTaken < 1.f/GlobalPlatform.TargetFPS) {
+            if(SetSleepGranular) {
+                DWORD TimeToWait = ((DWORD) ((1.f/GlobalPlatform.TargetFPS)-TimeTaken)) * 1000;
+                if(TimeToWait > 0) {
+                    Sleep(TimeToWait);
+                }
+            }
+
+            QueryPerformanceCounter(&EndTime);
+            TimeTaken += ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)ClockFrequency.QuadPart);
+        }
+
+        StartTime = EndTime;
+
     }
 
     quit:;
