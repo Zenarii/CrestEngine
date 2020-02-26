@@ -19,7 +19,62 @@ internal b32
 CrestUIIDEquals(CrestUIID ID1, CrestUIID ID2) {
     return ((ID1.Primary == ID2.Primary) && (ID2.Secondary == ID1.Secondary));
 }
+//Note(Zen): Layout Control
+//~
 
+internal void
+CrestUIPushRow(CrestUI * ui, v2 Position, v2 Size, u32 MaxElementsPerRow) {
+    Assert(ui->AutoLayoutStackPosition < CREST_UI_MAX_STACKED_ROWS);
+
+    u32 index = ui->AutoLayoutStackPosition++;
+
+
+    ui->AutoLayoutStack[index].Position = Position;
+    ui->AutoLayoutStack[index].Size = Size;
+    ui->AutoLayoutStack[index].ProgressX = 0.0f;
+    ui->AutoLayoutStack[index].ProgressY = 0.0f;
+    ui->AutoLayoutStack[index].IsRow = 1;
+    ui->AutoLayoutStack[index].ElementsInRow = 0;
+    ui->AutoLayoutStack[index].MaxElementsPerRow = MaxElementsPerRow;
+}
+
+internal void CrestUIPopRow(CrestUI * ui) {
+    --ui->AutoLayoutStackPosition;
+}
+
+internal v4
+GetNextAutoLayoutPosition(CrestUI * ui) {
+    v4 rect = {0};
+
+    if(ui->AutoLayoutStackPosition > 0) {
+        u32 index = ui->AutoLayoutStackPosition - 1;
+        rect.x = ui->AutoLayoutStack[index].Position.x;
+        rect.y = ui->AutoLayoutStack[index].Position.y;
+        rect.width = ui->AutoLayoutStack[index].Size.x;
+        rect.height = ui->AutoLayoutStack[index].Size.y;
+
+        if(ui->AutoLayoutStack[index].IsRow) {
+            rect.x += ui->AutoLayoutStack[index].ProgressX;
+            rect.y += ui->AutoLayoutStack[index].ProgressY;
+            ui->AutoLayoutStack[index].ProgressX += rect.width;
+        }
+        else {
+            //TODO(Zen): Support for columns?
+        }
+
+        if(++ui->AutoLayoutStack[index].ElementsInRow >= ui->AutoLayoutStack[index].MaxElementsPerRow) {
+            ui->AutoLayoutStack[index].ProgressX = 0.0f;
+            ui->AutoLayoutStack[index].ProgressY += rect.height;
+            ui->AutoLayoutStack[index].ElementsInRow = 0;
+        }
+    }
+    else {
+        //TODO(Zen): Logging
+        rect = v4(0, 0, 64, 64);
+    }
+
+    return rect;
+}
 
 //Note(Zen): UI functions
 //~
@@ -64,12 +119,12 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
 }
 
 internal b32
-CrestUIButton(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
+CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
     b32 Pressed = 0;
 
     b32 MouseOver = (ui->MouseX >= rect.x &&
                        ui->MouseY >= rect.y &&
-                       ui->MouseX <= rect.x + rect.x + rect.width&&
+                       ui->MouseX <= rect.x + rect.width&&
                        ui->MouseY <= rect.y + rect.height);
 
     if(!CrestUIIDEquals(ui->hot, ID) && MouseOver) {
@@ -103,11 +158,17 @@ CrestUIButton(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
     return Pressed;
 }
 
+internal b32
+CrestUIButton(CrestUI *ui, CrestUIID ID, char * Text) {
+    v4 rect = GetNextAutoLayoutPosition(ui);
+    return CrestUIButtonP(ui, ID, rect, Text);
+}
+
 internal r32
-CrestUISlider(CrestUI * ui, CrestUIID ID, v4 rect, r32 value, char * Text) {
+CrestUISliderP(CrestUI * ui, CrestUIID ID, r32 value, v4 rect, char * Text) {
     b32 MouseOver = (ui->MouseX >= rect.x &&
                        ui->MouseY >= rect.y &&
-                       ui->MouseX <= rect.x + rect.x + rect.width&&
+                       ui->MouseX <= rect.x + rect.width &&
                        ui->MouseY <= rect.y + rect.height);
 
     if(!CrestUIIDEquals(ui->hot, ID) && MouseOver) {
@@ -143,4 +204,10 @@ CrestUISlider(CrestUI * ui, CrestUIID ID, v4 rect, r32 value, char * Text) {
     strcpy(Widget->Text, Text);
 
     return value;
+}
+
+internal r32
+CrestUISlider(CrestUI * ui, CrestUIID ID, r32 value, char * Text) {
+    v4 rect = GetNextAutoLayoutPosition(ui);
+    return CrestUISliderP(ui, ID, value, rect, Text);
 }

@@ -1,10 +1,11 @@
+#include "debug.c"
 #include "shader.c"
 #define STB_TRUETYPE_IMPLEMENTATION
 #define ALLOW_UNALIGNED_TRUETYPE
 #include "stb/stb_truetype.h"
 #include "ui/ui_renderer.c"
 #include "ui/ui.c"
-#include "debug.c"
+
 #include "ExampleECS/Player.h"
 
 typedef struct app {
@@ -70,16 +71,23 @@ AppUpdate(Platform * platform) {
 
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
     {
-        if(CrestUIButton(&App->UI, GENERIC_ID(0), v4(10.0f, 10.0f, 128.0f, 32.0f), "Epik")) {
+        CrestUIPushRow(&App->UI, v2(32.f, 32.f), v2(128.f, 32.f), 2);
+        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Button 1")) {
             OutputDebugString("Button 1 pressed\n");
         }
+        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Button 2")) {
+            OutputDebugString("Button 2 pressed\n");
+        }
 
-        App->BackgroundColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), v4(10.0f, 42.0f, 128.0f, 32.0f), App->BackgroundColour.x, "Red");
-        App->BackgroundColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), v4(10.0f, 74.0f, 128.0f, 32.0f), App->BackgroundColour.y, "Blue");
-        App->BackgroundColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), v4(10.0f, 106.0f, 128.0f, 32.0f), App->BackgroundColour.z, "Green");
-
+        App->BackgroundColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.x, "Red");
+        App->BackgroundColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.y, "Blue");
+        App->BackgroundColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.z, "Green");
+        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Button 3")) {
+            OutputDebugString("Button 3 pressed\n");
+        }
+        CrestUIPopRow(&App->UI);
     }
-    doPlayerSet(&App->p, platform, App);
+
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
 
 

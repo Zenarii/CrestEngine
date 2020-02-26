@@ -13,7 +13,7 @@ doPlayerSet(PlayerSet * Set, Platform * platform, app * tempApp) {
         //Change Position
         Set->Position[i].x += (platform->MouseEndX - Set->Position[i].x) * 0.5f * tempApp->Delta ;
         Set->Position[i].y += (platform->MouseEndY - Set->Position[i].y) * 0.5f * tempApp->Delta ;
-        CrestUIButton(&tempApp->UI, GENERIC_ID(i), v4(Set->Position[i].x, Set->Position[i].y, Set->Sprite[i].Source.width, Set->Sprite[i].Source.height), "Player");
+        CrestUIButtonP(&tempApp->UI, GENERIC_ID(i), v4(Set->Position[i].x, Set->Position[i].y, Set->Sprite[i].Source.width, Set->Sprite[i].Source.height), "Player");
     }
 
 }
