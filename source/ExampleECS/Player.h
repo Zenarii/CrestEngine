@@ -12,8 +12,13 @@ typedef struct SpriteComponent {
 
 typedef struct PositionComponent {
     EntityID id;
-    r32 x;
-    r32 y;
+    union {
+        struct {
+            r32 x;
+            r32 y;
+        };
+        v2 Pos;
+    };
 } PositionComponent;
 
 typedef struct PlayerSet {

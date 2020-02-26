@@ -5,7 +5,7 @@
 #include "ui/ui_renderer.c"
 #include "ui/ui.c"
 #include "debug.c"
-#include "Components/Player.h"
+#include "ExampleECS/Player.h"
 
 typedef struct app {
     b32 Initialised;
@@ -19,7 +19,7 @@ typedef struct app {
 
 } app;
 
-#include "Components/Player.c"
+#include "ExampleECS/Player.c"
 
 internal b32
 AppUpdate(Platform * platform) {
@@ -39,8 +39,12 @@ AppUpdate(Platform * platform) {
         //TEMP(ZEN): some component stuff
         EntityID ID = App->p.Count;
         PositionComponent pos = {ID, 512.0f, 512.0f};
-        SpriteComponent sprite = {ID, 0.0f, 0.0f, 1.0f, 1.0f};
+        SpriteComponent sprite = {ID, 0.0f, 0.0f, 30.0f, 30.0f};
         PushPlayer(&App->p, pos, sprite);
+        ID = App->p.Count;
+        PositionComponent pos2 = {ID, 256.0f, 256.0f};
+        SpriteComponent sprite2 = {ID, 0.0f, 0.0f, 40.0f, 40.0f};
+        PushPlayer(&App->p, pos2, sprite2);
     }
 
     //Note(Zen): Per-Frame initialisation
