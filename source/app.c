@@ -64,27 +64,24 @@ AppUpdate(Platform * platform) {
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
     {
         static v2 BoxPosition = {100.0f, 100.0f};
-        BoxPosition = CrestUIDnDBoxP(&App->UI, GENERIC_ID(0), v4(BoxPosition.x, BoxPosition.y, 256.0f, 32.0f), "Drag ME");
+        BoxPosition = CrestUIDnDBoxP(&App->UI, GENERIC_ID(0), v4(BoxPosition.x, BoxPosition.y, 256.0f + 24.0f, 32.0f), "Drag ME");
         CrestUIPushPanel(&App->UI, v2(BoxPosition.x, BoxPosition.y + 32.0f));
-
-        static int NumButtons = 2;
-        CrestUIPushRow(&App->UI, v2(BoxPosition.x, BoxPosition.y + 32.f), v2(128.f, 32.f), NumButtons);
         {
-            App->BackgroundColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.x, "Red");
-            App->BackgroundColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.y, "Blue");
-            App->BackgroundColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.z, "Green");
+            static int NumButtons = 2;
+            CrestUIPushRow(&App->UI, v2(BoxPosition.x, BoxPosition.y + 32.f), v2(128.f, 32.f), NumButtons);
+            {
+                App->BackgroundColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.x, "Red");
+                App->BackgroundColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.y, "Blue");
+                App->BackgroundColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.z, "Green");
+            }
+            CrestUIPopRow(&App->UI);
         }
-        CrestUIPopRow(&App->UI);
-
 
         CrestUIPopPanel(&App->UIRenderer, &App->UI); // draw panel at higher depth
 
     }
 
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
-    CrestPushFilledRect3D(&App->UIRenderer, PANEL_COLOUR, v3(100.0f, 100.f, 0.5f), v2(64.0f, 64.0f));
-    CrestUIRender(&App->UIRenderer);
-
 
     return AppShouldQuit;
 }

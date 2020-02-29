@@ -7,17 +7,25 @@
 TODO(Zen): Useful UI remaining
 text label (centre/right/left)
 text edit (?)
-Some kind of panel feature with drag and drop
 
 TODO(Zen): UI customisation
 easily use different styles (still render in a single call)
 padding in rows/columns
 
 TODO(Zen): Other features
-Panels on top f other panels
+Panels on top of other panels
+Figure out depth drawing.
+ - Sort Triangles?
+ - Give panels certain "z-indexes" and increase this for the rectangles drawn?
 */
 
+typedef struct CrestUIStyle {
+    v2 Padding;
+} CrestUIStyle;
 
+global CrestUIStyle DefaultStyle = {
+    .Padding = {8.f, 4.f}
+};
 
 typedef enum CrestUIType {
     CREST_UI_BUTTON,
