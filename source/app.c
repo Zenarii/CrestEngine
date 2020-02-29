@@ -34,18 +34,9 @@ AppUpdate(Platform * platform) {
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+
         App->BackgroundColour = v4(0.79, 0.95, 0.70, 1.0f);
         platform->TargetFPS = 60.0f;
-
-        //TEMP(ZEN): some component stuff
-        EntityID ID = App->p.Count;
-        PositionComponent pos = {ID, 512.0f, 512.0f};
-        SpriteComponent sprite = {ID, 0.0f, 0.0f, 30.0f, 30.0f};
-        PushPlayer(&App->p, pos, sprite);
-        ID = App->p.Count;
-        PositionComponent pos2 = {ID, 256.0f, 256.0f};
-        SpriteComponent sprite2 = {ID, 0.0f, 0.0f, 40.0f, 40.0f};
-        PushPlayer(&App->p, pos2, sprite2);
     }
 
     //Note(Zen): Per-Frame initialisation
@@ -63,34 +54,34 @@ AppUpdate(Platform * platform) {
     {
         UIIn.MouseX = platform->MouseEndX;
         UIIn.MouseY = platform->MouseEndY;
+        UIIn.MouseStartX = platform->MouseStartX;
+        UIIn.MouseStartY = platform->MouseStartY;
         UIIn.LeftMouseDown = platform->LeftMouseDown;
         UIIn.RightMouseDown = platform->RightMouseDown;
     }
 
-    static r32 value;
-
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
     {
-        CrestUIPushRow(&App->UI, v2(32.f, 32.f), v2(128.f, 32.f), 2);
-        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Button 1")) {
-            OutputDebugString("Button 1 pressed\n");
-        }
-        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Button 2")) {
-            OutputDebugString("Button 2 pressed\n");
-        }
 
-        App->BackgroundColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.x, "Red");
-        App->BackgroundColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.y, "Blue");
-        App->BackgroundColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.z, "Green");
-        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Button 3")) {
-            OutputDebugString("Button 3 pressed\n");
+
+        static v2 BoxPosition = {100.0f, 100.0f};
+        BoxPosition = CrestUIDnDBoxP(&App->UI, GENERIC_ID(0), v4(BoxPosition.x, BoxPosition.y, 256.0f, 32.0f), "Drag ME");
+
+        static int NumButtons = 2;
+        CrestUIPushRow(&App->UI, v2(BoxPosition.x, BoxPosition.y + 32.f), v2(128.f, 32.f), NumButtons);
+        {
+            App->BackgroundColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.x, "Red");
+            App->BackgroundColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.y, "Blue");
+            App->BackgroundColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.z, "Green");
         }
         CrestUIPopRow(&App->UI);
+
+
     }
 
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
-
-
+    CrestPushFilledRect3D(&App->UIRenderer, PANEL_COLOUR, v3(100.0f, 100.f, 0.5f), v2(64.0f, 64.0f));
+    CrestUIRender(&App->UIRenderer);
 
 
     return AppShouldQuit;

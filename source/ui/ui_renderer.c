@@ -95,13 +95,13 @@ CrestPushText(ui_renderer * UIRenderer, v2 Position, const char * Text) {
             stbtt_GetBakedQuad(UIRenderer->CharacterData, 512, 512, *Text-32, &x, &y, &Quad, 1);
 
             //TODO(Zen): Pull this out into it's own function?
-            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x0, Quad.y0, 0.0f), v2(Quad.s0, Quad.t0));
-            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x1, Quad.y0, 0.0f), v2(Quad.s1, Quad.t0));
-            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x0, Quad.y1, 0.0f), v2(Quad.s0, Quad.t1));
+            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x0, Quad.y0, 0.1f), v2(Quad.s0, Quad.t0));
+            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x1, Quad.y0, 0.1f), v2(Quad.s1, Quad.t0));
+            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x0, Quad.y1, 0.1f), v2(Quad.s0, Quad.t1));
 
-            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x1, Quad.y0, 0.0f), v2(Quad.s1, Quad.t0));
-            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x1, Quad.y1, 0.0f), v2(Quad.s1, Quad.t1));
-            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x0, Quad.y1, 0.0f), v2(Quad.s0, Quad.t1));
+            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x1, Quad.y0, 0.1f), v2(Quad.s1, Quad.t0));
+            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x1, Quad.y1, 0.1f), v2(Quad.s1, Quad.t1));
+            UIRenderer->TextVertices[UIRenderer->TextBufferIndex++] = textured_vertex(v3(Quad.x0, Quad.y1, 0.1f), v2(Quad.s0, Quad.t1));
 
         }
         ++Text;
@@ -119,6 +119,19 @@ CrestPushFilledRect(ui_renderer * UIRenderer, v4 colour, v2 position, v2 size) {
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y + size.y, 0.0f), colour);
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y, 0.0f), colour);
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x, position.y + size.y, 0.0f), colour);
+}
+
+internal void
+CrestPushFilledRect3D(ui_renderer * UIRenderer, v4 colour, v3 position, v2 size) {
+    //Note(Zen): First Triangle
+    UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x, position.y, position.z), colour);
+    UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y, position.z), colour);
+    UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x, position.y + size.y, position.z), colour);
+
+    //Note(Zen): Second Triangle
+    UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y + size.y, position.z), colour);
+    UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y, position.z), colour);
+    UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x, position.y + size.y, position.z), colour);
 }
 
 internal void

@@ -5,9 +5,12 @@
 //Note(Zen): max rects * (six vertices per rect)
 #define MAX_VERTICES_SIZE MAX_RECTS * 6
 
-#define BUTTON_COLOUR v4(75.f/255.f, 75.f/255.f, 75.f/255.f, 1.f)
+#define BUTTON_COLOUR v4(75.f/255.f, 75.f/255.f, 75.f/255.f, 0.8f)
 #define BUTTON_HOVER_COLOUR v4(95.f/255.f, 95.f/255.f, 95.f/255.f,  1.f)
 #define BORDER_COLOUR v4(1.0f, 1.0f, 1.0f, 1.0f)
+#define HEADER_COLOUR v4(0.1f, 0.1f, 0.5f, 1.0f)
+#define HEADER_BORDER_COLOUR v4(0.1f, 0.1f, 0.2f, 1.0f)
+#define PANEL_COLOUR v4(0.1f, 0.1f, 0.1f, 0.3f)
 
 typedef struct vertex {
     v3 position;
