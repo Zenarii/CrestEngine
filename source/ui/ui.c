@@ -42,7 +42,14 @@ CrestUIPushRow(CrestUI * ui, v2 Position, v2 Size, u32 MaxElementsPerRow) {
 }
 
 internal void CrestUIPopRow(CrestUI * ui) {
-    --ui->AutoLayoutStackPosition;
+    u32 index = --ui->AutoLayoutStackPosition;
+    Assert((index >= 0) && (index <= 16));
+
+    if(ui->PanelStackPosition) {
+        if(ui->PanelStack[ui->PanelStackPosition-1].Height <= ui->AutoLayoutStack[index].ProgressY + ui->AutoLayoutStack[index].Size.y) {
+            ui->PanelStack[ui->PanelStackPosition-1].Height = ui->AutoLayoutStack[index].ProgressY + ui->AutoLayoutStack[index].Size.y;
+        }
+    }
 }
 
 internal v4
@@ -67,13 +74,20 @@ GetNextAutoLayoutPosition(CrestUI * ui) {
 
         //Note(Zen): Overflow to the next row
         if(++ui->AutoLayoutStack[index].ElementsInRow >= ui->AutoLayoutStack[index].MaxElementsPerRow) {
-            ui->AutoLayoutStack[index].ProgressX = 0.0f;
+
             ui->AutoLayoutStack[index].ProgressY += rect.height;
             ui->AutoLayoutStack[index].ElementsInRow = 0;
 
+            //Note(Zen): Increase Panel Size
             if(ui->PanelStackPosition) {
                 ui->PanelStack[ui->PanelStackPosition-1].Rows += 1;
+                if(ui->AutoLayoutStack[index].ProgressX > ui->PanelStack[ui->PanelStackPosition-1].Width) {
+                    ui->PanelStack[ui->PanelStackPosition-1].Width = ui->AutoLayoutStack[index].ProgressX;
+                }
+                ui->PanelStack[ui->PanelStackPosition-1].Height += rect.height;
             }
+            //Note(Zen): Must go here or interferes with Panel calculations
+            ui->AutoLayoutStack[index].ProgressX = 0.0f;
         }
     }
     else {
@@ -92,6 +106,8 @@ CrestUIPushPanel(CrestUI * UI, v2 Position) {
 
     UI->PanelStack[index].Position = Position;
     UI->PanelStack[index].Rows = 0;
+    UI->PanelStack[index].Width = 0;
+    UI->PanelStack[index].Height = 0;
 }
 
 internal void
@@ -101,8 +117,9 @@ CrestUIPopPanel(ui_renderer * UIRenderer, CrestUI * UI) {
     //calculate the rect
     //draw panel based on number of rows
     v3 Position = v3(UI->PanelStack[index].Position.x, UI->PanelStack[index].Position.y, -0.1f);
+    v2 Size = v2(UI->PanelStack[index].Width, UI->PanelStack[index].Height);
     //CrestPushFilledRect3D(UIRenderer, PANEL_COLOUR, v3())
-
+    CrestPushFilledRect(UIRenderer, PANEL_COLOUR, v2(Position.x, Position.y), Size);
 }
 
 

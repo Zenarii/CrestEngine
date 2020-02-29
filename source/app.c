@@ -33,7 +33,8 @@ AppUpdate(Platform * platform) {
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
 
         App->BackgroundColour = v4(0.79, 0.95, 0.70, 1.0f);
         platform->TargetFPS = 60.0f;
@@ -42,7 +43,7 @@ AppUpdate(Platform * platform) {
     //Note(Zen): Per-Frame initialisation
     {
         glClearColor(App->BackgroundColour.x, App->BackgroundColour.y, App->BackgroundColour.z, App->BackgroundColour.w);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         App->UIRenderer.Width = platform->ScreenWidth;
         App->UIRenderer.Height = platform->ScreenHeight;
@@ -62,10 +63,9 @@ AppUpdate(Platform * platform) {
 
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
     {
-
-
         static v2 BoxPosition = {100.0f, 100.0f};
         BoxPosition = CrestUIDnDBoxP(&App->UI, GENERIC_ID(0), v4(BoxPosition.x, BoxPosition.y, 256.0f, 32.0f), "Drag ME");
+        CrestUIPushPanel(&App->UI, v2(BoxPosition.x, BoxPosition.y + 32.0f));
 
         static int NumButtons = 2;
         CrestUIPushRow(&App->UI, v2(BoxPosition.x, BoxPosition.y + 32.f), v2(128.f, 32.f), NumButtons);
@@ -76,6 +76,8 @@ AppUpdate(Platform * platform) {
         }
         CrestUIPopRow(&App->UI);
 
+
+        CrestUIPopPanel(&App->UIRenderer, &App->UI); // draw panel at higher depth
 
     }
 

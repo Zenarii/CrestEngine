@@ -80,6 +80,8 @@ typedef struct CrestUI {
     struct {
         v2 Position;
         u32 Rows;
+        r32 Width;
+        r32 Height;
     } PanelStack[CREST_UI_MAX_PANELS];
 
     CrestUIID hot;
