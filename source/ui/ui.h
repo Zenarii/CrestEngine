@@ -17,6 +17,10 @@ Panels on top of other panels
 Figure out depth drawing.
  - Sort Triangles?
  - Give panels certain "z-indexes" and increase this for the rectangles drawn?
+
+TODO(Zen): Testing
+Test explicitly pushing multiple rows
+
 */
 
 typedef struct CrestUIStyle {
@@ -45,6 +49,9 @@ typedef struct CrestUIWidget {
     CrestUIType Type;
     v4 rect;
     char Text[32];
+
+    //TEMP(ZEN): think of a better way to implement elements overlapping
+    r32 Precedence;
 
     union {
         r32 Value;
@@ -90,6 +97,7 @@ typedef struct CrestUI {
         u32 Rows;
         r32 Width;
         r32 Height;
+        r32 Precedence;
     } PanelStack[CREST_UI_MAX_PANELS];
 
     CrestUIID hot;

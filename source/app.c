@@ -63,12 +63,31 @@ AppUpdate(Platform * platform) {
 
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
     {
-        static v2 BoxPosition = {100.0f, 100.0f};
-        BoxPosition = CrestUIDnDBoxP(&App->UI, GENERIC_ID(0), v4(BoxPosition.x, BoxPosition.y, 256.0f + 24.0f, 32.0f), "Drag ME");
-        CrestUIPushPanel(&App->UI, v2(BoxPosition.x, BoxPosition.y + 32.0f));
+        //For Demo I need: 3 Panels
+        //Panel 1: Change BackgroundColour + a button that opens a sprite editor
+        //Panel 2: Diagnostics e.g. frame time, FPS, number of draw calls, time to draw
+        //Panel 3: Buttons example
+        static v2 ButtonPanelPosition = {10.0f, 10.0f};
+        ButtonPanelPosition = CrestUIDnDBoxP(&App->UI, GENERIC_ID(0), 0.0f, v4(ButtonPanelPosition.x, ButtonPanelPosition.y, 256.0f + 24.0f, 32.0f), "Button Test");
+
+        CrestUIPushPanel(&App->UI, v2(ButtonPanelPosition.x, ButtonPanelPosition.y + 32.0f), 0.0f);
         {
-            static int NumButtons = 2;
-            CrestUIPushRow(&App->UI, v2(BoxPosition.x, BoxPosition.y + 32.f), v2(128.f, 32.f), NumButtons);
+            CrestUIPushRow(&App->UI, v2(ButtonPanelPosition.x, ButtonPanelPosition.y + 32.0f), v2(128.f, 32.f), 2);
+            {
+                CrestUIButton(&App->UI, GENERIC_ID(0), "Button 1");
+                CrestUIButton(&App->UI, GENERIC_ID(0), "Button 2");
+                CrestUIButton(&App->UI, GENERIC_ID(0), "Button 3");
+            }
+            CrestUIPopRow(&App->UI);
+        }
+        CrestUIPopPanel(&App->UI);
+
+        static v2 StyleEditorPanelPosition = {100.0f, 100.0f};
+        StyleEditorPanelPosition = CrestUIDnDBoxP(&App->UI, GENERIC_ID(0), -0.02f, v4(StyleEditorPanelPosition.x, StyleEditorPanelPosition.y, 256.0f + 24.0f, 32.0f), "Background Colour");
+
+        CrestUIPushPanel(&App->UI, v2(StyleEditorPanelPosition.x, StyleEditorPanelPosition.y + 32.0f), -0.2f);
+        {
+            CrestUIPushRow(&App->UI, v2(StyleEditorPanelPosition.x, StyleEditorPanelPosition.y + 32.f), v2(128.f, 32.f), 2);
             {
                 App->BackgroundColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.x, "Red");
                 App->BackgroundColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.y, "Blue");
@@ -76,8 +95,7 @@ AppUpdate(Platform * platform) {
             }
             CrestUIPopRow(&App->UI);
         }
-
-        CrestUIPopPanel(&App->UIRenderer, &App->UI); // draw panel at higher depth
+        CrestUIPopPanel(&App->UI);
 
     }
 

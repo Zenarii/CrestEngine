@@ -36,19 +36,22 @@ CrestUIPushRow(CrestUI * ui, v2 Position, v2 Size, u32 MaxElementsPerRow) {
     ui->AutoLayoutStack[index].ElementsInRow = 0;
     ui->AutoLayoutStack[index].MaxElementsPerRow = MaxElementsPerRow;
 
-    //TODO(Zen): Check if this is still needed
-    if(ui->PanelStackPosition) {
-        ui->PanelStack[ui->PanelStackPosition-1].Rows += 1;
-    }
+
 }
 
 internal void CrestUIPopRow(CrestUI * ui) {
     u32 index = --ui->AutoLayoutStackPosition;
     Assert((index >= 0) && (index <= 16));
 
-    if(ui->PanelStackPosition) {
-        if(ui->PanelStack[ui->PanelStackPosition-1].Height <= ui->AutoLayoutStack[index].ProgressY + ui->AutoLayoutStack[index].Size.y + DefaultStyle.Padding.y) {
-            ui->PanelStack[ui->PanelStackPosition-1].Height = ui->AutoLayoutStack[index].ProgressY + ui->AutoLayoutStack[index].Size.y + DefaultStyle.Padding.y;
+    if(ui->PanelStackPosition ) {
+        //Note(Zen): If Elements in row = 0, the current row is empty
+        if(ui->AutoLayoutStack[index].ElementsInRow != 0) {
+            if(ui->PanelStack[ui->PanelStackPosition-1].Height <= ui->AutoLayoutStack[index].ProgressY + ui->AutoLayoutStack[index].Size.y + DefaultStyle.Padding.y) {
+                ui->PanelStack[ui->PanelStackPosition-1].Height = ui->AutoLayoutStack[index].ProgressY + ui->AutoLayoutStack[index].Size.y + DefaultStyle.Padding.y;
+            }
+        }
+        else {
+            ui->PanelStack[ui->PanelStackPosition-1].Height = ui->AutoLayoutStack[index].ProgressY /*+ ui->AutoLayoutStack[index].Size.y + DefaultStyle.Padding.y*/;
         }
     }
 }
@@ -56,6 +59,8 @@ internal void CrestUIPopRow(CrestUI * ui) {
 internal v4
 GetNextAutoLayoutPosition(CrestUI * ui) {
     v4 rect = {0};
+
+
 
     if(ui->AutoLayoutStackPosition > 0) {
         u32 index = ui->AutoLayoutStackPosition - 1;
@@ -73,19 +78,21 @@ GetNextAutoLayoutPosition(CrestUI * ui) {
             //TODO(Zen): Support for columns?
         }
 
+        if(ui->AutoLayoutStack[index].ElementsInRow == 0) {
+            ui->PanelStack[ui->PanelStackPosition-1].Height += rect.height;
+        }
+
         //Note(Zen): Overflow to the next row
         if(++ui->AutoLayoutStack[index].ElementsInRow >= ui->AutoLayoutStack[index].MaxElementsPerRow) {
-
             ui->AutoLayoutStack[index].ProgressY += rect.height + DefaultStyle.Padding.y;
             ui->AutoLayoutStack[index].ElementsInRow = 0;
 
             //Note(Zen): Increase Panel Size
             if(ui->PanelStackPosition) {
-                ui->PanelStack[ui->PanelStackPosition-1].Rows += 1;
                 if(ui->AutoLayoutStack[index].ProgressX > ui->PanelStack[ui->PanelStackPosition-1].Width) {
                     ui->PanelStack[ui->PanelStackPosition-1].Width = ui->AutoLayoutStack[index].ProgressX;
                 }
-                ui->PanelStack[ui->PanelStackPosition-1].Height += rect.height;
+
             }
             //Note(Zen): Must go here or interferes with Panel calculations
             ui->AutoLayoutStack[index].ProgressX = DefaultStyle.Padding.x;
@@ -100,7 +107,7 @@ GetNextAutoLayoutPosition(CrestUI * ui) {
 }
 
 internal void
-CrestUIPushPanel(CrestUI * UI, v2 Position) {
+CrestUIPushPanel(CrestUI * UI, v2 Position, r32 Precedence) {
     Assert(UI->PanelStackPosition < CREST_UI_MAX_PANELS);
 
     u32 index = UI->PanelStackPosition++;
@@ -109,10 +116,11 @@ CrestUIPushPanel(CrestUI * UI, v2 Position) {
     UI->PanelStack[index].Rows = 0;
     UI->PanelStack[index].Width = 0;
     UI->PanelStack[index].Height = 0;
+    UI->PanelStack[index].Precedence = Precedence;
 }
 
 internal void
-CrestUIPopPanel(ui_renderer * UIRenderer, CrestUI * UI) {
+CrestUIPopPanel(CrestUI * UI) {
     u32 index = --UI->PanelStackPosition;
 
     //calculate the rect
@@ -123,6 +131,7 @@ CrestUIPopPanel(ui_renderer * UIRenderer, CrestUI * UI) {
     CrestUIWidget *Widget = UI->Widgets + UI->Count++;
     Widget->id = CrestUIIDNull();
     Widget->Type = CREST_UI_PANEL;
+    Widget->Precedence = UI->PanelStack[index].Precedence;
     Widget->rect = v4(Position.x, Position.y, Size.x, Size.y);
 }
 
@@ -155,30 +164,31 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
             case CREST_UI_BUTTON: {
                 v4 colour = CrestUIIDEquals(ui->hot, Widget->id) ? BUTTON_HOVER_COLOUR : BUTTON_COLOUR;
 
-                CrestPushFilledRect(Renderer, colour, v2(Widget->rect.x, Widget->rect.y), v2(Widget->rect.width, Widget->rect.height));
-                CrestPushBorder(Renderer, BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, -0.3f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushFilledRectD(Renderer, colour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushBorder(Renderer, BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
-                CrestPushText(Renderer, v2(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height +TextOffset.y), Widget->Text);
+                CrestPushTextD(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_SLIDER: {
-                CrestPushFilledRect3D(Renderer, BUTTON_COLOUR, v3(Widget->rect.x, Widget->rect.y, -0.2f), v2(Widget->rect.width, Widget->rect.height));
-                CrestPushFilledRect3D(Renderer, BUTTON_HOVER_COLOUR, v3(Widget->rect.x, Widget->rect.y, -0.2f), v2(Widget->rect.width * Widget->Value, Widget->rect.height));
-                CrestPushBorder(Renderer, BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, -0.3f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushFilledRectD(Renderer, BUTTON_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushFilledRectD(Renderer, BUTTON_HOVER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width * Widget->Value, Widget->rect.height));
+                CrestPushBorder(Renderer, BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
-                CrestPushText(Renderer, v2(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height +TextOffset.y), Widget->Text);
+                CrestPushTextD(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_HEADER: {
-                CrestPushFilledRect(Renderer, HEADER_COLOUR, v2(Widget->rect.x, Widget->rect.y), v2(Widget->rect.width, Widget->rect.height));
-                CrestPushBorder(Renderer, HEADER_BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, -0.3f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushFilledRectD(Renderer, HEADER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.04f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushBorder(Renderer, HEADER_BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
-                CrestPushText(Renderer, v2(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height +TextOffset.y), Widget->Text);
+                //Note(Zen): For now header has text float left.
+                CrestPushTextD(Renderer, v3(Widget->rect.x + DefaultStyle.Padding.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_PANEL: {
-                CrestPushFilledRect3D(Renderer, PANEL_COLOUR, v3(Widget->rect.x, Widget->rect.y, -0.1f), v2(Widget->rect.width, Widget->rect.height));
-                CrestPushBorder(Renderer, HEADER_BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, -0.3f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushTransparentRect(Renderer, PANEL_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.01f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushBorder(Renderer, HEADER_BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
             } break;
         }
     }
@@ -221,6 +231,13 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
     Widget->Type = CREST_UI_BUTTON;
     Widget->rect = rect;
     strcpy(Widget->Text, Text);
+
+    if(ui->PanelStackPosition) {
+        Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
+    }
+    else {
+        Widget->Precedence = 0.f;
+    }
 
     return Pressed;
 }
@@ -270,6 +287,13 @@ CrestUISliderP(CrestUI * ui, CrestUIID ID, r32 value, v4 rect, char * Text) {
     Widget->Value = value;
     strcpy(Widget->Text, Text);
 
+    if(ui->PanelStackPosition) {
+        Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
+    }
+    else {
+        Widget->Precedence = 0.f;
+    }
+
     return value;
 }
 
@@ -280,7 +304,7 @@ CrestUISlider(CrestUI * ui, CrestUIID ID, r32 value, char * Text) {
 }
 
 internal v2
-CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
+CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, r32 Precedence, v4 rect, char * Text) {
     v2 Position = v2(rect.x, rect.y);
     v2 MouseOffset = {0};
 
@@ -324,6 +348,9 @@ CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
     Widget->id = ID;
     Widget->Type = CREST_UI_HEADER;
     Widget->rect = v4(Position.x, Position.y, rect.width, rect.height);
+    Widget->Precedence = Precedence;
+
+
     strcpy(Widget->Text, Text);
 
     return Position;
