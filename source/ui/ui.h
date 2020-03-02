@@ -35,7 +35,8 @@ typedef enum CrestUIType {
     CREST_UI_BUTTON,
     CREST_UI_SLIDER,
     CREST_UI_HEADER,
-    CREST_UI_PANEL
+    CREST_UI_PANEL,
+    CREST_UI_TEXTLABEL
 } CrestUIType;
 
 

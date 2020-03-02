@@ -16,7 +16,7 @@ filled rectangles, reducing the number of draw calls
 #define HEADER_COLOUR v4(0.9f, 0.3f, 0.f, 1.f)
 //v4(0.1f, 0.1f, 0.5f, 1.0f)
 #define HEADER_BORDER_COLOUR v4(0.1f, 0.1f, 0.2f, 1.0f)
-#define PANEL_COLOUR v4(0.1f, 0.1f, 0.1f, 0.7f)
+#define PANEL_COLOUR v4(0.1f, 0.1f, 0.1f, 0.6f)
 
 typedef struct vertex {
     v3 position;

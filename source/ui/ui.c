@@ -167,7 +167,7 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
                 CrestPushFilledRectD(Renderer, colour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width, Widget->rect.height));
                 CrestPushBorder(Renderer, BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
-                CrestPushTextD(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_SLIDER: {
@@ -175,7 +175,7 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
                 CrestPushFilledRectD(Renderer, BUTTON_HOVER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width * Widget->Value, Widget->rect.height));
                 CrestPushBorder(Renderer, BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
-                CrestPushTextD(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_HEADER: {
@@ -183,12 +183,16 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
                 CrestPushBorder(Renderer, HEADER_BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
                 //Note(Zen): For now header has text float left.
-                CrestPushTextD(Renderer, v3(Widget->rect.x + DefaultStyle.Padding.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+                CrestPushText(Renderer, v3(Widget->rect.x + DefaultStyle.Padding.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_PANEL: {
                 CrestPushTransparentRect(Renderer, PANEL_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.01f), v2(Widget->rect.width, Widget->rect.height));
                 CrestPushBorder(Renderer, HEADER_BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
+            } break;
+
+            case CREST_UI_TEXTLABEL: {
+                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
         }
     }
@@ -349,9 +353,28 @@ CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, r32 Precedence, v4 rect, char * Text) 
     Widget->Type = CREST_UI_HEADER;
     Widget->rect = v4(Position.x, Position.y, rect.width, rect.height);
     Widget->Precedence = Precedence;
-
-
     strcpy(Widget->Text, Text);
 
     return Position;
+}
+
+internal void
+CrestUITextLabelP(CrestUI * ui, CrestUIID ID, v4 rect, char * Text) {
+    CrestUIWidget * Widget = ui->Widgets + ui->Count++;
+    Widget->id = ID;
+    Widget->Type = CREST_UI_TEXTLABEL;
+    Widget->rect = rect;
+    strcpy(Widget->Text, Text);
+    if(ui->PanelStackPosition) {
+        Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
+    }
+    else {
+        Widget->Precedence = 0.f;
+    }
+}
+
+internal void
+CrestUITextLabel(CrestUI * ui, CrestUIID ID, char * Text) {
+    v4 rect = GetNextAutoLayoutPosition(ui);
+    CrestUITextLabelP(ui, ID, rect, Text);
 }

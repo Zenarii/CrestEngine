@@ -64,9 +64,11 @@ AppUpdate(Platform * platform) {
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
     {
         //For Demo I need: 3 Panels
-        //Panel 1: Change BackgroundColour + a button that opens a sprite editor
+        //Panel 1: Change BackgroundColour + a button that opens a settings editor
         //Panel 2: Diagnostics e.g. frame time, FPS, number of draw calls, time to draw
         //Panel 3: Buttons example
+
+        //Note(Zen): Diagnostic
         static v2 ButtonPanelPosition = {10.0f, 10.0f};
         ButtonPanelPosition = CrestUIDnDBoxP(&App->UI, GENERIC_ID(0), 0.0f, v4(ButtonPanelPosition.x, ButtonPanelPosition.y, 256.0f + 24.0f, 32.0f), "Button Test");
 
@@ -82,6 +84,8 @@ AppUpdate(Platform * platform) {
         }
         CrestUIPopPanel(&App->UI);
 
+
+        //Note(Zen): Style Editor Panel
         static v2 StyleEditorPanelPosition = {100.0f, 100.0f};
         StyleEditorPanelPosition = CrestUIDnDBoxP(&App->UI, GENERIC_ID(0), -0.02f, v4(StyleEditorPanelPosition.x, StyleEditorPanelPosition.y, 256.0f + 24.0f, 32.0f), "Background Colour");
 
@@ -89,16 +93,46 @@ AppUpdate(Platform * platform) {
         {
             CrestUIPushRow(&App->UI, v2(StyleEditorPanelPosition.x, StyleEditorPanelPosition.y + 32.f), v2(128.f, 32.f), 2);
             {
-                App->BackgroundColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.x, "Red");
-                App->BackgroundColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.y, "Blue");
-                App->BackgroundColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.z, "Green");
+                //Note(Zen): Get values of the sliders
+                char RedAmount[8];
+                sprintf(RedAmount, "%.2f\0", App->BackgroundColour.x);
+                char BlueAmount[8];
+                sprintf(BlueAmount, "%.2f\0", App->BackgroundColour.y);
+                char GreenAmount[8];
+                sprintf(GreenAmount, "%.2f\0", App->BackgroundColour.z);
+
+                CrestUITextLabel(&App->UI, GENERIC_ID(0), "Red");
+                App->BackgroundColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.x, RedAmount);
+                CrestUITextLabel(&App->UI, GENERIC_ID(0), "Blue");
+                App->BackgroundColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.y, BlueAmount);
+                CrestUITextLabel(&App->UI, GENERIC_ID(0), "Green");
+                App->BackgroundColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), App->BackgroundColour.z, GreenAmount);
             }
             CrestUIPopRow(&App->UI);
         }
         CrestUIPopPanel(&App->UI);
 
-    }
+        //Note(Zen): Diagnostic Panel
+        r32 PanelWidth = 8.f * 3.f + 128.f * 2.f;
+        CrestUIPushPanel(&App->UI, v2(platform->ScreenWidth - PanelWidth - 10.0f, 10.0f), 0.0f);
+        {
+            CrestUIPushRow(&App->UI, v2(platform->ScreenWidth - PanelWidth - 10.0f, 10.0f), v2(128.f, 32.f), 2);
+            {
+                r32 FPS = (platform->TargetFPS > platform->TimeTakenForFrame) ? platform->TargetFPS : 1.f / platform->TimeTakenForFrame;
+                char FPSString[16];
+                sprintf(FPSString, "%.2fFPS\0", FPS);
+                char TimeTakenForFrameString[32];
+                sprintf(TimeTakenForFrameString, "%.6fus\0", platform->TimeTakenForFrame * 1000000.f);
 
+                CrestUITextLabel(&App->UI, GENERIC_ID(0), "FPS:");
+                CrestUITextLabel(&App->UI, GENERIC_ID(0), FPSString);
+                CrestUITextLabel(&App->UI, GENERIC_ID(0), "Time:");
+                CrestUITextLabel(&App->UI, GENERIC_ID(0), TimeTakenForFrameString);
+            }
+            CrestUIPopRow(&App->UI);
+        }
+        CrestUIPopPanel(&App->UI);
+    }
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
 
     return AppShouldQuit;

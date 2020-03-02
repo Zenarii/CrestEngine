@@ -22,4 +22,5 @@ typedef struct Platform {
     r32 MouseEndY;
 
     r32 TargetFPS;
+    r64 TimeTakenForFrame;
 } Platform;

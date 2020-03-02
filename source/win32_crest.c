@@ -181,7 +181,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
         QueryPerformanceCounter(&EndTime);
 
         r64 TimeTaken = ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)ClockFrequency.QuadPart);
-
+        GlobalPlatform.TimeTakenForFrame = TimeTaken;
         while (TimeTaken < 1.f/GlobalPlatform.TargetFPS) {
             if(SetSleepGranular) {
                 DWORD TimeToWait = ((DWORD) ((1.f/GlobalPlatform.TargetFPS)-TimeTaken)) * 1000;

@@ -83,7 +83,7 @@ CrestUIRendererLoadFont(ui_renderer * UIRenderer, const char * FontPath) {
 }
 
 internal void
-CrestPushTextD(ui_renderer * UIRenderer, v3 Position, const char * Text) {
+CrestPushText(ui_renderer * UIRenderer, v3 Position, const char * Text) {
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, UIRenderer->FontTex);
 
@@ -107,6 +107,7 @@ CrestPushTextD(ui_renderer * UIRenderer, v3 Position, const char * Text) {
         }
         ++Text;
     }
+    Assert(UIRenderer->TextBufferIndex < MAX_VERTICES_SIZE);
 }
 
 internal void
@@ -120,6 +121,7 @@ CrestPushFilledRect(ui_renderer * UIRenderer, v4 colour, v2 position, v2 size) {
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y + size.y, 0.0f), colour);
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y, 0.0f), colour);
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x, position.y + size.y, 0.0f), colour);
+    Assert(UIRenderer->BufferIndex < MAX_VERTICES_SIZE);
 }
 
 internal void
@@ -133,6 +135,7 @@ CrestPushFilledRectD(ui_renderer * UIRenderer, v4 colour, v3 position, v2 size) 
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y + size.y, position.z), colour);
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x, position.y, position.z), colour);
     UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x, position.y + size.y, position.z), colour);
+    Assert(UIRenderer->BufferIndex < MAX_VERTICES_SIZE);
 }
 
 //Note(Zen): Makes sure transparent rectangles are rendered last
@@ -147,6 +150,7 @@ CrestPushTransparentRect(ui_renderer * UIRenderer, v4 colour, v3 position, v2 si
     UIRenderer->TransparentVertices[UIRenderer->TransparentBufferIndex++] = vertex(v3(position.x + size.x, position.y + size.y, position.z), colour);
     UIRenderer->TransparentVertices[UIRenderer->TransparentBufferIndex++] = vertex(v3(position.x + size.x, position.y, position.z), colour);
     UIRenderer->TransparentVertices[UIRenderer->TransparentBufferIndex++] = vertex(v3(position.x, position.y + size.y, position.z), colour);
+    Assert(UIRenderer->TransparentBufferIndex < MAX_VERTICES_SIZE);
 }
 
 internal void
@@ -193,11 +197,12 @@ CrestPushBorder(ui_renderer * UIRenderer, v4 colour, v3 position, v2 size) {
         UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 0.5f, position.y + size.y + 0.5f, position.z), colour);
         UIRenderer->Vertices[UIRenderer->BufferIndex++] = vertex(v3(position.x + size.x + 1.5f, position.y + size.y + 0.5f, position.z), colour);
     }
+
+    Assert(UIRenderer->BufferIndex < MAX_VERTICES_SIZE);
 }
 
 internal void
 CrestUIRender(ui_renderer * UIRenderer) {
-
     //Note(Zen): Draw Rectangles
     {
         glUseProgram(UIRenderer->shader);
