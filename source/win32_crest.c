@@ -15,7 +15,7 @@
 global Platform GlobalPlatform;
 global b32 OpenGLHasLoaded;
 
-//TODO(Zen): Need to sort this out later on
+
 internal char *
 CrestLoadFileAsString(const char* Path) {
     //TODO(Zen): Check if need to change security attributes
@@ -23,12 +23,12 @@ CrestLoadFileAsString(const char* Path) {
 
     char * Buffer;
     if(FileHandle != INVALID_HANDLE_VALUE) {
-        LARGE_INTEGER FileSize;
-        GetFileSizeEx(FileHandle, &FileSize);
+        DWORD FileSize = GetFileSize(FileHandle, 0);
 
-        Buffer = (char *)malloc(FileSize.QuadPart);
+        Buffer = malloc(FileSize+1);
         DWORD BytesRead = 0;
-        ReadFile(FileHandle, Buffer, FileSize.QuadPart-1, &BytesRead, NULL);
+        ReadFile(FileHandle, Buffer, FileSize, &BytesRead, NULL);
+        Buffer[BytesRead-1] = 0;
     }
     else {
         DWORD error = GetLastError();

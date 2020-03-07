@@ -37,7 +37,13 @@ doButtonPanel(app * App, r32 Precedence) {
     {
         CrestUIPushRow(&App->UI, v2(ButtonPanelPosition.x, ButtonPanelPosition.y + 32.0f), v2(220.f, 32.f), 1);
         {
-            StylePanelOpen = CrestUIButton(&App->UI, GENERIC_ID(0), "Close Style Editor") ? 0 : StylePanelOpen;
+            if(StylePanelOpen) {
+                StylePanelOpen = CrestUIButton(&App->UI, GENERIC_ID(0), "Close Style Editor") ? 0 : StylePanelOpen;
+                if(!StylePanelOpen) {
+                    App->UI.active = CrestUIIDNull();
+                    App->UI.hot = CrestUIIDNull();
+                }
+            }
             AppShouldQuit = CrestUIButton(&App->UI, GENERIC_ID(0), "Close App");
         }
         CrestUIPopRow(&App->UI);
