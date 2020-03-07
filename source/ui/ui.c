@@ -36,7 +36,9 @@ CrestUIPushRow(CrestUI * ui, v2 Position, v2 Size, u32 MaxElementsPerRow) {
     ui->AutoLayoutStack[index].ElementsInRow = 0;
     ui->AutoLayoutStack[index].MaxElementsPerRow = MaxElementsPerRow;
 
-
+    if(ui->PanelStackPosition) {
+        ui->AutoLayoutStack[index].ProgressY += ui->PanelStack[ui->PanelStackPosition-1].Height;
+    }
 }
 
 internal void CrestUIPopRow(CrestUI * ui) {
@@ -158,37 +160,37 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
     for(u32 i = 0; i < ui->Count; ++i) {
         CrestUIWidget * Widget = ui->Widgets + i;
         //Note(Zen): 11px per char in LiberationMono font (ish)
-        v2 TextOffset = v2(-11.0f * ((r32)strlen(Widget->Text))/2.0f,
+        v2 TextOffset = v2(-11.0f * ((r32)strlen(Widget->Text))/2.0f + 5.f,
                            -10.0f);
         switch (Widget->Type) {
             case CREST_UI_BUTTON: {
-                v4 colour = CrestUIIDEquals(ui->hot, Widget->id) ? BUTTON_HOVER_COLOUR : BUTTON_COLOUR;
+                v4 colour = CrestUIIDEquals(ui->hot, Widget->id) ? DefaultStyle.ButtonHotColour : DefaultStyle.ButtonColour;
 
                 CrestPushFilledRectD(Renderer, colour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width, Widget->rect.height));
-                CrestPushBorder(Renderer, BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushBorder(Renderer, DefaultStyle.ButtonBorderColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
                 CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_SLIDER: {
-                CrestPushFilledRectD(Renderer, BUTTON_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width, Widget->rect.height));
-                CrestPushFilledRectD(Renderer, BUTTON_HOVER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width * Widget->Value, Widget->rect.height));
-                CrestPushBorder(Renderer, BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushFilledRectD(Renderer, DefaultStyle.ButtonColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushFilledRectD(Renderer, DefaultStyle.ButtonHotColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width * Widget->Value, Widget->rect.height));
+                CrestPushBorder(Renderer, DefaultStyle.ButtonBorderColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
                 CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_HEADER: {
-                CrestPushFilledRectD(Renderer, HEADER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.04f), v2(Widget->rect.width, Widget->rect.height));
-                CrestPushBorder(Renderer, HEADER_BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushFilledRectD(Renderer, DefaultStyle.HeaderColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.04f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushBorder(Renderer, DefaultStyle.HeaderBorderColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
                 //Note(Zen): For now header has text float left.
                 CrestPushText(Renderer, v3(Widget->rect.x + DefaultStyle.Padding.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_PANEL: {
-                CrestPushTransparentRect(Renderer, PANEL_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.01f), v2(Widget->rect.width, Widget->rect.height));
-                CrestPushBorder(Renderer, HEADER_BORDER_COLOUR, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushTransparentRect(Renderer, DefaultStyle.PanelColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.01f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushBorder(Renderer, DefaultStyle.HeaderBorderColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
             } break;
 
             case CREST_UI_TEXTLABEL: {
@@ -208,7 +210,7 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
                        ui->MouseX <= rect.x + rect.width&&
                        ui->MouseY <= rect.y + rect.height);
 
-    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver) {
+    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver && CrestUIIDEquals(CrestUIIDNull(), ui->hot)) {
         ui->hot = ID;
     }
     else if(CrestUIIDEquals(ui->hot, ID) && !MouseOver) {
@@ -225,7 +227,7 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
         }
     }
     else {
-        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown) {
+        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown && CrestUIIDEquals(CrestUIIDNull(), ui->active)) {
             ui->active = ID;
         }
     }
@@ -259,7 +261,7 @@ CrestUISliderP(CrestUI * ui, CrestUIID ID, r32 value, v4 rect, char * Text) {
                        ui->MouseX <= rect.x + rect.width &&
                        ui->MouseY <= rect.y + rect.height);
 
-    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver) {
+    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver && CrestUIIDEquals(CrestUIIDNull(), ui->hot)) {
         ui->hot = ID;
     }
     else if(CrestUIIDEquals(ui->hot, ID) && !MouseOver) {
@@ -269,14 +271,14 @@ CrestUISliderP(CrestUI * ui, CrestUIID ID, r32 value, v4 rect, char * Text) {
     if(CrestUIIDEquals(ui->active, ID)) {
         if(ui->LeftMouseDown) {
             value = (ui->MouseX - rect.x) / rect.width;
-            ui->active = CrestUIIDNull();
+            //ui->active = CrestUIIDNull();
         }
         if(!CrestUIIDEquals(ui->hot, ID)) {
             ui->active = CrestUIIDNull();
         }
     }
     else {
-        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown) {
+        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown && CrestUIIDEquals(CrestUIIDNull(), ui->active)) {
             ui->active = ID;
         }
     }
@@ -328,21 +330,19 @@ CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, r32 Precedence, v4 rect, char * Text) 
         }
     }
     else {
-        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown) {
+        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown && CrestUIIDEquals(CrestUIIDNull(), ui->active)) {
             ui->active = ID;
         }
     }
 
 
-    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver) {
+    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver && CrestUIIDEquals(CrestUIIDNull(), ui->hot)) {
         ui->hot = ID;
     }
 
     if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown) {
         ui->active = ID;
     }
-
-
 
     if(CrestUIIDEquals(ui->hot, ID) && !MouseOver) {
         ui->hot = CrestUIIDNull();

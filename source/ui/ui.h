@@ -25,10 +25,22 @@ Test explicitly pushing multiple rows
 
 typedef struct CrestUIStyle {
     v2 Padding;
+    v4 ButtonColour;
+    v4 ButtonHotColour;
+    v4 ButtonBorderColour;
+    v4 HeaderColour;
+    v4 HeaderBorderColour;
+    v4 PanelColour;
 } CrestUIStyle;
 
 global CrestUIStyle DefaultStyle = {
-    .Padding = {8.f, 4.f}
+    .Padding = {8.f, 4.f},
+    .ButtonColour = {75.f/255.f, 75.f/255.f, 75.f/255.f, 1.f},
+    .ButtonHotColour = {95.f/255.f, 95.f/255.f, 95.f/255.f, 1.f},
+    .ButtonBorderColour = {1.0f, 1.0f, 1.0f, 1.0f},
+    .HeaderColour = {0.9f, 0.3f, 0.f, 1.f},
+    .HeaderBorderColour = {0.1f, 0.1f, 0.2f, 1.0f},
+    .PanelColour = {0.1f, 0.1f, 0.1f, 0.6f}
 };
 
 typedef enum CrestUIType {
