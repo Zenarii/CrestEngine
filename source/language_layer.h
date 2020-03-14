@@ -41,6 +41,7 @@ typedef union v4 {
             };
         };
     };
+    float elements[4];
 } v4;
 
 internal v4

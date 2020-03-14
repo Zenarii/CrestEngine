@@ -1,4 +1,5 @@
 #define C2D_MAX_VERTICES 1024 * 6
+#define C2D_MAX_TEXTURES 4
 
 typedef struct C2DVertex  {
     v3 Position;
@@ -22,7 +23,10 @@ typedef struct C2DRenderer {
     u32 Shader;
     u32 BufferIndex;
     C2DVertex Vertices[C2D_MAX_VERTICES];
+
+    u32 Textures[C2D_MAX_TEXTURES];
 } C2DRenderer;
+
 
 internal void
 C2DInit(C2DRenderer * Renderer) {
@@ -55,6 +59,7 @@ C2DInit(C2DRenderer * Renderer) {
 internal void
 C2DFlush(C2DRenderer * Renderer) {
     glUseProgram(Renderer->Shader);
+    glBindTexture(GL_TEXTURE_2D, Renderer->Textures[0]);
     CrestShaderSetFloat(Renderer->Shader, "RendererWidth", Renderer->Width);
     CrestShaderSetFloat(Renderer->Shader, "RendererHeight", Renderer->Height);
     glBindVertexArray(Renderer->VAO);
@@ -72,20 +77,30 @@ C2DDrawColouredRect(C2DRenderer * Renderer, v2 Position, v2 Size, v3 Colour) {
 
     //Note(Zen): First Triangle
     Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y, 0.0f), Colour, v2(0.0f, 0.0f));
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(0.0f, 0.0f));
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.0f, 0.0f));
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(1.0f, 0.0f));
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.0f, 1.0f));
 
     //Note(Zen): Second Tangle
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y + Size.y, 0.0f), Colour, v2(0.0f, 0.0f));
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(0.0f, 0.0f));
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.0f, 0.0f));
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y + Size.y, 0.0f), Colour, v2(1.0f, 1.0f));
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(1.0f, 0.0f));
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.0f, 1.0f));
 }
 
 
 internal void
-C2DDrawTexturedRect() {
+C2DDrawTexturedRect(C2DRenderer * Renderer, v2 Position, v2 Size) {
     const v3 Colour = v3(1.0f, 1.0f, 1.0f);
+    if(Renderer->BufferIndex + 6 > C2D_MAX_VERTICES) C2DFlush(Renderer);
 
+    //Note(Zen): First Triangle
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y, 0.0f), Colour, v2(0.0f, 0.0f));
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(1.0f, 0.0f));
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.0f, 1.0f));
+
+    //Note(Zen): Second Tangle
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y + Size.y, 0.0f), Colour, v2(1.0f, 1.0f));
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(1.0f, 0.0f));
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.0f, 1.0f));
 }
 
 internal i32

@@ -1,11 +1,16 @@
 #include "debug.c"
-#include "shader.c"
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #define ALLOW_UNALIGNED_TRUETYPE
 #include "stb/stb_truetype.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
+#include "shader.c"
 #include "ui/ui_renderer.c"
 #include "ui/ui.c"
 
+#include "CAssets/Textures.c"
 #include "C2D/2DRenderer.c"
 
 typedef struct app {
@@ -28,6 +33,7 @@ AppUpdate(Platform * platform) {
         CrestUIRendererInit(&App->UIRenderer);
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
         C2DInit(&App->Renderer);
+        App->Renderer.Textures[0] = CasLoadTexture("../assets/logo.png");
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEPTH_TEST);
@@ -60,13 +66,8 @@ AppUpdate(Platform * platform) {
         UIIn.RightMouseDown = platform->RightMouseDown;
     }
 
-    for(i32 x = 0; x < (platform->ScreenWidth/25); ++x) {
-        for(i32 y = 0; y < (platform->ScreenHeight/25); ++y) {
-            v2 Position = v2((r32)x * 25.0f, (r32)y * 25.0f);
-            v2 Size = v2(20.0f, 20.0f);
-            C2DDrawColouredRect(&App->Renderer, Position, Size, v3(Position.x/platform->ScreenWidth, 0.5f, Position.y/platform->ScreenWidth));
-        }
-    }
+    v2 TexPosition = v2(platform->ScreenWidth * 0.5f - 100.f, platform->ScreenHeight * 0.5f - 100.0f);
+    C2DDrawTexturedRect(&App->Renderer, TexPosition, v2(100.0f, 100.f));
 
     i32 DrawCalls = C2DEndFrame(&App->Renderer);
 
