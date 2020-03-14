@@ -22,5 +22,6 @@ typedef struct Platform {
     r32 MouseEndY;
 
     r32 TargetFPS;
-    r64 TimeTakenForFrame;
+    r64 TimeTakenForFrame; // time to do everything app needs
+    r64 TimeTaken; //includes the time sleeping etc
 } Platform;

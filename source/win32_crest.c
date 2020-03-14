@@ -1,7 +1,10 @@
 //################
 //# Zenarii 2020 #
 //################
+#define WIN32_LEAN_AND_MEAN
+#include <malloc.h>
 #include <windows.h>
+#include <timeapi.h>
 #include <stdio.h>
 #include "program_options.h"
 #include "language_layer.h"
@@ -193,7 +196,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
             QueryPerformanceCounter(&EndTime);
             TimeTaken += ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)ClockFrequency.QuadPart);
         }
-
+        GlobalPlatform.TimeTaken = TimeTaken;
         StartTime = EndTime;
 
     }
