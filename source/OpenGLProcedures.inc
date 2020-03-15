@@ -21,4 +21,7 @@ OpenGLProc(BufferSubData, BUFFERSUBDATA)
 OpenGLProc(GetUniformLocation, GETUNIFORMLOCATION)
 OpenGLProc(Uniform1f, UNIFORM1F)
 OpenGLProc(GenerateMipmap, GENERATEMIPMAP)
+OpenGLProc(ActiveTexture, ACTIVETEXTURE)
+OpenGLProc(BindTextureUnit, BINDTEXTUREUNIT)
+OpenGLProc(Uniform1iv, UNIFORM1IV)
 #undef OpenGLProc

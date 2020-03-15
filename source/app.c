@@ -23,6 +23,15 @@ typedef struct app {
     C2DRenderer Renderer;
 } app;
 
+enum Textures {
+    TEXTURE_WHITE,
+    TEXTURE_LOGO,
+    TEXTURE_MLOGO,
+
+    TEXTURE_COUNT
+};
+
+
 internal b32
 AppUpdate(Platform * platform) {
     b32 AppShouldQuit = 0;
@@ -33,7 +42,10 @@ AppUpdate(Platform * platform) {
         CrestUIRendererInit(&App->UIRenderer);
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
         C2DInit(&App->Renderer);
-        App->Renderer.Textures[0] = CasLoadTexture("../assets/logo.png");
+        App->Renderer.Textures[TEXTURE_WHITE] = CasLoadWhiteTexture();
+        App->Renderer.Textures[TEXTURE_MLOGO] = CasLoadTexture("../assets/Miestro.png");
+        App->Renderer.Textures[TEXTURE_LOGO] = CasLoadTexture("../assets/logo.png");
+        App->Renderer.ActiveTextures = 3;
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEPTH_TEST);
@@ -66,8 +78,20 @@ AppUpdate(Platform * platform) {
         UIIn.RightMouseDown = platform->RightMouseDown;
     }
 
-    v2 TexPosition = v2(platform->ScreenWidth * 0.5f - 100.f, platform->ScreenHeight * 0.5f - 100.0f);
-    C2DDrawTexturedRect(&App->Renderer, TexPosition, v2(100.0f, 100.f));
+
+    for(i32 x = 0; x < platform->ScreenWidth/25.f; ++x) {
+        for(i32 y = 0; y < platform->ScreenHeight/25.f; ++y) {
+            v2 Position = v2((r32)x*25.f, (r32)y *25.f);
+            v3 Colour = v3(Position.x/platform->ScreenWidth, 0.5f, Position.y/platform->ScreenHeight);
+            C2DDrawTexturedRect(&App->Renderer, Position, v2(20.0f, 20.f), Texture);
+        }
+    }
+
+    for(i32 x = 0; x < 4; ++x) {
+        for(i32 y = 0; y < 4; ++y) {
+            
+        }
+    }
 
     i32 DrawCalls = C2DEndFrame(&App->Renderer);
 
