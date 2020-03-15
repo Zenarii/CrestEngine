@@ -6,6 +6,7 @@
 #include <windows.h>
 #include <timeapi.h>
 #include <stdio.h>
+
 #include "program_options.h"
 #include "language_layer.h"
 
@@ -50,34 +51,34 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         // If we receive the destroy message, then quit the program.
         PostQuitMessage(0);
     }
-    else if(message == WM_KEYDOWN || message == WM_KEYUP) {
+    else if (message == WM_KEYDOWN || message == WM_KEYUP) {
         b32 IsDown = (message == WM_KEYDOWN);
         u32 KeyCode = wParam;
         u32 KeyIndex = 0;
 
-        if(KeyCode == 'A') {
+        if (KeyCode == 'A') {
             KeyIndex = KEY_A;
         }
-        else if(KeyCode == 'W') {
+        else if (KeyCode == 'W') {
             KeyIndex = KEY_W;
         }
-        else if(KeyCode == 'S') {
+        else if (KeyCode == 'S') {
             KeyIndex = KEY_S;
         }
-        else if(KeyCode == 'D') {
+        else if (KeyCode == 'D') {
             KeyIndex = KEY_D;
         }
         GlobalPlatform.KeyDown[KeyIndex] = IsDown;
     }
-    else if(message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {
+    else if (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {
         b32 IsDown = (message == WM_LBUTTONDOWN);
         GlobalPlatform.LeftMouseDown = IsDown;
     }
-    else if(message == WM_RBUTTONDOWN || message == WM_RBUTTONUP) {
+    else if (message == WM_RBUTTONDOWN || message == WM_RBUTTONUP) {
         b32 IsDown = (message == WM_RBUTTONDOWN);
         GlobalPlatform.RightMouseDown = IsDown;
     }
-    else if(message == WM_SIZE) {
+    else if (message == WM_SIZE) {
         RECT ClientRect = {0};
         GetClientRect(window, &ClientRect);
         i32 width = ClientRect.right - ClientRect.left;
@@ -112,6 +113,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
     if(!window) {
         DWORD error = GetLastError();
         fprintf(stderr, "ERROR: Window Creation Failed (%i)\n", error);
+        char Buffer[256];
+        sprintf(Buffer, "ERROR: Window Creation Failed (%i)\n", error);
+
+        OutputDebugStringA(Buffer);
         goto quit;
     }
 
@@ -120,7 +125,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
     UpdateWindow(window);
 
     //Note(Zenarii): Platform initialisation
-    //GlobalPlatform = {0};
     {
         GlobalPlatform.PermenantStorageSize = PERMENANT_STORAGE_SIZE;
         GlobalPlatform.PermenantStorage = VirtualAlloc(0,

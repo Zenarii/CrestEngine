@@ -101,14 +101,14 @@ C2DDrawColouredRect(C2DRenderer * Renderer, v2 Position, v2 Size, v3 Colour) {
     if(Renderer->BufferIndex + 6 > C2D_MAX_VERTICES) C2DFlush(Renderer);
 
     //Note(Zen): First Triangle
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y, 0.0f), Colour, v2(0.0f, 0.0f), 0);
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(1.0f, 0.0f), 0);
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.0f, 1.0f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y, 0.0f), Colour, v2(0.1f, 0.1f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(0.9f, 0.1f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.1f, 0.9f), 0);
 
     //Note(Zen): Second Tangle
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y + Size.y, 0.0f), Colour, v2(1.0f, 1.0f), 0);
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(1.0f, 0.0f), 0);
-    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.0f, 1.0f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y + Size.y, 0.0f), Colour, v2(0.9f, 0.9f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(0.9f, 0.1f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(0.1f, 0.9f), 0);
 }
 
 internal void

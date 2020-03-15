@@ -42,10 +42,9 @@ AppUpdate(Platform * platform) {
         CrestUIRendererInit(&App->UIRenderer);
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
         C2DInit(&App->Renderer);
-        App->Renderer.Textures[TEXTURE_WHITE] = CasLoadWhiteTexture();
-        App->Renderer.Textures[TEXTURE_MLOGO] = CasLoadTexture("../assets/Miestro.png");
+        App->Renderer.Textures[TEXTURE_WHITE] = CasLoadTexture("../assets/White.png");
         App->Renderer.Textures[TEXTURE_LOGO] = CasLoadTexture("../assets/logo.png");
-        App->Renderer.ActiveTextures = 3;
+        App->Renderer.ActiveTextures = TEXTURE_COUNT;
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEPTH_TEST);
@@ -57,7 +56,6 @@ AppUpdate(Platform * platform) {
 
     //Note(Zen): Per-Frame initialisation
     {
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         App->UIRenderer.Width = platform->ScreenWidth;
@@ -78,24 +76,29 @@ AppUpdate(Platform * platform) {
         UIIn.RightMouseDown = platform->RightMouseDown;
     }
 
-
     for(i32 x = 0; x < platform->ScreenWidth/25.f; ++x) {
         for(i32 y = 0; y < platform->ScreenHeight/25.f; ++y) {
-            v2 Position = v2((r32)x*25.f, (r32)y *25.f);
-            v3 Colour = v3(Position.x/platform->ScreenWidth, 0.5f, Position.y/platform->ScreenHeight);
-            C2DDrawTexturedRect(&App->Renderer, Position, v2(20.0f, 20.f), Texture);
+            v2 Position = v2((r32) x * 25.f, (r32) y * 25.f);
+            v2 Size = v2(20.f, 20.f);
+            C2DDrawColouredRect(&App->Renderer, Position, Size, v3(Position.x/platform->ScreenWidth, 0.5f, Position.y/platform->ScreenWidth));
         }
     }
 
+    static v3 RectColour = {1.f, 1.f, 1.f};
+    v2 Position = v2(platform->ScreenWidth * 0.5f - 200.f, platform->ScreenHeight * 0.5f - 100.f);
+    v2 Size = v2(200.f, 200.f);
+    C2DDrawColouredRect(&App->Renderer, Position, Size, RectColour);
+    v2 Position2 = v2(platform->ScreenWidth * 0.5f, platform->ScreenHeight * 0.5f -100.0f);
+    C2DDrawTexturedRectTint(&App->Renderer, Position2, Size, TEXTURE_LOGO, RectColour);
+
+
     for(i32 x = 0; x < 4; ++x) {
         for(i32 y = 0; y < 4; ++y) {
-            
+
         }
     }
 
     i32 DrawCalls = C2DEndFrame(&App->Renderer);
-
-
 
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
     {
@@ -120,6 +123,10 @@ AppUpdate(Platform * platform) {
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), TimeTakenForFrameString);
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), "Draw Calls:");
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), DrawCallsString);
+
+                RectColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), RectColour.x, "Red");
+                RectColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), RectColour.y, "Green");
+                RectColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), RectColour.z, "Blue");
             }
             CrestUIPopRow(&App->UI);
         }
