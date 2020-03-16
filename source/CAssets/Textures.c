@@ -1,6 +1,10 @@
 
 internal u32
-CasLoadTexture(const char * Path) {
+CasLoadTexture(const char * Path, GLenum Filter) {
+    u32 Texture;
+    glGenTextures(1, &Texture);
+    glBindTexture(GL_TEXTURE_2D, Texture);
+
     //Note(Zen): Set the wrapping options
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -8,16 +12,15 @@ CasLoadTexture(const char * Path) {
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &BorderColour.elements[0]);
 
     //Note(Zen): Set Filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, Filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Filter);
 
     i32 Width, Height, NumberOfChannels;
     unsigned char * Data = stbi_load(Path, &Width, &Height, &NumberOfChannels, 0);
 
-    u32 Texture;
-    glGenTextures(1, &Texture);
 
-    glBindTexture(GL_TEXTURE_2D, Texture);
+
+
     if(Data) {
         if (NumberOfChannels == 4) {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, Data);

@@ -33,8 +33,8 @@ typedef struct C2DRenderer {
 internal void
 C2DInit(C2DRenderer * Renderer) {
     //TODO(Zen): Must move these files
-    Renderer->Shader = CrestShaderInit("../source/C2D/vertex_shader.vs",
-                                       "../source/C2D/fragment_shader.fs");
+    Renderer->Shader = CrestShaderInit("../assets/vertex_shader.vs",
+                                       "../assets/fragment_shader.fs");
 
     {
         glGenVertexArrays(1, &Renderer->VAO);
@@ -130,4 +130,20 @@ internal void
 C2DDrawTexturedRect(C2DRenderer * Renderer, v2 Position, v2 Size, i32 TextureID) {
     const v3 Colour = v3(1.0f, 1.0f, 1.0f);
     C2DDrawTexturedRectTint(Renderer, Position, Size, TextureID, Colour);
+}
+
+internal void
+C2DDrawTexturedSlice(C2DRenderer * Renderer, v2 Position, v2 Size, v4 Rect, i32 TextureID) {
+    if(Renderer->BufferIndex + 6 > C2D_MAX_VERTICES) C2DFlush(Renderer);
+
+    const v3 Colour = v3(1.0f, 1.0f, 1.0f);
+    //Note(Zen): First Triangle
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y, 0.0f), Colour, v2(Rect.x, Rect.y), TextureID);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(Rect.x + Rect.width, Rect.y), TextureID);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(Rect.x, Rect.y + Rect.height), TextureID);
+
+    //Note(Zen): Second Tangle
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y + Size.y, 0.0f), Colour, v2(Rect.x + Rect.width, Rect.y + Rect.height), TextureID);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x + Size.x, Position.y, 0.0f), Colour, v2(Rect.x + Rect.width, Rect.y), TextureID);
+    Renderer->Vertices[Renderer->BufferIndex++] = C2DVertex(v3(Position.x, Position.y + Size.y, 0.0f), Colour, v2(Rect.x, Rect.y + Rect.height), TextureID);
 }

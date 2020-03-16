@@ -9,9 +9,10 @@
 #include "shader.c"
 #include "ui/ui_renderer.c"
 #include "ui/ui.c"
-
 #include "CAssets/Textures.c"
 #include "C2D/2DRenderer.c"
+
+#include "demo/demo_components.c"
 
 typedef struct app {
     b32 Initialised;
@@ -26,7 +27,7 @@ typedef struct app {
 enum Textures {
     TEXTURE_WHITE,
     TEXTURE_LOGO,
-    TEXTURE_MLOGO,
+    TEXTURE_ARTPACK,
 
     TEXTURE_COUNT
 };
@@ -42,8 +43,9 @@ AppUpdate(Platform * platform) {
         CrestUIRendererInit(&App->UIRenderer);
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
         C2DInit(&App->Renderer);
-        App->Renderer.Textures[TEXTURE_WHITE] = CasLoadTexture("../assets/White.png");
-        App->Renderer.Textures[TEXTURE_LOGO] = CasLoadTexture("../assets/logo.png");
+        App->Renderer.Textures[TEXTURE_WHITE] = CasLoadTexture("../assets/White.png", GL_NEAREST);
+        App->Renderer.Textures[TEXTURE_LOGO] = CasLoadTexture("../assets/logo.png", GL_LINEAR);
+        App->Renderer.Textures[TEXTURE_ARTPACK] = CasLoadTexture("../assets/art_pack.png", GL_NEAREST);
         App->Renderer.ActiveTextures = TEXTURE_COUNT;
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -76,30 +78,38 @@ AppUpdate(Platform * platform) {
         UIIn.RightMouseDown = platform->RightMouseDown;
     }
 
-    for(i32 x = 0; x < platform->ScreenWidth/25.f; ++x) {
-        for(i32 y = 0; y < platform->ScreenHeight/25.f; ++y) {
-            v2 Position = v2((r32) x * 25.f, (r32) y * 25.f);
-            v2 Size = v2(20.f, 20.f);
-            C2DDrawColouredRect(&App->Renderer, Position, Size, v3(Position.x/platform->ScreenWidth, 0.5f, Position.y/platform->ScreenWidth));
-        }
-    }
-
+    //Note(Zen): Demo Stuff
     static v3 RectColour = {1.f, 1.f, 1.f};
-    v2 Position = v2(platform->ScreenWidth * 0.5f - 200.f, platform->ScreenHeight * 0.5f - 100.f);
-    v2 Size = v2(200.f, 200.f);
-    C2DDrawColouredRect(&App->Renderer, Position, Size, RectColour);
-    v2 Position2 = v2(platform->ScreenWidth * 0.5f, platform->ScreenHeight * 0.5f -100.0f);
-    C2DDrawTexturedRectTint(&App->Renderer, Position2, Size, TEXTURE_LOGO, RectColour);
-
-
-    for(i32 x = 0; x < 4; ++x) {
-        for(i32 y = 0; y < 4; ++y) {
-
+    {
+        //Note(Zen): Coloured Rectangles
+        for(i32 x = 0; x < platform->ScreenWidth/25.f; ++x) {
+            for(i32 y = 0; y < platform->ScreenHeight/25.f; ++y) {
+                v2 Position = v2((r32) x * 25.f, (r32) y * 25.f);
+                v2 Size = v2(20.f, 20.f);
+                C2DDrawColouredRect(&App->Renderer, Position, Size, v3(Position.x/platform->ScreenWidth, 0.5f, Position.y/platform->ScreenWidth));
+            }
         }
+
+
+        v2 Position = v2(platform->ScreenWidth * 0.5f - 200.f, platform->ScreenHeight * 0.5f - 64.f);
+        v2 Size = v2(200.0f, 200.0f);
+
+        v2 Position2 = v2(platform->ScreenWidth * 0.5f, platform->ScreenHeight * 0.5f -100.0f);
+        C2DDrawTexturedRectTint(&App->Renderer, Position2, Size, TEXTURE_LOGO, RectColour);
+
+        Sprite TestSprite = Sprite(TEXTURE_ARTPACK, v4(0.f, 272.f, 16.f, 16.f));
+        static Animation TestAnimation = {8, 0.08f};
+        TestAnimation.TimeOnFrame -= App->Delta;
+        if(TestAnimation.TimeOnFrame < 0.f) {
+            TestAnimation.TimeOnFrame += TestAnimation.TimePerFrame;
+            TestAnimation.CurrentFrame = (TestAnimation.CurrentFrame + 1) % TestAnimation.NumberOfFrames;
+        }
+        DrawSprite(&App->Renderer, Position, &TestSprite, &TestAnimation);
     }
 
     i32 DrawCalls = C2DEndFrame(&App->Renderer);
 
+    //Note(Zen): UI Diagnostics
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
     {
         //Note(Zen): Diagnostic Panel
