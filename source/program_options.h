@@ -1,2 +1,2 @@
-#define WINDOW_TITLE "Crest Batch Rendering Demo"
+#define WINDOW_TITLE "Pong"
 #define PERMENANT_STORAGE_SIZE MegaBytes(32)

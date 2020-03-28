@@ -12,31 +12,35 @@
 #include "CAssets/Textures.c"
 #include "C2D/2DRenderer.c"
 
-#include "demo/demo_components.c"
+#include "Pong/pong.h"
 
 typedef struct app {
     b32 Initialised;
     r32 Delta;
+    b32 KeyDown[CREST_KEY_MAX];
 
     CrestUI UI;
     ui_renderer UIRenderer;
 
     C2DRenderer Renderer;
+
+    game_data Game;
 } app;
+
+#include "Pong/pong.c"
 
 enum Textures {
     TEXTURE_WHITE,
-    TEXTURE_LOGO,
-    TEXTURE_ARTPACK,
+    TEXTURE_MENU,
 
     TEXTURE_COUNT
 };
-
 
 internal b32
 AppUpdate(Platform * platform) {
     b32 AppShouldQuit = 0;
     app * App = platform->PermenantStorage;
+    static b32 OnMenu = 1;
 
     if(!App->Initialised) {
         App->Initialised = 1;
@@ -44,16 +48,21 @@ AppUpdate(Platform * platform) {
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
         C2DInit(&App->Renderer);
         App->Renderer.Textures[TEXTURE_WHITE] = CasLoadTexture("../assets/White.png", GL_NEAREST);
-        App->Renderer.Textures[TEXTURE_LOGO] = CasLoadTexture("../assets/logo.png", GL_LINEAR);
-        App->Renderer.Textures[TEXTURE_ARTPACK] = CasLoadTexture("../assets/art_pack.png", GL_NEAREST);
+        App->Renderer.Textures[TEXTURE_MENU] = CasLoadTexture("../assets/title_text.png", GL_NEAREST);
         App->Renderer.ActiveTextures = TEXTURE_COUNT;
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
 
-        glClearColor(0.1, 0.1, 0.1, 1.0f);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         platform->TargetFPS = 60.0f;
+
+
+        //Note(Zen): Demo Setup
+        App->Renderer.Width = platform->ScreenWidth;
+        App->Renderer.Height = platform->ScreenHeight;
+        App->Game = initGame(App);
     }
 
     //Note(Zen): Per-Frame initialisation
@@ -65,6 +74,7 @@ AppUpdate(Platform * platform) {
         App->Renderer.Width = platform->ScreenWidth;
         App->Renderer.Height = platform->ScreenHeight;
         App->Delta = 1.f / platform->TargetFPS;
+        memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
     }
 
     //Note(Zen): Copy across UI Input
@@ -77,34 +87,25 @@ AppUpdate(Platform * platform) {
         UIIn.LeftMouseDown = platform->LeftMouseDown;
         UIIn.RightMouseDown = platform->RightMouseDown;
     }
-
-    //Note(Zen): Demo Stuff
-    static v3 RectColour = {1.f, 1.f, 1.f};
-    {
-        //Note(Zen): Coloured Rectangles
-        for(i32 x = 0; x < platform->ScreenWidth/25.f; ++x) {
-            for(i32 y = 0; y < platform->ScreenHeight/25.f; ++y) {
-                v2 Position = v2((r32) x * 25.f, (r32) y * 25.f);
-                v2 Size = v2(20.f, 20.f);
-                C2DDrawColouredRect(&App->Renderer, Position, Size, v3(Position.x/platform->ScreenWidth, 0.5f, Position.y/platform->ScreenWidth));
-            }
+    static i32 InWinState;
+    if(!OnMenu) {
+        if(App->KeyDown[KEY_R]) {
+            App->Game = initGame(App);
+            InWinState = 0;
         }
+        if(!InWinState) InWinState = doGame(App) ? 1 : InWinState;
+        else doWin(App);
+    }
+    else {
+        if(App->KeyDown[KEY_R]) {
+            App->Game = initGame(App);
+            InWinState = 0;
+            OnMenu = 0;
 
-
-        v2 Position = v2(platform->ScreenWidth * 0.5f - 200.f, platform->ScreenHeight * 0.5f - 64.f);
-        v2 Size = v2(200.0f, 200.0f);
-
-        v2 Position2 = v2(platform->ScreenWidth * 0.5f, platform->ScreenHeight * 0.5f -100.0f);
-        C2DDrawTexturedRectTint(&App->Renderer, Position2, Size, TEXTURE_LOGO, RectColour);
-
-        Sprite TestSprite = Sprite(TEXTURE_ARTPACK, v4(0.f, 272.f, 16.f, 16.f));
-        static Animation TestAnimation = {8, 0.08f};
-        TestAnimation.TimeOnFrame -= App->Delta;
-        if(TestAnimation.TimeOnFrame < 0.f) {
-            TestAnimation.TimeOnFrame += TestAnimation.TimePerFrame;
-            TestAnimation.CurrentFrame = (TestAnimation.CurrentFrame + 1) % TestAnimation.NumberOfFrames;
         }
-        DrawSprite(&App->Renderer, Position, &TestSprite, &TestAnimation);
+        v2 Size = v2(37.f * 10.f, 11.f * 10.f);
+        v2 Position = v2(App->Renderer.Width * 0.5f - Size.x * 0.5f, 100.f);
+        C2DDrawTexturedRect(&App->Renderer, Position, Size, TEXTURE_MENU);
     }
 
     i32 DrawCalls = C2DEndFrame(&App->Renderer);
@@ -133,10 +134,6 @@ AppUpdate(Platform * platform) {
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), TimeTakenForFrameString);
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), "Draw Calls:");
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), DrawCallsString);
-
-                RectColour.x = CrestUISlider(&App->UI, GENERIC_ID(0), RectColour.x, "Red");
-                RectColour.y = CrestUISlider(&App->UI, GENERIC_ID(0), RectColour.y, "Green");
-                RectColour.z = CrestUISlider(&App->UI, GENERIC_ID(0), RectColour.z, "Blue");
             }
             CrestUIPopRow(&App->UI);
         }
