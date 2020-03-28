@@ -9,7 +9,7 @@
 
 #include "program_options.h"
 #include "language_layer.h"
-
+global i32 keys_down;
 #include "win32_crest.h"
 
 #include "win32_opengl.c"
@@ -18,6 +18,7 @@
 
 global Platform GlobalPlatform;
 global b32 OpenGLHasLoaded;
+
 
 
 internal char *
@@ -51,23 +52,20 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         // If we receive the destroy message, then quit the program.
         PostQuitMessage(0);
     }
-    else if (message == WM_KEYDOWN || message == WM_KEYUP) {
+
+    else if ((message == WM_KEYDOWN) || (message == WM_KEYUP)) {
         b32 IsDown = (message == WM_KEYDOWN);
         u32 KeyCode = wParam;
         u32 KeyIndex = 0;
 
-        if (KeyCode == 'A') {
-            KeyIndex = KEY_A;
+        if((KeyCode >= 65) && (KeyCode <= 90)) {
+            KeyIndex = KEY_A + (KeyCode - 65);
         }
-        else if (KeyCode == 'W') {
-            KeyIndex = KEY_W;
+
+        if(KeyCode >= VK_LEFT && KeyCode <= VK_DOWN) {
+            KeyIndex = KEY_LEFT + (KeyCode - VK_LEFT);
         }
-        else if (KeyCode == 'S') {
-            KeyIndex = KEY_S;
-        }
-        else if (KeyCode == 'D') {
-            KeyIndex = KEY_D;
-        }
+
         GlobalPlatform.KeyDown[KeyIndex] = IsDown;
     }
     else if (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {
@@ -88,7 +86,6 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         GlobalPlatform.ScreenHeight = (r32)height;
     }
     else {
-        // We don't handle this message. Use the default handler.
         result = DefWindowProc(window, message, wParam, lParam);
     }
     return result;
