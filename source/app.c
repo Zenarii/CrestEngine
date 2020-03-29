@@ -10,9 +10,7 @@
 #include "ui/ui_renderer.c"
 #include "ui/ui.c"
 #include "CAssets/Textures.c"
-#include "C2D/2DRenderer.c"
-
-#include "Pong/pong.h"
+#include "C3D/3DRenderer.c"
 
 typedef struct app {
     b32 Initialised;
@@ -22,19 +20,8 @@ typedef struct app {
     CrestUI UI;
     ui_renderer UIRenderer;
 
-    C2DRenderer Renderer;
-
-    game_data Game;
+    C3DRenderer Renderer;
 } app;
-
-#include "Pong/pong.c"
-
-enum Textures {
-    TEXTURE_WHITE,
-    TEXTURE_MENU,
-
-    TEXTURE_COUNT
-};
 
 internal b32
 AppUpdate(Platform * platform) {
@@ -46,23 +33,19 @@ AppUpdate(Platform * platform) {
         App->Initialised = 1;
         CrestUIRendererInit(&App->UIRenderer);
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
-        C2DInit(&App->Renderer);
-        App->Renderer.Textures[TEXTURE_WHITE] = CasLoadTexture("../assets/White.png", GL_NEAREST);
-        App->Renderer.Textures[TEXTURE_MENU] = CasLoadTexture("../assets/title_text.png", GL_NEAREST);
-        App->Renderer.ActiveTextures = TEXTURE_COUNT;
+        C3DInit(&App->Renderer);
+        App->Renderer.Textures[0] = CasLoadTexture("../assets/White.png", GL_LINEAR);
+
+
+
+        App->Renderer.ActiveTextures = 1;
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
-
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         platform->TargetFPS = 60.0f;
 
-
-        //Note(Zen): Demo Setup
-        App->Renderer.Width = platform->ScreenWidth;
-        App->Renderer.Height = platform->ScreenHeight;
-        App->Game = initGame(App);
     }
 
     //Note(Zen): Per-Frame initialisation
@@ -71,8 +54,6 @@ AppUpdate(Platform * platform) {
 
         App->UIRenderer.Width = platform->ScreenWidth;
         App->UIRenderer.Height = platform->ScreenHeight;
-        App->Renderer.Width = platform->ScreenWidth;
-        App->Renderer.Height = platform->ScreenHeight;
         App->Delta = 1.f / platform->TargetFPS;
         memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
     }
@@ -87,28 +68,9 @@ AppUpdate(Platform * platform) {
         UIIn.LeftMouseDown = platform->LeftMouseDown;
         UIIn.RightMouseDown = platform->RightMouseDown;
     }
-    static i32 InWinState;
-    if(!OnMenu) {
-        if(App->KeyDown[KEY_R]) {
-            App->Game = initGame(App);
-            InWinState = 0;
-        }
-        if(!InWinState) InWinState = doGame(App) ? 1 : InWinState;
-        else doWin(App);
-    }
-    else {
-        if(App->KeyDown[KEY_R]) {
-            App->Game = initGame(App);
-            InWinState = 0;
-            OnMenu = 0;
 
-        }
-        v2 Size = v2(37.f * 10.f, 11.f * 10.f);
-        v2 Position = v2(App->Renderer.Width * 0.5f - Size.x * 0.5f, 100.f);
-        C2DDrawTexturedRect(&App->Renderer, Position, Size, TEXTURE_MENU);
-    }
-
-    i32 DrawCalls = C2DEndFrame(&App->Renderer);
+    C3DDrawQuad(&App->Renderer, p0, p1, p2, p4, v3(1.f, 0.8f, 1.f));
+    C3DFlush(&App->Renderer);
 
     //Note(Zen): UI Diagnostics
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
@@ -124,16 +86,12 @@ AppUpdate(Platform * platform) {
                 sprintf(FPSString, "%.2fFPS\0", FPS);
                 char TimeTakenForFrameString[32];
                 sprintf(TimeTakenForFrameString, "%.6fus\0", platform->TimeTakenForFrame * 1000000.f);
-                char DrawCallsString[8];
-                sprintf(DrawCallsString, "%d", DrawCalls);
 
 
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), "FPS:");
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), FPSString);
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), "Time:");
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), TimeTakenForFrameString);
-                CrestUITextLabel(&App->UI, GENERIC_ID(0), "Draw Calls:");
-                CrestUITextLabel(&App->UI, GENERIC_ID(0), DrawCallsString);
             }
             CrestUIPopRow(&App->UI);
         }
