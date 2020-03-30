@@ -6,7 +6,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#include "CMaths/Vectors.c"
 #include "CMaths/Matrices.c"
+#include "CMaths/ProjectionMatrices.c"
 
 #include "shader.c"
 #include "ui/ui_renderer.c"
@@ -73,12 +75,13 @@ AppUpdate(Platform * platform) {
 
 
     {
+
         static r32 TotalTime = 0.f;
         TotalTime += App->Delta;
-        v3 p0 = v3(0.5, 0.5f, 0.f);
-        v3 p1 = v3(0.5, -0.5f, 0.f);
-        v3 p2 = v3(-0.5, 0.5f, 0.f);
-        v3 p3 = v3(-0.5, -0.5f, 0.f);
+        v3 p0 = v3(0.5, 0.5f, -0.2f);
+        v3 p1 = v3(0.5, -0.5f, -0.2f);
+        v3 p2 = v3(-0.5, 0.5f, -0.2f);
+        v3 p3 = v3(-0.5, -0.5f, -0.2f);
         v3 colour = v3(sin(TotalTime), .9f, cos(TotalTime));
 
         matrix IdentityMatrix = {
@@ -88,13 +91,14 @@ AppUpdate(Platform * platform) {
             0.f, 0.f, 0.f, 1.f
         };
 
-
-        matrix Rot = CrestMatrixRotation(0.1f, CREST_AXIS_Z);
-        matrix Trans = CrestMatrixTranslation(v3(0.5f, 0.0f, 0.f));
-
-        CrestShaderSetMatrix(App->Renderer.Shader, "View", &IdentityMatrix);
-        CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Rot);
-        CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Trans);
+        r32 Ratio = platform->ScreenWidth / platform->ScreenHeight;
+        matrix Projection = CrestMatrixPerspective(PI * 0.5f, Ratio, 0.1f, 100.f);
+        matrix View = LookAt(v3(0.f, 0.f, 0.f), v3(0.f, 1.f, 3.f));//CrestMatrixTranslation(v3(0.f, 0.f, -3.f))
+        matrix Model = CrestMatrixRotation(-1.f, CREST_AXIS_X);
+        glUseProgram(App->Renderer.Shader);
+        CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
+        CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
+        CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
 
         C3DDrawQuad(&App->Renderer, p0, p1, p2, p3, colour);
     }
