@@ -65,3 +65,9 @@ CrestShaderSetFloat(CrestShader Shader, const char * UniformName, float Value) {
     i32 Location = glGetUniformLocation(Shader, UniformName);
     glUniform1f(Location, Value);
 }
+
+internal void
+CrestShaderSetMatrix(CrestShader Shader, const char * UniformName, matrix * Matrix) {
+    i32 Location = glGetUniformLocation(Shader, UniformName);
+    glUniformMatrix4fv(Location, 1, GL_TRUE, Matrix->Elements);
+}

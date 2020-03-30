@@ -25,6 +25,8 @@ typedef double r64;
 #define internal static
 #define global static
 
+#define PI 3.14159265358f
+
 //Vector types
 //~
 typedef union v4 {

@@ -6,6 +6,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#include "CMaths/Matrices.c"
+
 #include "shader.c"
 #include "ui/ui_renderer.c"
 #include "ui/ui.c"
@@ -69,8 +71,37 @@ AppUpdate(Platform * platform) {
         UIIn.RightMouseDown = platform->RightMouseDown;
     }
 
-    C3DDrawQuad(&App->Renderer, p0, p1, p2, p4, v3(1.f, 0.8f, 1.f));
+
+    {
+        static r32 TotalTime = 0.f;
+        TotalTime += App->Delta;
+        v3 p0 = v3(0.5, 0.5f, 0.f);
+        v3 p1 = v3(0.5, -0.5f, 0.f);
+        v3 p2 = v3(-0.5, 0.5f, 0.f);
+        v3 p3 = v3(-0.5, -0.5f, 0.f);
+        v3 colour = v3(sin(TotalTime), .9f, cos(TotalTime));
+
+        matrix IdentityMatrix = {
+            1.f, 0.f, 0.f, 0.f,
+            0.f, 1.f, 0.f, 0.f,
+            0.f, 0.f, 1.f, 0.f,
+            0.f, 0.f, 0.f, 1.f
+        };
+
+
+        matrix Rot = CrestMatrixRotation(0.1f, CREST_AXIS_Z);
+        matrix Trans = CrestMatrixTranslation(v3(0.5f, 0.0f, 0.f));
+
+        CrestShaderSetMatrix(App->Renderer.Shader, "View", &IdentityMatrix);
+        CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Rot);
+        CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Trans);
+
+        C3DDrawQuad(&App->Renderer, p0, p1, p2, p3, colour);
+    }
+
+
     C3DFlush(&App->Renderer);
+
 
     //Note(Zen): UI Diagnostics
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);

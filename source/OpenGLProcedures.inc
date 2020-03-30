@@ -24,4 +24,5 @@ OpenGLProc(GenerateMipmap, GENERATEMIPMAP)
 OpenGLProc(ActiveTexture, ACTIVETEXTURE)
 OpenGLProc(BindTextureUnit, BINDTEXTUREUNIT)
 OpenGLProc(Uniform1iv, UNIFORM1IV)
+OpenGLProc(UniformMatrix4fv, UNIFORMMATRIX4FV)
 #undef OpenGLProc
