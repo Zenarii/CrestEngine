@@ -17,3 +17,26 @@ CrestV3Normalise(v3 v) {
     }
     return v;
 }
+
+internal v3
+CrestV3Add(v3 a, v3 b) {
+    v3 Result = v3(a.x + b.x, a.y + b.y, a.z + b.z);
+    return Result;
+}
+
+internal v3
+CrestV3Sub(v3 a, v3 b) {
+    v3 Result = v3(a.x - b.x, a.y - b.y, a.z - b.z);
+    return Result;
+}
+
+internal r32
+CrestV3Dot(v3 a, v3 b) {
+    r32 Result = a.x * b.x + a.y * b.y + a.z * b.z;
+    return Result;
+}
+internal r32
+CrestV4Dot(v4 a, v4 b) {
+    r32 Result = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+    return Result;
+}

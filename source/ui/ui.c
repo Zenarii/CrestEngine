@@ -80,7 +80,7 @@ GetNextAutoLayoutPosition(CrestUI * ui) {
             //TODO(Zen): Support for columns?
         }
 
-        if(ui->AutoLayoutStack[index].ElementsInRow == 0) {
+        if(ui->AutoLayoutStack[index].ElementsInRow == 0 && ui->PanelStackPosition) {
             ui->PanelStack[ui->PanelStackPosition-1].Height += rect.height;
         }
 

@@ -66,6 +66,8 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
             KeyIndex = KEY_LEFT + (KeyCode - VK_LEFT);
         }
 
+        if(KeyCode == VK_ESCAPE) KeyIndex = KEY_ESC;
+
         GlobalPlatform.KeyDown[KeyIndex] = IsDown;
     }
     else if (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {

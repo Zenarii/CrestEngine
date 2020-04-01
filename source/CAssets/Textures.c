@@ -41,8 +41,3 @@ CasLoadTexture(const char * Path, GLenum Filter) {
     stbi_image_free(Data);
     return Texture;
 }
-
-internal u32
-CasLoadFont() {
-
-}

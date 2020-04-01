@@ -29,4 +29,5 @@ key(LEFT, "LEFT")
 key(UP, "UP")
 key(RIGHT, "RIGHT")
 key(DOWN, "DOWN")
+key(ESC, "ESC")
 #undef key

@@ -29,7 +29,7 @@ matrix4index(int n, int m) {
   return 4*n + m;
 }
 
-//Note(Zen): Create Matrix with Rows
+
 internal matrix
 CrestMatrixInitC(v4 Column1, v4 Column2, v4 Column3, v4 Column4) {
     matrix Result = {
@@ -102,3 +102,77 @@ CrestMatrixTranslation(v3 Translation) {
 }
 
 #define TranslateMatrix(Matrix, TranslationVector)
+
+internal v4
+CrestMatrixMultipyV4(matrix Matrix, v4 Vector) {
+    v4 Result = {0};
+    Result.x = CrestV4Dot(Matrix.Row1, Vector);
+    Result.y = CrestV4Dot(Matrix.Row2, Vector);
+    Result.z = CrestV4Dot(Matrix.Row3, Vector);
+    Result.w = CrestV4Dot(Matrix.Row4, Vector);
+
+    return Result;
+}
+
+internal r32
+CrestMatrixDeterminant(matrix m) {
+    r32 det = 0.f;
+
+    det = m.Elements[3]*m.Elements[6]*m.Elements[9]*m.Elements[12]
+          - m.Elements[2]*m.Elements[7]*m.Elements[9]*m.Elements[12]
+          - m.Elements[3]*m.Elements[5]*m.Elements[10]*m.Elements[12]
+          + m.Elements[1]*m.Elements[7]*m.Elements[10]*m.Elements[12]
+          + m.Elements[2]*m.Elements[5]*m.Elements[11]*m.Elements[12]
+          - m.Elements[1]*m.Elements[6]*m.Elements[11]*m.Elements[12]
+          - m.Elements[3]*m.Elements[6]*m.Elements[8]*m.Elements[13]
+          + m.Elements[2]*m.Elements[7]*m.Elements[8]*m.Elements[13]
+          + m.Elements[3]*m.Elements[4]*m.Elements[10]*m.Elements[13]
+          - m.Elements[0]*m.Elements[7]*m.Elements[10]*m.Elements[13]
+          - m.Elements[2]*m.Elements[4]*m.Elements[11]*m.Elements[13]
+          + m.Elements[0]*m.Elements[6]*m.Elements[11]*m.Elements[13]
+          + m.Elements[3]*m.Elements[5]*m.Elements[8]*m.Elements[14]
+          - m.Elements[1]*m.Elements[7]*m.Elements[8]*m.Elements[14]
+          - m.Elements[3]*m.Elements[4]*m.Elements[9]*m.Elements[14]
+          + m.Elements[0]*m.Elements[7]*m.Elements[9]*m.Elements[14]
+          + m.Elements[1]*m.Elements[4]*m.Elements[11]*m.Elements[14]
+          - m.Elements[0]*m.Elements[5]*m.Elements[11]*m.Elements[14]
+          - m.Elements[2]*m.Elements[5]*m.Elements[8]*m.Elements[15]
+          + m.Elements[1]*m.Elements[6]*m.Elements[8]*m.Elements[15]
+          + m.Elements[2]*m.Elements[4]*m.Elements[9]*m.Elements[15]
+          - m.Elements[0]*m.Elements[6]*m.Elements[9]*m.Elements[15]
+          - m.Elements[1]*m.Elements[4]*m.Elements[10]*m.Elements[15]
+          + m.Elements[0]*m.Elements[5]*m.Elements[10]*m.Elements[15];
+    return det;
+}
+
+internal matrix
+CrestMatrixInverse(matrix m) {
+    r32 detM = CrestMatrixDeterminant(m);
+    Assert(detM != 0);
+
+    //Note(Zen) m is the inverse matrix
+    matrix Inverse = {0};
+
+    Inverse.Elements[0] = m.Elements[4 + 2]*m.Elements[8 +3]*m.Elements[12 +1] - m.Elements[4 +3]*m.Elements[8 +2]*m.Elements[12 +1] + m.Elements[4 +3]*m.Elements[8 +1]*m.Elements[12 +2] - m.Elements[4 +1]*m.Elements[8 +3]*m.Elements[12 +2] - m.Elements[4 +2]*m.Elements[8 +1]*m.Elements[12 +3] + m.Elements[4 +1]*m.Elements[8 +2]*m.Elements[12 +3];
+    Inverse.Elements[1] = m.Elements[3]*m.Elements[8 + 2]*m.Elements[12 +1] - m.Elements[2]*m.Elements[8 +3]*m.Elements[12 +1] - m.Elements[3]*m.Elements[8 +1]*m.Elements[12 +2] + m.Elements[1]*m.Elements[8 +3]*m.Elements[12 +2] + m.Elements[2]*m.Elements[8 +1]*m.Elements[12 +3] - m.Elements[1]*m.Elements[8 +2]*m.Elements[12 +3];
+    Inverse.Elements[2] = m.Elements[2]*m.Elements[4 + 3]*m.Elements[12 +1] - m.Elements[3]*m.Elements[4 +2]*m.Elements[12 +1] + m.Elements[3]*m.Elements[4 +1]*m.Elements[12 +2] - m.Elements[1]*m.Elements[4 +3]*m.Elements[12 +2] - m.Elements[2]*m.Elements[4 +1]*m.Elements[12 +3] + m.Elements[1]*m.Elements[4 +2]*m.Elements[12 +3];
+    Inverse.Elements[3] = m.Elements[3]*m.Elements[4 + 2]*m.Elements[8 +1] - m.Elements[2]*m.Elements[4 +3]*m.Elements[8 +1] - m.Elements[3]*m.Elements[4 +1]*m.Elements[8 +2] + m.Elements[1]*m.Elements[4 +3]*m.Elements[8 +2] + m.Elements[2]*m.Elements[4 +1]*m.Elements[8 +3] - m.Elements[1]*m.Elements[4 +2]*m.Elements[8 +3];
+    Inverse.Elements[4] = m.Elements[4 + 3]*m.Elements[8 +2]*m.Elements[12 +0] - m.Elements[4 +2]*m.Elements[8 +3]*m.Elements[12 +0] - m.Elements[4 +3]*m.Elements[8 +0]*m.Elements[12 +2] + m.Elements[4 +0]*m.Elements[8 +3]*m.Elements[12 +2] + m.Elements[4 +2]*m.Elements[8 +0]*m.Elements[12 +3] - m.Elements[4 +0]*m.Elements[8 +2]*m.Elements[12 +3];
+    Inverse.Elements[5] = m.Elements[2]*m.Elements[8 +3]*m.Elements[12 +0] - m.Elements[3]*m.Elements[8 +2]*m.Elements[12 +0] + m.Elements[3]*m.Elements[8 +0]*m.Elements[12 +2] - m.Elements[0]*m.Elements[8 +3]*m.Elements[12 +2] - m.Elements[2]*m.Elements[8 +0]*m.Elements[12 +3] + m.Elements[0]*m.Elements[8 +2]*m.Elements[12 +3];
+    Inverse.Elements[6] = m.Elements[3]*m.Elements[4 +2]*m.Elements[12 +0] - m.Elements[2]*m.Elements[4 +3]*m.Elements[12 +0] - m.Elements[3]*m.Elements[4 +0]*m.Elements[12 +2] + m.Elements[0]*m.Elements[4 +3]*m.Elements[12 +2] + m.Elements[2]*m.Elements[4 +0]*m.Elements[12 +3] - m.Elements[0]*m.Elements[4 +2]*m.Elements[12 +3];
+    Inverse.Elements[7] = m.Elements[2]*m.Elements[4 +3]*m.Elements[8 +0] - m.Elements[3]*m.Elements[4 +2]*m.Elements[8 +0] + m.Elements[3]*m.Elements[4 +0]*m.Elements[8 +2] - m.Elements[0]*m.Elements[4 +3]*m.Elements[8 +2] - m.Elements[2]*m.Elements[4 +0]*m.Elements[8 +3] + m.Elements[0]*m.Elements[4 +2]*m.Elements[8 +3];
+    Inverse.Elements[8] = m.Elements[4 + 1]*m.Elements[8 +3]*m.Elements[12 +0] - m.Elements[4 +3]*m.Elements[8 +1]*m.Elements[12 +0] + m.Elements[4 +3]*m.Elements[8 +0]*m.Elements[12 +1] - m.Elements[4 +0]*m.Elements[8 +3]*m.Elements[12 +1] - m.Elements[4 +1]*m.Elements[8 +0]*m.Elements[12 +3] + m.Elements[4 +0]*m.Elements[8 +1]*m.Elements[12 +3];
+    Inverse.Elements[9] = m.Elements[3]*m.Elements[8 +1]*m.Elements[12 +0] - m.Elements[1]*m.Elements[8 +3]*m.Elements[12 +0] - m.Elements[3]*m.Elements[8 +0]*m.Elements[12 +1] + m.Elements[0]*m.Elements[8 +3]*m.Elements[12 +1] + m.Elements[1]*m.Elements[8 +0]*m.Elements[12 +3] - m.Elements[0]*m.Elements[8 +1]*m.Elements[12 +3];
+    Inverse.Elements[10] = m.Elements[1]*m.Elements[4 +3]*m.Elements[12 +0] - m.Elements[3]*m.Elements[4 +1]*m.Elements[12 +0] + m.Elements[3]*m.Elements[4 +0]*m.Elements[12 +1] - m.Elements[0]*m.Elements[4 +3]*m.Elements[12 +1] - m.Elements[1]*m.Elements[4 +0]*m.Elements[12 +3] + m.Elements[0]*m.Elements[4 +1]*m.Elements[12 +3];
+    Inverse.Elements[11] = m.Elements[3]*m.Elements[4 +1]*m.Elements[8 +0] - m.Elements[1]*m.Elements[4 +3]*m.Elements[8 +0] - m.Elements[3]*m.Elements[4 +0]*m.Elements[8 +1] + m.Elements[0]*m.Elements[4 +3]*m.Elements[8 +1] + m.Elements[1]*m.Elements[4 +0]*m.Elements[8 +3] - m.Elements[0]*m.Elements[4 +1]*m.Elements[8 +3];
+    Inverse.Elements[12] = m.Elements[4+2]*m.Elements[8 +1]*m.Elements[12 +0] - m.Elements[4 +1]*m.Elements[8 +2]*m.Elements[12 +0] - m.Elements[4 +2]*m.Elements[8 +0]*m.Elements[12 +1] + m.Elements[4 +0]*m.Elements[8 +2]*m.Elements[12 +1] + m.Elements[4 +1]*m.Elements[8 +0]*m.Elements[12 +2] - m.Elements[4 +0]*m.Elements[8 +1]*m.Elements[12 +2];
+    Inverse.Elements[13] = m.Elements[1]*m.Elements[8 +2]*m.Elements[12 +0] - m.Elements[2]*m.Elements[8 +1]*m.Elements[12 +0] + m.Elements[2]*m.Elements[8 +0]*m.Elements[12 +1] - m.Elements[0]*m.Elements[8 +2]*m.Elements[12 +1] - m.Elements[1]*m.Elements[8 +0]*m.Elements[12 +2] + m.Elements[0]*m.Elements[8 +1]*m.Elements[12 +2];
+    Inverse.Elements[14] = m.Elements[2]*m.Elements[4 +1]*m.Elements[12 +0] - m.Elements[1]*m.Elements[4 +2]*m.Elements[12 +0] - m.Elements[2]*m.Elements[4 +0]*m.Elements[12 +1] + m.Elements[0]*m.Elements[4 +2]*m.Elements[12 +1] + m.Elements[1]*m.Elements[4 +0]*m.Elements[12 +2] - m.Elements[0]*m.Elements[4 +1]*m.Elements[12 +2];
+    Inverse.Elements[15] = m.Elements[1]*m.Elements[4 +2]*m.Elements[8 +0] - m.Elements[2]*m.Elements[4 +1]*m.Elements[8 +0] + m.Elements[2]*m.Elements[4 +0]*m.Elements[8 +1] - m.Elements[0]*m.Elements[4 +2]*m.Elements[8 +1] - m.Elements[1]*m.Elements[4 +0]*m.Elements[8 +2] + m.Elements[0]*m.Elements[4 +1]*m.Elements[8 +2];
+
+    for(u32 i = 0; i < 16; ++i) {
+        Inverse.Elements[i] = Inverse.Elements[i] / detM;
+    }
+
+    return Inverse;
+}

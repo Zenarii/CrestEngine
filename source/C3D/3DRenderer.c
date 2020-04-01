@@ -28,6 +28,9 @@ struct C3DRenderer {
 
     i32 ActiveTextures;
     u32 Textures[C3D_MAX_TEXTURES];
+
+    //TEMP(Zen): Very much a temporary solution
+    stbtt_bakedchar CharacterData[96];
 };
 
 internal void
@@ -127,9 +130,3 @@ C3DDrawTri(C3DRenderer * Renderer, v3 p0, v3 p1, v3 p2, v3 Colour) {
     Renderer->Indices[Renderer->IndicesIndex + 2] = Renderer->IndicesIndex + 2;
     Renderer->IndicesIndex += 3;
 }
-
-/*
-Draw Quad
-Draw Tri
-somewhere else can deal with meshes and drawing them
-*/

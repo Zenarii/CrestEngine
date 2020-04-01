@@ -12,6 +12,7 @@ CrestMatrixPerspective(r32 Theta, r32 Ratio, r32 Near, r32 Far) {
     return Result;
 }
 
+/* TODO(Zen): Create a working lookat matrix :/
 internal matrix
 LookAt(v3 Target, v3 From) {
     v3 Up = v3(0.f, 1.f, 0.f);
@@ -25,11 +26,16 @@ LookAt(v3 Target, v3 From) {
     Up = CrestV3Cross(ReverseDirection, Right);
 
     matrix Result = {0};
-    Result.Row1 = v4(Right.x,            Right.y,            Right.z,            -From.x);
-    Result.Row2 = v4(Up.x,               Up.y,               Up.z,               -From.y);
-    Result.Row3 = v4(ReverseDirection.x, ReverseDirection.y, ReverseDirection.z, -From.z);
-    Result.Row4 = v4(0.f,                0.f,                0.f,                1.f);
+    // Result.Row1 = v4(Right.x,            Right.y,            Right.z,            -From.x);
+    // Result.Row2 = v4(Up.x,               Up.y,               Up.z,               -From.y);
+    // Result.Row3 = v4(ReverseDirection.x, ReverseDirection.y, ReverseDirection.z, -From.z);
+    // Result.Row4 = v4(0.f,                0.f,                0.f,                1.f);
 
+    Result.Row1 = v4(Right.x, Up.x, ReverseDirection.x, -From.x);
+    Result.Row2 = v4(Right.y, Up.y, ReverseDirection.y, -From.y);
+    Result.Row3 = v4(Right.z, Up.z, ReverseDirection.z, -From.z);
+    Result.Row4 = v4(0.f,     0.f,  0.f,                 1.f);
 
     return Result;
 }
+*/

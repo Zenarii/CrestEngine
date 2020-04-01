@@ -13,19 +13,36 @@
 #include "shader.c"
 #include "ui/ui_renderer.c"
 #include "ui/ui.c"
+
 #include "CAssets/Textures.c"
 #include "C3D/3DRenderer.c"
+
+#include "Zeravia/Zeravia.h"
 
 typedef struct app {
     b32 Initialised;
     r32 Delta;
+    r32 ScreenWidth;
+    r32 ScreenHeight;
+    v2 MousePosition;
     b32 KeyDown[CREST_KEY_MAX];
 
     CrestUI UI;
     ui_renderer UIRenderer;
 
     C3DRenderer Renderer;
+
+    game_state GameState;
 } app;
+
+#include "Zeravia/Zeravia.c"
+
+enum Textures {
+    TEXTURE_WHITE,
+    TEXTURE_TEXT,
+
+    TEXTURE_COUNT
+};
 
 internal b32
 AppUpdate(Platform * platform) {
@@ -41,8 +58,7 @@ AppUpdate(Platform * platform) {
         App->Renderer.Textures[0] = CasLoadTexture("../assets/White.png", GL_LINEAR);
 
 
-
-        App->Renderer.ActiveTextures = 1;
+        App->Renderer.ActiveTextures = TEXTURE_COUNT;
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEPTH_TEST);
@@ -50,6 +66,7 @@ AppUpdate(Platform * platform) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         platform->TargetFPS = 60.0f;
 
+        GameStateInit(App);
     }
 
     //Note(Zen): Per-Frame initialisation
@@ -58,8 +75,11 @@ AppUpdate(Platform * platform) {
 
         App->UIRenderer.Width = platform->ScreenWidth;
         App->UIRenderer.Height = platform->ScreenHeight;
+        App->ScreenWidth = platform->ScreenWidth;
+        App->ScreenHeight = platform->ScreenHeight;
         App->Delta = 1.f / platform->TargetFPS;
         memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
+        App->MousePosition = v2(platform->MouseEndX, platform->MouseEndY);
     }
 
     //Note(Zen): Copy across UI Input
@@ -73,60 +93,31 @@ AppUpdate(Platform * platform) {
         UIIn.RightMouseDown = platform->RightMouseDown;
     }
 
+    CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
 
-    {
-
-        static r32 TotalTime = 0.f;
-        TotalTime += App->Delta;
-        v3 p0 = v3(0.5, 0.5f, -0.2f);
-        v3 p1 = v3(0.5, -0.5f, -0.2f);
-        v3 p2 = v3(-0.5, 0.5f, -0.2f);
-        v3 p3 = v3(-0.5, -0.5f, -0.2f);
-        v3 colour = v3(sin(TotalTime), .9f, cos(TotalTime));
-
-        matrix IdentityMatrix = {
-            1.f, 0.f, 0.f, 0.f,
-            0.f, 1.f, 0.f, 0.f,
-            0.f, 0.f, 1.f, 0.f,
-            0.f, 0.f, 0.f, 1.f
-        };
-
-        r32 Ratio = platform->ScreenWidth / platform->ScreenHeight;
-        matrix Projection = CrestMatrixPerspective(PI * 0.5f, Ratio, 0.1f, 100.f);
-        matrix View = LookAt(v3(0.f, 0.f, 0.f), v3(0.f, 1.f, 3.f));//CrestMatrixTranslation(v3(0.f, 0.f, -3.f))
-        matrix Model = CrestMatrixRotation(-1.f, CREST_AXIS_X);
-        glUseProgram(App->Renderer.Shader);
-        CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
-        CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
-        CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
-
-        C3DDrawQuad(&App->Renderer, p0, p1, p2, p3, colour);
-    }
-
+    GameStateUpdate(App);
 
     C3DFlush(&App->Renderer);
 
 
     //Note(Zen): UI Diagnostics
-    CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
     {
         //Note(Zen): Diagnostic Panel
         r32 PanelWidth = 8.f * 3.f + 128.f * 2.f;
-        CrestUIPushPanel(&App->UI, v2(platform->ScreenWidth - PanelWidth - 10.0f, 10.0f), 0.0f);
+        CrestUIPushPanel(&App->UI, v2(platform->ScreenWidth - PanelWidth - 30.0f, 10.0f), 0.0f);
         {
-            CrestUIPushRow(&App->UI, v2(platform->ScreenWidth - PanelWidth - 10.0f, 10.0f), v2(128.f, 32.f), 2);
+            CrestUIPushRow(&App->UI, v2(platform->ScreenWidth - PanelWidth - 30.0f, 10.0f), v2(128.f, 32.f), 2);
             {
                 r32 FPS = 1.f / platform->TimeTaken;
                 char FPSString[16];
                 sprintf(FPSString, "%.2fFPS\0", FPS);
-                char TimeTakenForFrameString[32];
-                sprintf(TimeTakenForFrameString, "%.6fus\0", platform->TimeTakenForFrame * 1000000.f);
-
+                char MousePos[32];
+                sprintf(MousePos, "(%.2f, %.2f)", App->MousePosition.x, App->MousePosition.y);
 
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), "FPS:");
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), FPSString);
-                CrestUITextLabel(&App->UI, GENERIC_ID(0), "Time:");
-                CrestUITextLabel(&App->UI, GENERIC_ID(0), TimeTakenForFrameString);
+                CrestUITextLabel(&App->UI, GENERIC_ID(0), "Mouse:");
+                CrestUITextLabel(&App->UI, GENERIC_ID(0), MousePos);
             }
             CrestUIPopRow(&App->UI);
         }
