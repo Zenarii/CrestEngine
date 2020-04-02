@@ -6,10 +6,10 @@
 #include <windows.h>
 #include <timeapi.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "program_options.h"
 #include "language_layer.h"
-global i32 keys_down;
 #include "win32_crest.h"
 
 #include "win32_opengl.c"

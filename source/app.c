@@ -19,12 +19,16 @@
 
 #include "Zeravia/Zeravia.h"
 
+
+
 typedef struct app {
     b32 Initialised;
     r32 Delta;
     r32 ScreenWidth;
     r32 ScreenHeight;
     v2 MousePosition;
+    b32 LeftMouseDown;
+    b32 RightMouseDown;
     b32 KeyDown[CREST_KEY_MAX];
 
     CrestUI UI;
@@ -32,11 +36,13 @@ typedef struct app {
 
     C3DRenderer Renderer;
 
-    game_state GameState;
+    editor_state EditorState;
 } app;
 
 #include "Zeravia/Zeravia.c"
 
+
+#define UI_ID_OFFSET 20
 enum Textures {
     TEXTURE_WHITE,
     TEXTURE_TEXT,
@@ -66,7 +72,7 @@ AppUpdate(Platform * platform) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         platform->TargetFPS = 60.0f;
 
-        GameStateInit(App);
+        EditorStateInit(App);
     }
 
     //Note(Zen): Per-Frame initialisation
@@ -80,6 +86,9 @@ AppUpdate(Platform * platform) {
         App->Delta = 1.f / platform->TargetFPS;
         memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         App->MousePosition = v2(platform->MouseEndX, platform->MouseEndY);
+
+        App->LeftMouseDown = platform->LeftMouseDown;
+        App->RightMouseDown = platform->RightMouseDown;
     }
 
     //Note(Zen): Copy across UI Input
@@ -95,7 +104,7 @@ AppUpdate(Platform * platform) {
 
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
 
-    GameStateUpdate(App);
+    EditorStateUpdate(App);
 
     C3DFlush(&App->Renderer);
 
@@ -130,3 +139,4 @@ AppUpdate(Platform * platform) {
 
     return AppShouldQuit;
 }
+#undef UI_ID_OFFSET

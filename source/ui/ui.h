@@ -1,7 +1,7 @@
 #define CREST_UI_MAX 256
 #define CREST_UI_MAX_STACKED_ROWS 16
 #define CREST_UI_MAX_PANELS 16
-#define GENERIC_ID(x) CrestUIIDInit(__LINE__, x)
+#define GENERIC_ID(x) CrestUIIDInit(__LINE__ + UI_ID_OFFSET, x)
 
 /*
 TODO(Zen): Useful UI remaining
@@ -32,7 +32,7 @@ typedef struct CrestUIStyle {
     v4 HeaderBorderColour;
     v4 PanelColour;
 } CrestUIStyle;
-
+/* old
 global CrestUIStyle DefaultStyle = {
     .Padding = {8.f, 4.f},
     .ButtonColour = {75.f/255.f, 75.f/255.f, 75.f/255.f, 1.f},
@@ -42,6 +42,19 @@ global CrestUIStyle DefaultStyle = {
     .HeaderBorderColour = {0.1f, 0.1f, 0.2f, 1.0f},
     .PanelColour = {0.1f, 0.1f, 0.1f, 0.6f}
 };
+*/
+global CrestUIStyle DefaultStyle = {
+    .Padding = {8.f, 4.f},
+    .ButtonColour = {0.1f, 0.1f, 0.1f, 0.6f},
+    .ButtonHotColour = {0.2f, 0.2f, 0.2f, 0.6f},
+    .ButtonBorderColour = {1.0f, 1.0f, 1.0f, 1.0f},
+    .HeaderColour = {0.9f, 0.3f, 0.f, 1.f},
+    .HeaderBorderColour = {0.1f, 0.1f, 0.2f, 1.0f},
+    .PanelColour = {0.1f, 0.1f, 0.1f, 0.6f}
+};
+
+
+
 
 typedef enum CrestUIType {
     CREST_UI_BUTTON,
@@ -50,6 +63,11 @@ typedef enum CrestUIType {
     CREST_UI_PANEL,
     CREST_UI_TEXTLABEL
 } CrestUIType;
+
+typedef enum CrestUITextFloat {
+    CREST_UI_LEFT,
+    CREST_UI_CENTRE
+} CrestUITextFloat;
 
 
 typedef struct CrestUIID {
@@ -62,6 +80,7 @@ typedef struct CrestUIWidget {
     CrestUIType Type;
     v4 rect;
     char Text[32];
+    CrestUITextFloat TextFloat;
 
     //TEMP(ZEN): think of a better way to implement elements overlapping
     r32 Precedence;
@@ -88,6 +107,8 @@ typedef struct CrestUI {
     r32 MouseStartY;
     b32 LeftMouseDown;
     b32 RightMouseDown;
+
+    b32 IsMouseOver;
 
     u32 Count;
     CrestUIWidget Widgets[CREST_UI_MAX];

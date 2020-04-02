@@ -150,7 +150,7 @@ CrestUIBeginFrame(CrestUI * ui, CrestUIInput * input, ui_renderer * UIRenderer) 
     ui->MouseStartY = input->MouseStartY;
     ui->LeftMouseDown = input->LeftMouseDown;
     ui->RightMouseDown = input->RightMouseDown;
-
+    ui->IsMouseOver = 0;
 
     CrestUIRendererStartFrame(UIRenderer);
 }
@@ -162,6 +162,10 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
         //Note(Zen): 11px per char in LiberationMono font (ish)
         v2 TextOffset = v2(-11.0f * ((r32)strlen(Widget->Text))/2.0f + 5.f,
                            -10.0f);
+        if(Widget->TextFloat == CREST_UI_LEFT) {
+            TextOffset.x = -0.5f * Widget->rect.width;
+        }
+
         switch (Widget->Type) {
             case CREST_UI_BUTTON: {
                 v4 colour = CrestUIIDEquals(ui->hot, Widget->id) ? DefaultStyle.ButtonHotColour : DefaultStyle.ButtonColour;
@@ -209,6 +213,7 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
                        ui->MouseY >= rect.y &&
                        ui->MouseX <= rect.x + rect.width&&
                        ui->MouseY <= rect.y + rect.height);
+    ui->IsMouseOver = MouseOver ? 1 : ui->IsMouseOver;
 
     if(!CrestUIIDEquals(ui->hot, ID) && MouseOver && CrestUIIDEquals(CrestUIIDNull(), ui->hot)) {
         ui->hot = ID;
@@ -235,6 +240,7 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
     CrestUIWidget *Widget = ui->Widgets + ui->Count++;
     Widget->id = ID;
     Widget->Type = CREST_UI_BUTTON;
+    Widget->TextFloat = CREST_UI_CENTRE;
     Widget->rect = rect;
     strcpy(Widget->Text, Text);
 
@@ -260,6 +266,7 @@ CrestUISliderP(CrestUI * ui, CrestUIID ID, r32 value, v4 rect, char * Text) {
                        ui->MouseY >= rect.y &&
                        ui->MouseX <= rect.x + rect.width &&
                        ui->MouseY <= rect.y + rect.height);
+    ui->IsMouseOver = MouseOver ? 1 : ui->IsMouseOver;
 
     if(!CrestUIIDEquals(ui->hot, ID) && MouseOver && CrestUIIDEquals(CrestUIIDNull(), ui->hot)) {
         ui->hot = ID;
@@ -289,6 +296,7 @@ CrestUISliderP(CrestUI * ui, CrestUIID ID, r32 value, v4 rect, char * Text) {
     CrestUIWidget *Widget = ui->Widgets + ui->Count++;
     Widget->id = ID;
     Widget->Type = CREST_UI_SLIDER;
+    Widget->TextFloat = CREST_UI_CENTRE;
     Widget->rect = rect;
     Widget->Value = value;
     strcpy(Widget->Text, Text);
@@ -318,6 +326,7 @@ CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, r32 Precedence, v4 rect, char * Text) 
                        ui->MouseY >= rect.y &&
                        ui->MouseX <= rect.x + rect.width&&
                        ui->MouseY <= rect.y + rect.height);
+    ui->IsMouseOver = MouseOver ? 1 : ui->IsMouseOver;
 
     if(CrestUIIDEquals(ui->active, ID)) {
         if(ui->LeftMouseDown) {
@@ -351,6 +360,7 @@ CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, r32 Precedence, v4 rect, char * Text) 
     CrestUIWidget *Widget = ui->Widgets + ui->Count++;
     Widget->id = ID;
     Widget->Type = CREST_UI_HEADER;
+    Widget->TextFloat = CREST_UI_LEFT;
     Widget->rect = v4(Position.x, Position.y, rect.width, rect.height);
     Widget->Precedence = Precedence;
     strcpy(Widget->Text, Text);
@@ -363,6 +373,7 @@ CrestUITextLabelP(CrestUI * ui, CrestUIID ID, v4 rect, char * Text) {
     CrestUIWidget * Widget = ui->Widgets + ui->Count++;
     Widget->id = ID;
     Widget->Type = CREST_UI_TEXTLABEL;
+    Widget->TextFloat = CREST_UI_LEFT;
     Widget->rect = rect;
     strcpy(Widget->Text, Text);
     if(ui->PanelStackPosition) {

@@ -1,3 +1,3 @@
 #include "Camera.c"
-#include "HexGrid/HexGrid.c"
-#include "GameState.c"
+#include "HexGrid/Hexes.c"
+#include "EditorState.c"
