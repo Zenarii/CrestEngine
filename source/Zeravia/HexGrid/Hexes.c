@@ -306,3 +306,16 @@ InitHexMesh(b32 ForEditor) {
 
     return Mesh;
 }
+
+internal collision_mesh
+CollisionMeshFromHexMesh(hex_mesh * Mesh) {
+    collision_mesh Result = {0};
+    u32 Index = 0;
+    for(; 3 * Index < Mesh->VerticesCount; ++Index) {
+        Result.Triangles[Index] = CreateTriangle(Mesh->Vertices[3 * Index].Position,
+                                                 Mesh->Vertices[3 * Index + 1].Position,
+                                                 Mesh->Vertices[3 * Index + 2].Position);
+    }
+    Result.TriangleCount = Index;
+    return Result;
+}

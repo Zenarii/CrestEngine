@@ -42,22 +42,11 @@ EditorStateInit(app * App) {
                     }
                 }
             }
-
-            //Note(Zen): Add to the collision mesh
-            v3 Center = App->EditorState.HexGrid.Cells[Index].Position;
-
-            i32 Count = App->EditorState.HexGrid.CollisionMesh.TriangleCount;
-            for(int i = 0; i < 6; ++i) {
-                i32 NextIndex = (i + 1) % 6;
-
-                App->EditorState.HexGrid.CollisionMesh.Triangles[Count + i] = CreateTriangle(CrestV3Add(Center, HexCorners[i]), CrestV3Add(Center, HexCorners[NextIndex]), Center);
-                App->EditorState.HexGrid.CollisionMesh.TriangleCount += 1;
-            }
         }
     }
 
     TriangulateMesh(&App->EditorState.HexGrid);
-
+    State->HexGrid.CollisionMesh = CollisionMeshFromHexMesh(&State->HexGrid.HexMesh);
     //Set default editor settings
     State->Settings.Colour = *EditorColourV;
 }
