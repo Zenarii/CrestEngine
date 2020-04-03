@@ -46,3 +46,16 @@ CrestV3Scale(v3 v, r32 s) {
     v3 Result = v3(v.x * s, v.y * s, v.z * s);
     return Result;
 }
+
+internal b32
+CrestV3Equals(v3 a, v3 b) {
+    return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
+}
+
+internal v3
+CrestV3Lerp(v3 a, v3 b, r32 t) {
+    a.x += (b.x - a.x) * t;
+    a.y += (b.y - a.y) * t;
+    a.z += (b.z - a.z) * t;
+    return a;
+}
