@@ -7,14 +7,43 @@ EditorStateInit(app * App) {
 
     //Note(Zen): Create the hex mesh
     App->EditorState.HexGrid.CollisionMesh.TriangleCount = 0;
+    hex_cell * Cells = App->EditorState.HexGrid.Cells;
+
+    App->EditorState.HexGrid.HexMesh = InitHexMesh(1);
 
     for(i32 z = 0; z < HEX_CHUNK_HEIGHT; ++z) {
         for(i32 x = 0; x < HEX_CHUNK_WIDTH; ++x) {
             i32 Index = z * HEX_CHUNK_WIDTH + x;
-            App->EditorState.HexGrid.Cells[Index] = CreateCell(x, z);
+            Cells[Index] = CreateCell(x, z);
+            hex_cell * Cell = &Cells[Index];
+            //Connect the cells to their Neighbours
+            if(x > 0) {
+                Cell->Neighbours[HEX_DIRECTION_W] = &Cells[Index - 1];
+                Cells[Index - 1].Neighbours[HEX_DIRECTION_E] = Cell;
+            }
 
+            if(z > 0) {
+                if((z % 2) == 0) {
+                    Cell->Neighbours[HEX_DIRECTION_NE] = &Cells[Index - HEX_CHUNK_WIDTH];
+                    Cells[Index - HEX_CHUNK_WIDTH].Neighbours[HEX_DIRECTION_SW] = Cell;
 
-            //Note(Zen): Create the collision mesh
+                    if(x > 0) {
+                        Cell->Neighbours[HEX_DIRECTION_NW] = &Cells[Index - HEX_CHUNK_WIDTH - 1];
+                        Cells[Index - HEX_CHUNK_WIDTH - 1].Neighbours[HEX_DIRECTION_SE] = Cell;
+                    }
+                }
+                else {
+                    Cell->Neighbours[HEX_DIRECTION_NW] = &Cells[Index - HEX_CHUNK_WIDTH];
+                    Cells[Index - HEX_CHUNK_WIDTH].Neighbours[HEX_DIRECTION_SE] = Cell;
+
+                    if(x < HEX_CHUNK_WIDTH - 1) {
+                        Cell->Neighbours[HEX_DIRECTION_NE] = &Cells[Index - HEX_CHUNK_WIDTH + 1];
+                        Cells[Index - HEX_CHUNK_WIDTH + 1].Neighbours[HEX_DIRECTION_SW] = Cell;
+                    }
+                }
+            }
+
+            //Note(Zen): Add to the collision mesh
             v3 Center = App->EditorState.HexGrid.Cells[Index].Position;
 
             i32 Count = App->EditorState.HexGrid.CollisionMesh.TriangleCount;
@@ -127,13 +156,11 @@ EditorStateUpdate(app * App) {
 
             if(Hit.DidIntersect) {
                 hex_coordinates SelectedHex = CartesianToHexCoords(Hit.IntersectionPoint.x, Hit.IntersectionPoint.z);
-                sprintf(Buffer, "(%d, %d, %d)", SelectedHex.x, SelectedHex.y, SelectedHex.z);
-                CrestUITextLabelP(&App->UI, GENERIC_ID(0),  v4(74, 42, 128, 32), Buffer);
-
-                //change the colour
                 i32 Index = GetCellIndex(SelectedHex);
+                //change the colour
                 if(Index > -1) {
                     App->EditorState.HexGrid.Cells[Index].Colour = EditorState->Settings.Colour;
+
                     TriangulateMesh(&App->EditorState.HexGrid);
                 }
                 else {
@@ -144,6 +171,7 @@ EditorStateUpdate(app * App) {
     }
 
     //Note(Zen): Draw the Collision Shapes
+    /*
     DebugCollisions ^= App->KeyDown[KEY_T];
     if(DebugCollisions) {
         C3DFlush(&App->Renderer);
@@ -155,5 +183,8 @@ EditorStateUpdate(app * App) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
+    */
+    sprintf(Buffer, "%d/%d Vertices", EditorState->HexGrid.HexMesh.VerticesCount, MAX_HEX_VERTICES);
+    CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10.f, App->ScreenHeight - 42.f, 128, 32.f), Buffer);
 }
 #undef UI_ID_OFFSET

@@ -112,20 +112,18 @@ AppUpdate(Platform * platform) {
     //Note(Zen): UI Diagnostics
     {
         //Note(Zen): Diagnostic Panel
-        r32 PanelWidth = 8.f * 3.f + 128.f * 2.f;
+        r32 PanelWidth = 8.f * 2.f + 250.f;
         CrestUIPushPanel(&App->UI, v2(platform->ScreenWidth - PanelWidth - 30.0f, 10.0f), 0.0f);
         {
-            CrestUIPushRow(&App->UI, v2(platform->ScreenWidth - PanelWidth - 30.0f, 10.0f), v2(128.f, 32.f), 2);
+            CrestUIPushRow(&App->UI, v2(platform->ScreenWidth - PanelWidth - 30.0f, 10.0f), v2(250.f, 32.f), 1);
             {
                 r32 FPS = 1.f / platform->TimeTaken;
                 char FPSString[16];
-                sprintf(FPSString, "%.2fFPS\0", FPS);
+                sprintf(FPSString, "FPS: %.2fFPS\0", FPS);
                 char MousePos[32];
-                sprintf(MousePos, "(%.2f, %.2f)", App->MousePosition.x, App->MousePosition.y);
+                sprintf(MousePos, "Mouse: (%.2f, %.2f)", App->MousePosition.x, App->MousePosition.y);
 
-                CrestUITextLabel(&App->UI, GENERIC_ID(0), "FPS:");
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), FPSString);
-                CrestUITextLabel(&App->UI, GENERIC_ID(0), "Mouse:");
                 CrestUITextLabel(&App->UI, GENERIC_ID(0), MousePos);
             }
             CrestUIPopRow(&App->UI);

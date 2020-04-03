@@ -40,3 +40,9 @@ CrestV4Dot(v4 a, v4 b) {
     r32 Result = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
     return Result;
 }
+
+internal v3
+CrestV3Scale(v3 v, r32 s) {
+    v3 Result = v3(v.x * s, v.y * s, v.z * s);
+    return Result;
+}

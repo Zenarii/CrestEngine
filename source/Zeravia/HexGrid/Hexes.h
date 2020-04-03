@@ -19,11 +19,31 @@ const global v3 HexCorners[] = {
 #define HEX_CHUNK_WIDTH 7
 #define HEX_CHUNK_HEIGHT 5
 
+#define HEX_SOLID_FACTOR 0.75f
+#define HEX_BLEND_FACTOR 1.f - HEX_SOLID_FACTOR
+
+typedef enum hex_direction {
+    HEX_DIRECTION_SE,
+    HEX_DIRECTION_E,
+    HEX_DIRECTION_NE,
+    HEX_DIRECTION_NW,
+    HEX_DIRECTION_W,
+    HEX_DIRECTION_SW,
+
+    HEX_DIRECTION_COUNT
+} hex_direction;
+
+internal hex_direction
+HexGetOppositeDirection(hex_direction Dir) {
+    return (Dir + 3) % 6;
+}
+
+
 typedef struct hex_mesh hex_mesh;
 struct hex_mesh {
+    u32 VAO, VBO, Shader;
     u32 VerticesCount;
     C3DVertex Vertices[MAX_HEX_VERTICES];
-    //Note(Zen): Some of the drawn mesh was missing when these were used
     // u32 IndicesCount;
     // u32 Indices[MAX_HEX_INDICES];
 };
@@ -39,6 +59,7 @@ typedef struct hex_cell hex_cell;
 struct hex_cell {
     v3 Position;
     v3 Colour;
+    hex_cell * Neighbours[HEX_DIRECTION_COUNT];
 };
 
 
