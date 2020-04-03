@@ -30,4 +30,5 @@ key(UP, "UP")
 key(RIGHT, "RIGHT")
 key(DOWN, "DOWN")
 key(ESC, "ESC")
+key(CTRL, "CTRL")
 #undef key
