@@ -10,7 +10,8 @@ const global v3 HexCorners[] = {
     {HEX_INNER_RADIUS, 0.f, -0.5f * HEX_OUTER_RADIUS},
     {0.f, 0.f, -HEX_OUTER_RADIUS},
     {-HEX_INNER_RADIUS, 0.f, -0.5f * HEX_OUTER_RADIUS},
-    {-HEX_INNER_RADIUS, 0.f, 0.5f * HEX_OUTER_RADIUS}
+    {-HEX_INNER_RADIUS, 0.f, 0.5f * HEX_OUTER_RADIUS},
+    {0.f, 0.f, HEX_OUTER_RADIUS},
 };
 
 #define MAX_HEX_VERTICES 4096
@@ -21,6 +22,8 @@ const global v3 HexCorners[] = {
 
 #define HEX_SOLID_FACTOR 0.75f
 #define HEX_BLEND_FACTOR 1.f - HEX_SOLID_FACTOR
+
+//#define USING_HEX_INDICES
 
 typedef enum hex_direction {
     HEX_DIRECTION_SE,
@@ -44,8 +47,11 @@ struct hex_mesh {
     u32 VAO, VBO, Shader;
     u32 VerticesCount;
     C3DVertex Vertices[MAX_HEX_VERTICES];
-    // u32 IndicesCount;
-    // u32 Indices[MAX_HEX_INDICES];
+    #ifdef USING_HEX_INDICES
+    u32 EBO;
+    u32 IndicesCount;
+    u32 Indices[MAX_HEX_INDICES];
+    #endif
 };
 
 typedef struct hex_coordinates hex_coordinates;

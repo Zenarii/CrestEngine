@@ -127,9 +127,11 @@ DrawHexMesh(C3DRenderer * Renderer, hex_mesh * Mesh) {
 
     glBindVertexArray(Mesh->VAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
-
+    #ifdef USING_HEX_INDICES
+    glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
+    #else
     glDrawArrays(GL_TRIANGLES, 0, Mesh->VerticesCount);
+    #endif
 }
 
 /*
@@ -141,10 +143,17 @@ internal void
 AddTriangleToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
     Assert((Mesh->VerticesCount <= MAX_HEX_VERTICES - 3));
 
-    v3 Colour = v3(0.f, 1.f, 1.f);
+    v3 Colour = v3(1.f, 1.f, 1.f);
     Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p0, Colour, v2(0.1f, 0.1f), 0);
     Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p1, Colour, v2(0.1f, 0.1f), 0);
     Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p2, Colour, v2(0.1f, 0.1f), 0);
+
+    #ifdef USING_HEX_INDICES
+    Mesh->Indices[Mesh->IndicesCount] = Mesh->IndicesCount;
+    Mesh->Indices[Mesh->IndicesCount + 1] = Mesh->IndicesCount + 1;
+    Mesh->Indices[Mesh->IndicesCount + 2] = Mesh->IndicesCount + 2;
+    Mesh->IndicesCount += 3;
+    #endif
 }
 
 internal void
@@ -154,12 +163,7 @@ AddTriangleColour3(hex_mesh * Mesh, v3 c1, v3 c2, v3 c3) {
     Mesh->Vertices[Mesh->VerticesCount++].Colour = c2;
     Mesh->Vertices[Mesh->VerticesCount++].Colour = c3;
 
-    #ifdef USING_HEX_INDICES
-    Mesh->Indices[Mesh->IndicesCount] = Mesh->IndicesCount;
-    Mesh->Indices[Mesh->IndicesCount + 1] = Mesh->IndicesCount + 1;
-    Mesh->Indices[Mesh->IndicesCount + 2] = Mesh->IndicesCount + 2;
-    Mesh->Indices += 3;
-    #endif
+
 }
 
 internal void
@@ -179,8 +183,58 @@ AddQuadToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
     Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p2, Colour, v2(0.1f, 0.1f), 0);
 
     Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p3, Colour, v2(0.1f, 0.1f), 0);
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p1, Colour, v2(0.1f, 0.1f), 0);
+    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p0, Colour, v2(0.1f, 0.1f), 0);
     Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p2, Colour, v2(0.1f, 0.1f), 0);
+}
+
+internal void
+AddQuadColour4(hex_mesh * Mesh, v3 c0, v3 c1, v3 c2, v3 c3) {
+    Mesh->VerticesCount -= 6;
+    Mesh->Vertices[Mesh->VerticesCount++].Colour = c0;
+    Mesh->Vertices[Mesh->VerticesCount++].Colour = c1;
+    Mesh->Vertices[Mesh->VerticesCount++].Colour = c2;
+    Mesh->Vertices[Mesh->VerticesCount++].Colour = c3;
+    Mesh->Vertices[Mesh->VerticesCount++].Colour = c0;
+    Mesh->Vertices[Mesh->VerticesCount++].Colour = c2;
+}
+
+internal void
+AddQuadColour2(hex_mesh * Mesh, v3 c01, v3 c23) {
+    AddQuadColour4(Mesh, c01, c01, c23, c23);
+}
+
+internal void
+AddQuadColour(hex_mesh * Mesh, v3 Colour) {
+    AddQuadColour4(Mesh, Colour, Colour, Colour, Colour);
+}
+
+internal v3
+GetBridgeLocation(hex_direction Direction) {
+    v3 Unscaled = CrestV3Add(HexCorners[Direction], HexCorners[Direction + 1]);
+    return CrestV3Scale(Unscaled, HEX_BLEND_FACTOR);
+}
+
+internal void
+TriangulateConnection(hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v3 p0, v3 p1) {
+    if(Direction < 3) {
+        if(Cell.Neighbours[Direction]) {
+            hex_cell Neighbour = *Cell.Neighbours[Direction];
+
+            v3 Bridge = GetBridgeLocation(Direction);
+            v3 p2 = CrestV3Add(p1, Bridge);
+            v3 p3 = CrestV3Add(p0, Bridge);
+
+            AddQuadToHexMesh(Mesh, p0, p1, p2, p3);
+            AddQuadColour2(Mesh, Cell.Colour, Neighbour.Colour);
+
+            //Note(Zen): Know won't cause errors as long as Direction < 3
+            if(Cell.Neighbours[Direction + 1]) {
+                hex_cell NextNeighour = * Cell.Neighbours[Direction + 1];
+                AddTriangleToHexMesh(Mesh, p1, p2, CrestV3Add(p1, GetBridgeLocation(Direction + 1)));
+                AddTriangleColour3(Mesh, Cell.Colour, Neighbour.Colour, NextNeighour.Colour);
+            }
+        }
+    }
 }
 
 internal void
@@ -191,28 +245,12 @@ TriangulateCell(hex_mesh * Mesh, hex_cell Cell) {
         i32 NextIndex = (i + 1) % 6;
         i32 PrevIndex = (i==0) ? 5 : i-1;
         //Note(Zen): Inner Triangles
-        AddTriangleToHexMesh(Mesh, Center, CrestV3Add(Center, CrestV3Scale(HexCorners[i], HEX_SOLID_FACTOR)),
-                                           CrestV3Add(Center, CrestV3Scale(HexCorners[NextIndex], HEX_SOLID_FACTOR)));
-
-        hex_cell Neighbour0 = Cell.Neighbours[PrevIndex] ? *Cell.Neighbours[PrevIndex] : Cell;
-        hex_cell Neighbour1 = Cell.Neighbours[i] ? *Cell.Neighbours[i] : Cell;
-        hex_cell Neighbour2 = Cell.Neighbours[NextIndex] ? *Cell.Neighbours[NextIndex] : Cell;
-        v3 EdgeColour1 = v3((Colour.x + Neighbour0.Colour.x + Neighbour1.Colour.x) * 0.3333333333f,
-                            (Colour.y + Neighbour0.Colour.y + Neighbour1.Colour.y) * 0.3333333333f,
-                            (Colour.z + Neighbour0.Colour.z + Neighbour1.Colour.z) * 0.3333333333f);
-
-        v3 EdgeColour2 = v3((Colour.x + Neighbour1.Colour.x + Neighbour2.Colour.x) * 0.3333333333f,
-                           (Colour.y + Neighbour1.Colour.y + Neighbour2.Colour.y) * 0.3333333333f,
-                           (Colour.z + Neighbour1.Colour.z + Neighbour2.Colour.z) * 0.3333333333f);
-
-        AddTriangleColour3(Mesh, Colour, EdgeColour1, EdgeColour2);
-        //Note(Zen): Outer Quads
         v3 p0 = CrestV3Add(Center, CrestV3Scale(HexCorners[i], HEX_SOLID_FACTOR));
-        v3 p1 = CrestV3Add(Center, HexCorners[i]);
-        v3 p2 = CrestV3Add(Center, CrestV3Scale(HexCorners[NextIndex], HEX_SOLID_FACTOR));
-        v3 p3 = CrestV3Add(Center, HexCorners[NextIndex]);
-
-        //AddQuadToHexMesh(Mesh, p0, p1, p2, p3);
+        v3 p1 = CrestV3Add(Center, CrestV3Scale(HexCorners[NextIndex], HEX_SOLID_FACTOR));
+        AddTriangleToHexMesh(Mesh, Center, p0, p1);
+        AddTriangleColour(Mesh, Colour);
+        //Note(Zen): Bridges
+        TriangulateConnection(Mesh, Cell, i, p0, p1);
     }
 }
 
@@ -233,6 +271,11 @@ TriangulateMesh(hex_grid * Grid) {
 
     glBindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, Mesh->VerticesCount * sizeof(C3DVertex), Mesh->Vertices);
+
+    #ifdef USING_HEX_INDICES
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh->EBO);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, Mesh->IndicesCount * sizeof(u32), Mesh->Indices);
+    #endif
 }
 
 internal hex_mesh

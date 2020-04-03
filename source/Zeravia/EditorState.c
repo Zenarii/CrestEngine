@@ -171,7 +171,6 @@ EditorStateUpdate(app * App) {
     }
 
     //Note(Zen): Draw the Collision Shapes
-    /*
     DebugCollisions ^= App->KeyDown[KEY_T];
     if(DebugCollisions) {
         C3DFlush(&App->Renderer);
@@ -183,7 +182,7 @@ EditorStateUpdate(app * App) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-    */
+
     sprintf(Buffer, "%d/%d Vertices", EditorState->HexGrid.HexMesh.VerticesCount, MAX_HEX_VERTICES);
     CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10.f, App->ScreenHeight - 42.f, 128, 32.f), Buffer);
 }
