@@ -62,12 +62,21 @@ CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
 
 internal void
 CrestShaderSetFloat(CrestShader Shader, const char * UniformName, float Value) {
+    glUseProgram(Shader);
     i32 Location = glGetUniformLocation(Shader, UniformName);
     glUniform1f(Location, Value);
 }
 
 internal void
 CrestShaderSetMatrix(CrestShader Shader, const char * UniformName, matrix * Matrix) {
+    glUseProgram(Shader);
     i32 Location = glGetUniformLocation(Shader, UniformName);
     glUniformMatrix4fv(Location, 1, GL_TRUE, Matrix->Elements);
+}
+
+internal void
+CrestShaderSetV3(CrestShader Shader, const char * UniformName, v3 Vector) {
+    glUseProgram(Shader);
+    i32 Location = glGetUniformLocation(Shader, UniformName);
+    glUniform3f(Location, Vector.x, Vector.y, Vector.z);
 }

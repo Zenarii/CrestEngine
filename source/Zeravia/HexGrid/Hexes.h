@@ -27,8 +27,8 @@ const global v3 HexCorners[] = {
 #define HEX_MAX_ELEVATION 4
 #define HEX_TERRACES 2
 #define HEX_TERRACE_STEPS (HEX_TERRACES * 2 + 1)
-#define HEX_HORIZONTAL_TERRACE_SIZE (1.f/HEX_TERRACE_STEPS)
-#define HEX_VERTICAL_TERRACE_SIZE (1.f/(HEX_TERRACES + 1))
+#define HEX_HORIZONTAL_TERRACE_SIZE (1.f/(r32)HEX_TERRACE_STEPS)
+#define HEX_VERTICAL_TERRACE_SIZE (1.f/(r32)(HEX_TERRACES + 1))
 
 typedef enum hex_edge_type {
     HEX_EDGE_FLAT,
@@ -65,17 +65,27 @@ HexGetOppositeDirection(hex_direction Dir) {
     return (Dir + 3) % 6;
 }
 
+typedef struct hex_mesh_vertex hex_mesh_vertex;
+struct hex_mesh_vertex {
+    v3 Position;
+    v3 Normal;
+    v3 Colour;
+    v2 TextureCoord;
+    r32 TextureID;
+};
+internal hex_mesh_vertex
+HexMeshVertexInit(v3 P, v3 N, v3 C, v2 TC, r32 TID) {
+    hex_mesh_vertex Result = {P, N, C, TC, TID};
+    return Result;
+};
+#define HexMeshVertex(P, N, C, TC, TID) HexMeshVertexInit(P, N, C, TC, TID)
+
 
 typedef struct hex_mesh hex_mesh;
 struct hex_mesh {
     u32 VAO, VBO, Shader;
     u32 VerticesCount;
-    C3DVertex Vertices[MAX_HEX_VERTICES];
-    #ifdef USING_HEX_INDICES
-    u32 EBO;
-    u32 IndicesCount;
-    u32 Indices[MAX_HEX_INDICES];
-    #endif
+    hex_mesh_vertex Vertices[MAX_HEX_VERTICES];
 };
 
 typedef struct hex_coordinates hex_coordinates;

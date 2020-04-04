@@ -100,7 +100,7 @@ EditCell(hex_cell * Cell, hex_edit_settings Settings) {
     return Result;
 }
 
-global b32 DebugCollisions = 0;
+global b32 DebugCollisions = 1;
 
 static void
 EditorStateUpdate(app * App) {
@@ -119,7 +119,10 @@ EditorStateUpdate(app * App) {
     };
 
     //Note(Zen): Camera Controls
-    if(App->KeyDown[KEY_W]) Camera->Position.z -= CAMERA_SPEED * App->Delta;
+    if(App->KeyDown[KEY_W]) {
+        Camera->Position.z -= CAMERA_SPEED * App->Delta;
+        OutputDebugStringA("W");
+    }
     if(App->KeyDown[KEY_S]) Camera->Position.z += CAMERA_SPEED * App->Delta;
     if(App->KeyDown[KEY_A]) Camera->Position.x -= CAMERA_SPEED * App->Delta;
     if(App->KeyDown[KEY_D]) Camera->Position.x += CAMERA_SPEED * App->Delta;
@@ -138,10 +141,15 @@ EditorStateUpdate(app * App) {
     matrix Projection = CrestMatrixPerspective(PI * 0.5f, Ratio, 0.1f, 100.f);
     matrix View = ViewMatrixFromCamera(Camera);
     matrix Model = IdentityMatrix;
-    glUseProgram(App->Renderer.Shader);
-    CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
-    CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
-    CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
+
+    CrestShaderSetMatrix(EditorState->HexGrid.HexMesh.Shader, "View", &View);
+    CrestShaderSetMatrix(EditorState->HexGrid.HexMesh.Shader, "Model", &Model);
+    CrestShaderSetMatrix(EditorState->HexGrid.HexMesh.Shader, "Projection", &Projection);
+
+
+    CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "LightColour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "LightPosition", v3(0.f, 8.f, 0.f));
+
 
     hex_mesh HexMesh = App->EditorState.HexGrid.HexMesh;
     DrawHexMesh(&App->Renderer, &HexMesh);
@@ -175,9 +183,6 @@ EditorStateUpdate(app * App) {
                     if(Result.VisualsChanged) TriangulateMesh(&EditorState->HexGrid);
                     if(Result.CollisionsChanged) EditorState->HexGrid.CollisionMesh = CollisionMeshFromHexMesh(&EditorState->HexGrid.HexMesh);
                 }
-                else {
-                    OutputDebugStringA("Cell Index out of bounds");
-                }
             }
         }
     }
@@ -185,6 +190,11 @@ EditorStateUpdate(app * App) {
     //Note(Zen): Draw the Collision Shapes
     DebugCollisions ^= AppKeyJustDown(KEY_T);
     if(DebugCollisions) {
+        CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
+        CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
+        CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
+
+
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         for(i32 TriIndex = 0; TriIndex < App->EditorState.HexGrid.CollisionMesh.TriangleCount; ++TriIndex) {
@@ -197,10 +207,7 @@ EditorStateUpdate(app * App) {
 
     //in case of breaking CURRENTLY UNTESTED
     if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_R)) {
-        HexMesh.VerticesCount = 0;
-        DrawHexMesh(&App->Renderer, &HexMesh);
-        TriangulateMesh(&EditorState->HexGrid);
-        DrawHexMesh(&App->Renderer, &HexMesh);
+        App->EditorState.HexGrid.HexMesh = InitHexMesh(1);
     }
 
     sprintf(Buffer, "%d/%d Vertices", EditorState->HexGrid.HexMesh.VerticesCount, MAX_HEX_VERTICES);

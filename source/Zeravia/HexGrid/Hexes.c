@@ -119,11 +119,9 @@ RayTriangleIntersect(v3 RayOrigin, v3 RayDirection, collision_triangle * Triangl
 
 internal void
 DrawHexMesh(C3DRenderer * Renderer, hex_mesh * Mesh) {
-    glUseProgram(Renderer->Shader);
-    //Note(Zen): Set Active Textures
-    for(i32 i = 0; i < Renderer->ActiveTextures; ++i) {
-        glBindTextureUnit(i, Renderer->Textures[i]);
-    }
+    glUseProgram(Mesh->Shader);
+
+    glBindTextureUnit(0, Renderer->Textures[0]);
 
     glBindVertexArray(Mesh->VAO);
     glDrawArrays(GL_TRIANGLES, 0, Mesh->VerticesCount);
@@ -139,9 +137,15 @@ AddTriangleToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
     Assert((Mesh->VerticesCount <= MAX_HEX_VERTICES - 3));
 
     v3 Colour = v3(1.f, 1.f, 1.f);
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p0, Colour, v2(0.1f, 0.1f), 0);
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p1, Colour, v2(0.1f, 0.1f), 0);
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p2, Colour, v2(0.1f, 0.1f), 0);
+
+    v3 Edge1 = CrestV3Sub(p0, p1);
+    v3 Edge2 = CrestV3Sub(p0, p2);
+
+    v3 Normal = CrestV3Normalise(CrestV3Cross(Edge1, Edge2));
+
+    Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p0, Normal, Colour, v2(0.1f, 0.1f), 0);
+    Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p1, Normal, Colour, v2(0.1f, 0.1f), 0);
+    Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p2, Normal, Colour, v2(0.1f, 0.1f), 0);
 }
 
 internal void
@@ -166,13 +170,18 @@ AddQuadToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
 
     v3 Colour = v3(1.f, 1.f, 1.f);
 
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p0, Colour, v2(0.1f, 0.1f), 0);
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p1, Colour, v2(0.1f, 0.1f), 0);
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p2, Colour, v2(0.1f, 0.1f), 0);
+    v3 Edge1 = CrestV3Sub(p0, p1);
+    v3 Edge2 = CrestV3Sub(p0, p2);
 
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p3, Colour, v2(0.1f, 0.1f), 0);
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p0, Colour, v2(0.1f, 0.1f), 0);
-    Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p2, Colour, v2(0.1f, 0.1f), 0);
+    v3 Normal = CrestV3Normalise(CrestV3Cross(Edge1, Edge2));
+
+    Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p0, Normal, Colour, v2(0.1f, 0.1f), 0);
+    Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p1, Normal, Colour, v2(0.1f, 0.1f), 0);
+    Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p2, Normal, Colour, v2(0.1f, 0.1f), 0);
+
+    Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p3, Normal, Colour, v2(0.1f, 0.1f), 0);
+    Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p0, Normal, Colour, v2(0.1f, 0.1f), 0);
+    Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p2, Normal, Colour, v2(0.1f, 0.1f), 0);
 }
 
 internal void
@@ -198,7 +207,7 @@ AddQuadColour(hex_mesh * Mesh, v3 Colour) {
 
 internal v3
 TerracePositionLerp(v3 a, v3 b, u32 Step) {
-    r32 Horizontal = (r32)Step * HEX_HORIZONTAL_TERRACE_SIZE;
+    r32 Horizontal = Step * HEX_HORIZONTAL_TERRACE_SIZE;
     a.x += (b.x - a.x) * Horizontal;
     a.z += (b.z - a.z) * Horizontal;
     r32 Vertical = ((Step + 1)/2) * HEX_VERTICAL_TERRACE_SIZE;
@@ -243,7 +252,7 @@ TriangulateEdgeTerraces(hex_mesh * Mesh, v3 StartLeft, v3 StartRight, hex_cell S
          AddQuadColour2(Mesh, c1, c2);
      }
 
-     AddQuadToHexMesh(Mesh, p2, p3, EndLeft, EndRight);
+     AddQuadToHexMesh(Mesh, p3, p2, EndRight, EndLeft);
      AddQuadColour2(Mesh, c2, EndCell.Colour);
 
 }
@@ -251,31 +260,31 @@ TriangulateEdgeTerraces(hex_mesh * Mesh, v3 StartLeft, v3 StartRight, hex_cell S
 internal void
 TriangulateCornerTerraces(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
  v3 Left, hex_cell LeftCell, v3 Right, hex_cell RightCell) {
-     v3 p2 = TerracePositionLerp(Bottom, Left, 1);
-     v3 p3 = TerracePositionLerp(Bottom, Right, 1);
-     v3 c2 = TerraceColourLerp(BottomCell.Colour, LeftCell.Colour, 1);
-     v3 c3 = TerraceColourLerp(BottomCell.Colour, RightCell.Colour, 1);
+    v3 p2 = TerracePositionLerp(Bottom, Left, 1);
+    v3 p3 = TerracePositionLerp(Bottom, Right, 1);
+    v3 c2 = TerraceColourLerp(BottomCell.Colour, LeftCell.Colour, 1);
+    v3 c3 = TerraceColourLerp(BottomCell.Colour, RightCell.Colour, 1);
 
-     AddTriangleToHexMesh(Mesh, Bottom, p2, p3);
-     AddTriangleColour3(Mesh, BottomCell.Colour, c2, c3);
+    AddTriangleToHexMesh(Mesh, Bottom, p2, p3);
+    AddTriangleColour3(Mesh, BottomCell.Colour, c2, c3);
 
-     for (i32 i = 2; i < HEX_TERRACE_STEPS; ++i) {
-         v3 p0 = p3;
-         v3 p1 = p2;
-         p2 = TerracePositionLerp(Bottom, Left, i);
-         p3 = TerracePositionLerp(Bottom, Right, i);
+    for (i32 i = 2; i < HEX_TERRACE_STEPS; ++i) {
+        v3 p0 = p3;
+        v3 p1 = p2;
+        p2 = TerracePositionLerp(Bottom, Left, i);
+        p3 = TerracePositionLerp(Bottom, Right, i);
 
-         v3 c0 = c3;
-         c3 = TerraceColourLerp(BottomCell.Colour, RightCell.Colour, i);
-         v3 c1 = c2;
-         c2 = TerraceColourLerp(BottomCell.Colour, LeftCell.Colour, i);
+        v3 c0 = c3;
+        v3 c1 = c2;
+        c2 = TerraceColourLerp(BottomCell.Colour, LeftCell.Colour, i);
+        c3 = TerraceColourLerp(BottomCell.Colour, RightCell.Colour, i);
 
-         AddQuadToHexMesh(Mesh, p0, p1, p2, p3);
-         AddQuadColour4(Mesh, c0, c1, c2, c3);
-     }
+        AddQuadToHexMesh(Mesh, p0, p1, p2, p3);
+        AddQuadColour4(Mesh, c0, c1, c2, c3);
+    }
 
-     AddQuadToHexMesh(Mesh, p2, p3, Right, Left);
-     AddQuadColour4(Mesh, c2, c3, RightCell.Colour, LeftCell.Colour);
+     AddQuadToHexMesh(Mesh, p3, p2, Left, Right);
+     AddQuadColour4(Mesh, c3, c2, LeftCell.Colour, RightCell.Colour);
 }
 
 internal void
@@ -354,30 +363,37 @@ TriangulateCorner(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
     if(LeftEdgeType == HEX_EDGE_TERRACE) {
         if(RightEdgeType == HEX_EDGE_TERRACE) {
             TriangulateCornerTerraces(Mesh, Bottom, BottomCell, Left, LeftCell, Right, RightCell);
+            return;
         }
         else if(RightEdgeType == HEX_EDGE_FLAT) {
             TriangulateCornerTerraces(Mesh, Left, LeftCell, Right, RightCell, Bottom, BottomCell);
+            return;
         }
         else {
             TriangulateCornerTerracesCliff(Mesh, Bottom, BottomCell, Left, LeftCell, Right, RightCell);
+            return;
         }
     }
 
     else if(RightEdgeType == HEX_EDGE_TERRACE) {
         if(LeftEdgeType == HEX_EDGE_FLAT) {
             TriangulateCornerTerraces(Mesh, Right, RightCell, Bottom, BottomCell, Left, LeftCell);
+            return;
         }
         else {
             TriangulateCornerCliffTerraces(Mesh, Bottom, BottomCell, Left, LeftCell, Right, RightCell);
+            return;
         }
     }
 
     else if(GetHexEdgeType(LeftCell.Elevation, RightCell.Elevation) == HEX_EDGE_TERRACE) {
         if(LeftCell.Elevation < RightCell.Elevation) {
             TriangulateCornerCliffTerraces(Mesh, Right, RightCell, Bottom, BottomCell, Left, LeftCell);
+            return;
         }
         else {
             TriangulateCornerTerracesCliff(Mesh, Left, LeftCell, Right, RightCell, Bottom, BottomCell);
+            return;
         }
     }
 
@@ -402,7 +418,7 @@ TriangulateConnection(hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v
                 TriangulateEdgeTerraces(Mesh, p1, p0, Cell, p2, p3, Neighbour);
             }
             else {
-                AddQuadToHexMesh(Mesh, p0, p1, p2, p3);
+                AddQuadToHexMesh(Mesh, p1, p0, p3, p2);
                 AddQuadColour2(Mesh, Cell.Colour, Neighbour.Colour);
             }
 
@@ -470,35 +486,52 @@ TriangulateMesh(hex_grid * Grid) {
     glBindVertexArray(Mesh->VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, Mesh->VerticesCount * sizeof(C3DVertex), Mesh->Vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, Mesh->VerticesCount * sizeof(hex_mesh_vertex), Mesh->Vertices);
 
 }
 
 internal hex_mesh
 InitHexMesh(b32 ForEditor) {
     hex_mesh Mesh = {0};
-    Mesh.Shader = CrestShaderInit("../assets/3D_vertex_shader.vs", "../assets/3D_fragment_shader.fs");
-
-    glGenVertexArrays(1, &Mesh.VAO);
-    glBindVertexArray(Mesh.VAO);
-
-
-    glGenBuffers(1, &Mesh.VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, Mesh.VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Mesh.Vertices), Mesh.Vertices, GL_DYNAMIC_DRAW);
+    //Probably a way to make all the meshes use the same shader
+    //May not matter, in the game state map will be one whole opaque mesh
+    Mesh.Shader = CrestShaderInit("../assets/hex_shader.vs", "../assets/hex_shader.fs");
+    {
+        glGenVertexArrays(1, &Mesh.VAO);
+        glBindVertexArray(Mesh.VAO);
 
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(C3DVertex), 0);
-    glEnableVertexAttribArray(0);
+        glGenBuffers(1, &Mesh.VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, Mesh.VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(Mesh.Vertices), Mesh.Vertices, GL_DYNAMIC_DRAW);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(C3DVertex), (void *)offsetof(C3DVertex, Colour));
-    glEnableVertexAttribArray(1);
+        //Position
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), 0);
+        glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(C3DVertex), (void *)offsetof(C3DVertex, TextureCoord));
-    glEnableVertexAttribArray(2);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void*)offsetof(hex_mesh_vertex, Normal));
+        glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(C3DVertex), (void *)offsetof(C3DVertex, TextureID));
-    glEnableVertexAttribArray(3);
+        //Colour
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, Colour));
+        glEnableVertexAttribArray(2);
+
+        //Texture
+        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, TextureCoord));
+        glEnableVertexAttribArray(3);
+
+        //Texture ID
+        glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, TextureID));
+        glEnableVertexAttribArray(4);
+    }
+
+    //Note(Zen): Set up Texture Array
+    {
+        glUseProgram(Mesh.Shader);
+        i32 Location = glGetUniformLocation(Mesh.Shader, "Images");
+        int samplers[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+        glUniform1iv(Location, 16, samplers);
+    }
 
     return Mesh;
 }

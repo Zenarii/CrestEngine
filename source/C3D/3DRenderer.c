@@ -29,8 +29,6 @@ struct C3DRenderer {
     i32 ActiveTextures;
     u32 Textures[C3D_MAX_TEXTURES];
 
-    //TEMP(Zen): Very much a temporary solution
-    stbtt_bakedchar CharacterData[96];
 };
 
 internal void

@@ -25,4 +25,5 @@ OpenGLProc(ActiveTexture, ACTIVETEXTURE)
 OpenGLProc(BindTextureUnit, BINDTEXTUREUNIT)
 OpenGLProc(Uniform1iv, UNIFORM1IV)
 OpenGLProc(UniformMatrix4fv, UNIFORMMATRIX4FV)
+OpenGLProc(Uniform3f, UNIFORM3F)
 #undef OpenGLProc
