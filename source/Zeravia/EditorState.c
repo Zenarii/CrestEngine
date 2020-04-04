@@ -146,7 +146,7 @@ EditorStateUpdate(app * App) {
     CrestShaderSetMatrix(EditorState->HexGrid.HexMesh.Shader, "Model", &Model);
     CrestShaderSetMatrix(EditorState->HexGrid.HexMesh.Shader, "Projection", &Projection);
 
-
+    CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "ViewPosition", Camera->Position);
     CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "LightColour", v3(1.f, 1.f, 1.f));
     CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "LightPosition", v3(0.f, 8.f, 0.f));
 

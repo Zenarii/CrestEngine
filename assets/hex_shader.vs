@@ -22,5 +22,6 @@ void main() {
     Colour = inColour;
     TextureCoord = inTextureCoord;
     TextureID = inTextureID;
-    Normal = inNormal;
+    //Undo any non-uniform scaling
+    Normal = mat3(transpose(inverse(Model))) * inNormal;
 }
