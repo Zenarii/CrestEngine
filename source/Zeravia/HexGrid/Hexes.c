@@ -126,12 +126,7 @@ DrawHexMesh(C3DRenderer * Renderer, hex_mesh * Mesh) {
     }
 
     glBindVertexArray(Mesh->VAO);
-
-    #ifdef USING_HEX_INDICES
-    glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
-    #else
     glDrawArrays(GL_TRIANGLES, 0, Mesh->VerticesCount);
-    #endif
 }
 
 /*
@@ -147,13 +142,6 @@ AddTriangleToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
     Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p0, Colour, v2(0.1f, 0.1f), 0);
     Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p1, Colour, v2(0.1f, 0.1f), 0);
     Mesh->Vertices[Mesh->VerticesCount++] = C3DVertex(p2, Colour, v2(0.1f, 0.1f), 0);
-
-    #ifdef USING_HEX_INDICES
-    Mesh->Indices[Mesh->IndicesCount] = Mesh->IndicesCount;
-    Mesh->Indices[Mesh->IndicesCount + 1] = Mesh->IndicesCount + 1;
-    Mesh->Indices[Mesh->IndicesCount + 2] = Mesh->IndicesCount + 2;
-    Mesh->IndicesCount += 3;
-    #endif
 }
 
 internal void
@@ -209,14 +197,199 @@ AddQuadColour(hex_mesh * Mesh, v3 Colour) {
 }
 
 internal v3
+TerracePositionLerp(v3 a, v3 b, u32 Step) {
+    r32 Horizontal = (r32)Step * HEX_HORIZONTAL_TERRACE_SIZE;
+    a.x += (b.x - a.x) * Horizontal;
+    a.z += (b.z - a.z) * Horizontal;
+    r32 Vertical = ((Step + 1)/2) * HEX_VERTICAL_TERRACE_SIZE;
+    a.y += (b.y - a.y) * Vertical;
+    return a;
+}
+
+internal v3
+TerraceColourLerp(v3 a, v3 b, u32 Step) {
+    r32 t = Step * HEX_HORIZONTAL_TERRACE_SIZE;
+    a.x += (b.x - a.x) * t;
+    a.y += (b.y - a.y) * t;
+    a.z += (b.z - a.z) * t;
+    return a;
+}
+
+internal v3
 GetBridgeLocation(hex_direction Direction) {
     v3 Unscaled = CrestV3Add(HexCorners[Direction], HexCorners[Direction + 1]);
     return CrestV3Scale(Unscaled, HEX_BLEND_FACTOR);
 }
 
 internal void
+TriangulateEdgeTerraces(hex_mesh * Mesh, v3 StartLeft, v3 StartRight, hex_cell StartCell,
+ v3 EndLeft, v3 EndRight, hex_cell EndCell) {
+     v3 p2 = TerracePositionLerp(StartRight, EndRight, 1);
+     v3 p3 = TerracePositionLerp(StartLeft, EndLeft, 1);
+     v3 c2 = TerraceColourLerp(StartCell.Colour, EndCell.Colour, 1);
+     AddQuadToHexMesh(Mesh, StartLeft, StartRight, p2, p3);
+     AddQuadColour2(Mesh, StartCell.Colour, c2);
+
+     for(i32 i = 2; i < HEX_TERRACE_STEPS; ++i) {
+         v3 p0 = p3;
+         v3 p1 = p2;
+         v3 c1 = c2;
+
+         p2 = TerracePositionLerp(StartRight, EndRight, i);
+         p3 = TerracePositionLerp(StartLeft, EndLeft, i);
+         c2 = TerraceColourLerp(StartCell.Colour, EndCell.Colour, i);
+
+         AddQuadToHexMesh(Mesh, p0, p1, p2, p3);
+         AddQuadColour2(Mesh, c1, c2);
+     }
+
+     AddQuadToHexMesh(Mesh, p2, p3, EndLeft, EndRight);
+     AddQuadColour2(Mesh, c2, EndCell.Colour);
+
+}
+
+internal void
+TriangulateCornerTerraces(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+ v3 Left, hex_cell LeftCell, v3 Right, hex_cell RightCell) {
+     v3 p2 = TerracePositionLerp(Bottom, Left, 1);
+     v3 p3 = TerracePositionLerp(Bottom, Right, 1);
+     v3 c2 = TerraceColourLerp(BottomCell.Colour, LeftCell.Colour, 1);
+     v3 c3 = TerraceColourLerp(BottomCell.Colour, RightCell.Colour, 1);
+
+     AddTriangleToHexMesh(Mesh, Bottom, p2, p3);
+     AddTriangleColour3(Mesh, BottomCell.Colour, c2, c3);
+
+     for (i32 i = 2; i < HEX_TERRACE_STEPS; ++i) {
+         v3 p0 = p3;
+         v3 p1 = p2;
+         p2 = TerracePositionLerp(Bottom, Left, i);
+         p3 = TerracePositionLerp(Bottom, Right, i);
+
+         v3 c0 = c3;
+         c3 = TerraceColourLerp(BottomCell.Colour, RightCell.Colour, i);
+         v3 c1 = c2;
+         c2 = TerraceColourLerp(BottomCell.Colour, LeftCell.Colour, i);
+
+         AddQuadToHexMesh(Mesh, p0, p1, p2, p3);
+         AddQuadColour4(Mesh, c0, c1, c2, c3);
+     }
+
+     AddQuadToHexMesh(Mesh, p2, p3, Right, Left);
+     AddQuadColour4(Mesh, c2, c3, RightCell.Colour, LeftCell.Colour);
+}
+
+internal void
+TriangulateBoundaryTriangle(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+ v3 Left, hex_cell LeftCell, v3 Boundary, v3 BoundaryColour) {
+      v3 p1 = TerracePositionLerp(Bottom, Left, 1);
+      v3 c1 = TerraceColourLerp(BottomCell.Colour, LeftCell.Colour, 1);
+
+
+     AddTriangleToHexMesh(Mesh, Bottom, p1, Boundary);
+     AddTriangleColour3(Mesh, BottomCell.Colour, c1, BoundaryColour);
+
+     for(i32 i = 2; i < HEX_TERRACE_STEPS; ++i) {
+         v3 p0 = p1;
+         v3 c0 = c1;
+
+         p1 = TerracePositionLerp(Bottom, Left, i);
+         c1 = TerraceColourLerp(BottomCell.Colour, LeftCell.Colour, i);
+
+         AddTriangleToHexMesh(Mesh, p0, p1, Boundary);
+         AddTriangleColour3(Mesh, c0, c1, BoundaryColour);
+     }
+
+     AddTriangleToHexMesh(Mesh, p1, Left, Boundary);
+     AddTriangleColour3(Mesh, c1, LeftCell.Colour, BoundaryColour);
+}
+
+//TODO(Zen): Instead of all the terraces goign to a point,
+//keep them level up untill they reach the cliff
+internal void
+TriangulateCornerTerracesCliff(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+ v3 Left, hex_cell LeftCell, v3 Right, hex_cell RightCell) {
+     r32 BoundaryScale = 1.f / (RightCell.Elevation - BottomCell.Elevation);
+     BoundaryScale = (BoundaryScale > 0.f) ? BoundaryScale : - BoundaryScale;
+     v3 Boundary = CrestV3Lerp(Bottom, Right, BoundaryScale);
+     v3 BoundaryColour = CrestV3Lerp(BottomCell.Colour, RightCell.Colour, BoundaryScale);
+
+
+     TriangulateBoundaryTriangle(Mesh, Bottom, BottomCell, Left, LeftCell, Boundary, BoundaryColour);
+
+     if(GetHexEdgeType(LeftCell.Elevation, RightCell.Elevation) == HEX_EDGE_TERRACE) {
+         TriangulateBoundaryTriangle(Mesh, Left, LeftCell, Right, RightCell, Boundary, BoundaryColour);
+     }
+     else {
+         AddTriangleToHexMesh(Mesh, Left, Right, Boundary);
+         AddTriangleColour3(Mesh, LeftCell.Colour, RightCell.Colour, BoundaryColour);
+     }
+}
+
+internal void
+TriangulateCornerCliffTerraces(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+ v3 Left, hex_cell LeftCell, v3 Right, hex_cell RightCell) {
+     r32 BoundaryScale = 1.f / (LeftCell.Elevation - BottomCell.Elevation);
+     BoundaryScale = (BoundaryScale > 0.f) ? BoundaryScale : - BoundaryScale;
+     v3 Boundary = CrestV3Lerp(Bottom, Left, BoundaryScale);
+     v3 BoundaryColour = CrestV3Lerp(BottomCell.Colour, LeftCell.Colour, BoundaryScale);
+
+     TriangulateBoundaryTriangle(Mesh, Right, RightCell, Bottom, BottomCell, Boundary, BoundaryColour);
+
+     if(GetHexEdgeType(RightCell.Elevation, LeftCell.Elevation) == HEX_EDGE_TERRACE) {
+         TriangulateBoundaryTriangle(Mesh, Left, LeftCell, Right, RightCell, Boundary, BoundaryColour);
+     }
+     else {
+         AddTriangleToHexMesh(Mesh, Left, Right, Boundary);
+         AddTriangleColour3(Mesh, LeftCell.Colour, RightCell.Colour, BoundaryColour);
+     }
+
+}
+
+internal void
+TriangulateCorner(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+ v3 Left, hex_cell LeftCell, v3 Right, hex_cell RightCell) {
+    hex_edge_type RightEdgeType = GetHexEdgeType(BottomCell.Elevation, RightCell.Elevation);
+    hex_edge_type LeftEdgeType = GetHexEdgeType(BottomCell.Elevation, LeftCell.Elevation);
+
+    if(LeftEdgeType == HEX_EDGE_TERRACE) {
+        if(RightEdgeType == HEX_EDGE_TERRACE) {
+            TriangulateCornerTerraces(Mesh, Bottom, BottomCell, Left, LeftCell, Right, RightCell);
+        }
+        else if(RightEdgeType == HEX_EDGE_FLAT) {
+            TriangulateCornerTerraces(Mesh, Left, LeftCell, Right, RightCell, Bottom, BottomCell);
+        }
+        else {
+            TriangulateCornerTerracesCliff(Mesh, Bottom, BottomCell, Left, LeftCell, Right, RightCell);
+        }
+    }
+
+    else if(RightEdgeType == HEX_EDGE_TERRACE) {
+        if(LeftEdgeType == HEX_EDGE_FLAT) {
+            TriangulateCornerTerraces(Mesh, Right, RightCell, Bottom, BottomCell, Left, LeftCell);
+        }
+        else {
+            TriangulateCornerCliffTerraces(Mesh, Bottom, BottomCell, Left, LeftCell, Right, RightCell);
+        }
+    }
+
+    else if(GetHexEdgeType(LeftCell.Elevation, RightCell.Elevation) == HEX_EDGE_TERRACE) {
+        if(LeftCell.Elevation < RightCell.Elevation) {
+            TriangulateCornerCliffTerraces(Mesh, Right, RightCell, Bottom, BottomCell, Left, LeftCell);
+        }
+        else {
+            TriangulateCornerTerracesCliff(Mesh, Left, LeftCell, Right, RightCell, Bottom, BottomCell);
+        }
+    }
+
+
+    AddTriangleToHexMesh(Mesh, Bottom, Left, Right);
+    AddTriangleColour3(Mesh, BottomCell.Colour, LeftCell.Colour, RightCell.Colour);
+}
+
+internal void
 TriangulateConnection(hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v3 p0, v3 p1) {
-    if(Direction < 3) {
+    if(Direction < HEX_DIRECTION_NW) {
+        hex_direction NextDirection = Direction + 1;
         if(Cell.Neighbours[Direction]) {
             hex_cell Neighbour = *Cell.Neighbours[Direction];
 
@@ -224,33 +397,60 @@ TriangulateConnection(hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v
             v3 p2 = CrestV3Add(p1, Bridge);
             v3 p3 = CrestV3Add(p0, Bridge);
 
-            AddQuadToHexMesh(Mesh, p0, p1, p2, p3);
-            AddQuadColour2(Mesh, Cell.Colour, Neighbour.Colour);
+            p2.y = p3.y = Neighbour.Elevation * HEX_ELEVATION_STEP;
+            if(GetHexEdgeType(Cell.Elevation, Neighbour.Elevation) == HEX_EDGE_TERRACE) {
+                TriangulateEdgeTerraces(Mesh, p1, p0, Cell, p2, p3, Neighbour);
+            }
+            else {
+                AddQuadToHexMesh(Mesh, p0, p1, p2, p3);
+                AddQuadColour2(Mesh, Cell.Colour, Neighbour.Colour);
+            }
 
-            //Note(Zen): Know won't cause errors as long as Direction < 3
-            if(Cell.Neighbours[Direction + 1]) {
-                hex_cell NextNeighour = * Cell.Neighbours[Direction + 1];
-                AddTriangleToHexMesh(Mesh, p1, p2, CrestV3Add(p1, GetBridgeLocation(Direction + 1)));
-                AddTriangleColour3(Mesh, Cell.Colour, Neighbour.Colour, NextNeighour.Colour);
+            if(Direction <= 2 && Cell.Neighbours[NextDirection]) {
+                hex_cell NextNeighbour = *Cell.Neighbours[NextDirection];
+
+                v3 p4 = CrestV3Add(p1, GetBridgeLocation(Direction + 1));
+                p4.y = NextNeighbour.Elevation * HEX_ELEVATION_STEP;
+                //Note(Zen): Deduce orientation
+                if(Cell.Elevation <= Neighbour.Elevation) {
+                    if(Cell.Elevation <= NextNeighbour.Elevation) {
+                        TriangulateCorner(Mesh, p1, Cell, p2, Neighbour, p4, NextNeighbour);
+                    }
+                    else {
+                        TriangulateCorner(Mesh, p4, NextNeighbour, p1, Cell, p2, Neighbour);
+                    }
+                }
+                else if(Neighbour.Elevation <= NextNeighbour.Elevation) {
+                    TriangulateCorner(Mesh, p2, Neighbour, p4, NextNeighbour, p1, Cell);
+                }
+                else {
+                    TriangulateCorner(Mesh, p4, NextNeighbour, p1, Cell, p2, Neighbour);
+                }
             }
         }
     }
 }
 
+
+
 internal void
 TriangulateCell(hex_mesh * Mesh, hex_cell Cell) {
     v3 Center = Cell.Position;
     v3 Colour = Cell.Colour;
-    for(int i = 0; i < 6; ++i) {
-        i32 NextIndex = (i + 1) % 6;
-        i32 PrevIndex = (i==0) ? 5 : i-1;
+    for(i32 Direction = 0; Direction < 6; ++Direction) {
+        i32 NextDirection = (Direction + 1) % 6;
+
         //Note(Zen): Inner Triangles
-        v3 p0 = CrestV3Add(Center, CrestV3Scale(HexCorners[i], HEX_SOLID_FACTOR));
-        v3 p1 = CrestV3Add(Center, CrestV3Scale(HexCorners[NextIndex], HEX_SOLID_FACTOR));
+        v3 p0 = CrestV3Add(Center, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR));
+        v3 p1 = CrestV3Add(Center, CrestV3Scale(HexCorners[NextDirection], HEX_SOLID_FACTOR));
         AddTriangleToHexMesh(Mesh, Center, p0, p1);
         AddTriangleColour(Mesh, Colour);
+
         //Note(Zen): Bridges
-        TriangulateConnection(Mesh, Cell, i, p0, p1);
+        TriangulateConnection(Mesh, Cell, Direction, p0, p1);
+        //Note(Zen): Corners
+
+
     }
 }
 
@@ -272,10 +472,6 @@ TriangulateMesh(hex_grid * Grid) {
     glBindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, Mesh->VerticesCount * sizeof(C3DVertex), Mesh->Vertices);
 
-    #ifdef USING_HEX_INDICES
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh->EBO);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, Mesh->IndicesCount * sizeof(u32), Mesh->Indices);
-    #endif
 }
 
 internal hex_mesh

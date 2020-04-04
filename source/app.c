@@ -30,6 +30,7 @@ typedef struct app {
     b32 LeftMouseDown;
     b32 RightMouseDown;
     b32 KeyDown[CREST_KEY_MAX];
+    b32 KeyWasDown[CREST_KEY_MAX];
 
     CrestUI UI;
     ui_renderer UIRenderer;
@@ -50,10 +51,17 @@ enum Textures {
     TEXTURE_COUNT
 };
 
+global app * App;
+
+internal b32
+AppKeyJustDown(i32 Key) {
+    return (App->KeyDown[Key] && !App->KeyWasDown[Key]);
+}
+
 internal b32
 AppUpdate(Platform * platform) {
     b32 AppShouldQuit = 0;
-    app * App = platform->PermenantStorage;
+    App = platform->PermenantStorage;
     static b32 OnMenu = 1;
 
     if(!App->Initialised) {
@@ -84,6 +92,7 @@ AppUpdate(Platform * platform) {
         App->ScreenWidth = platform->ScreenWidth;
         App->ScreenHeight = platform->ScreenHeight;
         App->Delta = 1.f / platform->TargetFPS;
+        memcpy(App->KeyWasDown, App->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         App->MousePosition = v2(platform->MouseEndX, platform->MouseEndY);
 

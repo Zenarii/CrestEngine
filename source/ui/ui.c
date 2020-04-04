@@ -317,6 +317,70 @@ CrestUISlider(CrestUI * ui, CrestUIID ID, r32 value, char * Text) {
     return CrestUISliderP(ui, ID, value, rect, Text);
 }
 
+internal i32
+CrestUISliderIntP(CrestUI * ui, CrestUIID ID, v4 rect, i32 Value, i32 Max, char * Text) {
+    r32 FloatValue = (r32)Value/(r32)Max;
+
+    b32 MouseOver = (ui->MouseX >= rect.x &&
+                       ui->MouseY >= rect.y &&
+                       ui->MouseX <= rect.x + rect.width &&
+                       ui->MouseY <= rect.y + rect.height);
+    ui->IsMouseOver = MouseOver ? 1 : ui->IsMouseOver;
+
+    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver && CrestUIIDEquals(CrestUIIDNull(), ui->hot)) {
+        ui->hot = ID;
+    }
+    else if(CrestUIIDEquals(ui->hot, ID) && !MouseOver) {
+        ui->hot = CrestUIIDNull();
+    }
+
+    if(CrestUIIDEquals(ui->active, ID)) {
+        if(ui->LeftMouseDown) {
+            FloatValue = (ui->MouseX - rect.x) / rect.width;
+            //ui->active = CrestUIIDNull();
+        }
+        if(!CrestUIIDEquals(ui->hot, ID)) {
+            ui->active = CrestUIIDNull();
+        }
+    }
+    else {
+        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown && CrestUIIDEquals(CrestUIIDNull(), ui->active)) {
+            ui->active = ID;
+        }
+    }
+
+    if(FloatValue > 1.f) FloatValue = 1.f;
+    if(FloatValue < 0.f) FloatValue = 0.f;
+
+    CrestUIWidget *Widget = ui->Widgets + ui->Count++;
+    Widget->id = ID;
+    Widget->Type = CREST_UI_SLIDER;
+    Widget->TextFloat = CREST_UI_CENTRE;
+    Widget->rect = rect;
+
+    strcpy(Widget->Text, Text);
+
+    if(ui->PanelStackPosition) {
+        Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
+    }
+    else {
+        Widget->Precedence = 0.f;
+    }
+
+    Value = (FloatValue * Max + 0.5f);
+    FloatValue = Value /(r32)Max;
+    Widget->Value = FloatValue;
+
+    return Value;
+}
+
+
+internal i32
+CrestUISliderInt(CrestUI * ui, CrestUIID ID, i32 Value, i32 Max, char * Text) {
+    v4 rect = GetNextAutoLayoutPosition(ui);
+    return CrestUISliderIntP(ui, ID, rect, Value, Max, Text);
+}
+
 internal v2
 CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, r32 Precedence, v4 rect, char * Text) {
     v2 Position = v2(rect.x, rect.y);

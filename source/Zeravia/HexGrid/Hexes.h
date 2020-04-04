@@ -14,16 +14,40 @@ const global v3 HexCorners[] = {
     {0.f, 0.f, HEX_OUTER_RADIUS},
 };
 
-#define MAX_HEX_VERTICES 4096
+#define MAX_HEX_VERTICES 8192
 #define MAX_HEX_INDICES 2046
 
 #define HEX_CHUNK_WIDTH 7
 #define HEX_CHUNK_HEIGHT 5
 
-#define HEX_SOLID_FACTOR 0.75f
-#define HEX_BLEND_FACTOR 1.f - HEX_SOLID_FACTOR
+#define HEX_SOLID_FACTOR 0.7f
+#define HEX_BLEND_FACTOR (1.f - HEX_SOLID_FACTOR)
 
-//#define USING_HEX_INDICES
+#define HEX_ELEVATION_STEP 0.4f
+#define HEX_MAX_ELEVATION 4
+#define HEX_TERRACES 2
+#define HEX_TERRACE_STEPS (HEX_TERRACES * 2 + 1)
+#define HEX_HORIZONTAL_TERRACE_SIZE (1.f/HEX_TERRACE_STEPS)
+#define HEX_VERTICAL_TERRACE_SIZE (1.f/(HEX_TERRACES + 1))
+
+typedef enum hex_edge_type {
+    HEX_EDGE_FLAT,
+    HEX_EDGE_TERRACE,
+    HEX_EDGE_CLIFF
+} hex_edge_type;
+
+internal hex_edge_type
+GetHexEdgeType(i32 Elevation1, i32 Elevation2) {
+    hex_edge_type Result = HEX_EDGE_CLIFF;
+    i32 Diff = Elevation1 - Elevation2;
+    if(Diff == 0) {
+        Result = HEX_EDGE_FLAT;
+    }
+    else if((Diff == 1) || (Diff == -1)) {
+        Result = HEX_EDGE_TERRACE;
+    }
+    return Result;
+}
 
 typedef enum hex_direction {
     HEX_DIRECTION_SE,
@@ -63,6 +87,7 @@ struct hex_coordinates {
 
 typedef struct hex_cell hex_cell;
 struct hex_cell {
+    i32 Elevation;
     v3 Position;
     v3 Colour;
     hex_cell * Neighbours[HEX_DIRECTION_COUNT];

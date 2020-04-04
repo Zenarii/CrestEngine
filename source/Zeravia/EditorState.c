@@ -48,7 +48,8 @@ EditorStateInit(app * App) {
     TriangulateMesh(&App->EditorState.HexGrid);
     State->HexGrid.CollisionMesh = CollisionMeshFromHexMesh(&State->HexGrid.HexMesh);
     //Set default editor settings
-    State->Settings.Colour = *EditorColourV;
+    State->Settings.Colour = EditorColourV[EDITOR_COLOUR_COUNT-1];
+    State->Settings.Elevation = 1;
 }
 
 internal hex_edit_settings
@@ -69,15 +70,37 @@ doEditorUI(CrestUI * ui, hex_edit_settings Settings) {
         Elevation
     */
 
+    Settings.Elevation = CrestUISliderInt(ui, GENERIC_ID(0), Settings.Elevation, HEX_MAX_ELEVATION, "Elevation");
+
     CrestUIPopRow(ui);
     CrestUIPopPanel(ui);
 
     return Settings;
 }
 
+typedef struct edit_cell_result edit_cell_result;
+struct edit_cell_result {
+    b32 VisualsChanged;
+    b32 CollisionsChanged;
+};
 
+internal edit_cell_result
+EditCell(hex_cell * Cell, hex_edit_settings Settings) {
+    edit_cell_result Result = {0};
+    if(!CrestV3Equals(Cell->Colour, Settings.Colour)) {
+        Cell->Colour = Settings.Colour;
+        Result.VisualsChanged = 1;
+    }
+    if(Cell->Elevation != Settings.Elevation) {
+        Cell->Elevation = Settings.Elevation;
+        Cell->Position.y = Cell->Elevation * HEX_ELEVATION_STEP;
+        Result.VisualsChanged = 1;
+        Result.CollisionsChanged = 1;
+    }
+    return Result;
+}
 
-global b32 DebugCollisions = 1;
+global b32 DebugCollisions = 0;
 
 static void
 EditorStateUpdate(app * App) {
@@ -135,7 +158,7 @@ EditorStateUpdate(app * App) {
     v3 RayDirection = CrestV3Normalise(v3(RayWorld.x, RayWorld.y, RayWorld.z));
 
     v3 RayOrigin = Camera->Position;
-
+    //Note(Zen): Check for collisions
     char Buffer[32];
     if(App->LeftMouseDown && !App->UI.IsMouseOver) {
         for(i32 TriIndex = 0; TriIndex < App->EditorState.HexGrid.CollisionMesh.TriangleCount; ++TriIndex) {
@@ -148,9 +171,9 @@ EditorStateUpdate(app * App) {
                 i32 Index = GetCellIndex(SelectedHex);
                 //change the colour
                 if(Index > -1) {
-                    App->EditorState.HexGrid.Cells[Index].Colour = EditorState->Settings.Colour;
-
-                    TriangulateMesh(&App->EditorState.HexGrid);
+                    edit_cell_result Result = EditCell(&EditorState->HexGrid.Cells[Index], EditorState->Settings);
+                    if(Result.VisualsChanged) TriangulateMesh(&EditorState->HexGrid);
+                    if(Result.CollisionsChanged) EditorState->HexGrid.CollisionMesh = CollisionMeshFromHexMesh(&EditorState->HexGrid.HexMesh);
                 }
                 else {
                     OutputDebugStringA("Cell Index out of bounds");
@@ -160,7 +183,7 @@ EditorStateUpdate(app * App) {
     }
 
     //Note(Zen): Draw the Collision Shapes
-    DebugCollisions ^= App->KeyDown[KEY_T];
+    DebugCollisions ^= AppKeyJustDown(KEY_T);
     if(DebugCollisions) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -170,6 +193,14 @@ EditorStateUpdate(app * App) {
         }
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
+    //in case of breaking CURRENTLY UNTESTED
+    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_R)) {
+        HexMesh.VerticesCount = 0;
+        DrawHexMesh(&App->Renderer, &HexMesh);
+        TriangulateMesh(&EditorState->HexGrid);
+        DrawHexMesh(&App->Renderer, &HexMesh);
     }
 
     sprintf(Buffer, "%d/%d Vertices", EditorState->HexGrid.HexMesh.VerticesCount, MAX_HEX_VERTICES);
