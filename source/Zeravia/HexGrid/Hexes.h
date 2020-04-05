@@ -14,19 +14,18 @@ const global v3 HexCorners[] = {
     {0.f, 0.f, HEX_OUTER_RADIUS},
 };
 
-#define MAX_HEX_VERTICES 8192
-#define MAX_HEX_INDICES 2046
+#define MAX_HEX_VERTICES (8192 * 2)
 
 #define HEX_CHUNK_WIDTH 7
 #define HEX_CHUNK_HEIGHT 5
 
 #define HEX_SOLID_FACTOR 0.7f
 #define HEX_BLEND_FACTOR (1.f - HEX_SOLID_FACTOR)
-#define HEX_NUDGE_STRENGTH 0.5f
-#define HEX_ELEVATION_NUDGE_STRENGTH 0.2f
-#define HEX_NOISE_SCALE 0.03f
+#define HEX_NUDGE_STRENGTH 0.2f
+#define HEX_ELEVATION_NUDGE_STRENGTH 0.15f
+#define HEX_NOISE_SCALE 0.15f
 
-#define HEX_ELEVATION_STEP 0.4f
+#define HEX_ELEVATION_STEP 0.3f
 #define HEX_MAX_ELEVATION 4
 #define HEX_TERRACES 2
 #define HEX_TERRACE_STEPS (HEX_TERRACES * 2 + 1)
@@ -70,6 +69,14 @@ HexGetOppositeDirection(hex_direction Dir) {
     return (Dir + 3) % 6;
 }
 
+typedef struct hex_edge_vertices hex_edge_vertices;
+struct hex_edge_vertices {
+    v3 p0;
+    v3 p1;
+    v3 p2;
+    v3 p3;
+};
+
 typedef struct hex_mesh_vertex hex_mesh_vertex;
 struct hex_mesh_vertex {
     v3 Position;
@@ -110,7 +117,7 @@ struct hex_cell {
 
 
 //Collisions
-#define MAX_COLLISION_TRIANGLES 2048
+#define MAX_COLLISION_TRIANGLES 4096
 
 typedef struct collision_triangle collision_triangle;
 struct collision_triangle {
@@ -125,9 +132,22 @@ struct collision_mesh {
     collision_triangle Triangles[MAX_COLLISION_TRIANGLES];
 };
 
-typedef struct hex_grid hex_grid;
-struct hex_grid {
+/*
+    World Storage
+*/
+
+typedef struct hex_grid_chunk hex_grid_chunk;
+struct hex_grid_chunk {
     hex_cell Cells[HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT];
     hex_mesh HexMesh;
     collision_mesh CollisionMesh;
+};
+
+
+#define HEX_MAX_CHUNKS 128
+
+typedef struct hex_grid hex_grid;
+struct hex_grid {
+    i32 Width, Height;
+    hex_grid_chunk[HEX_MAX_CHUNKS];
 };

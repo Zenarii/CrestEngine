@@ -9,8 +9,9 @@ EditorStateInit(app * App) {
     App->EditorState.HexGrid.CollisionMesh.TriangleCount = 0;
     hex_cell * Cells = App->EditorState.HexGrid.Cells;
 
-    App->EditorState.HexGrid.HexMesh = InitHexMesh(1);
+    InitHexMesh(&App->EditorState.HexGrid.HexMesh, 1);
 
+    //Setup hex grid
     for(i32 z = 0; z < HEX_CHUNK_HEIGHT; ++z) {
         for(i32 x = 0; x < HEX_CHUNK_WIDTH; ++x) {
             i32 Index = z * HEX_CHUNK_WIDTH + x;
@@ -46,7 +47,7 @@ EditorStateInit(app * App) {
     }
 
     TriangulateMesh(&App->EditorState.HexGrid);
-    State->HexGrid.CollisionMesh = CollisionMeshFromHexMesh(&State->HexGrid.HexMesh);
+    CollisionMeshFromHexMesh(&State->HexGrid.CollisionMesh, &State->HexGrid.HexMesh);
     //Set default editor settings
     State->Settings.Colour = EditorColourV[EDITOR_COLOUR_COUNT-1];
     State->Settings.Elevation = 1;
@@ -183,7 +184,7 @@ EditorStateUpdate(app * App) {
                 if(Index > -1) {
                     edit_cell_result Result = EditCell(&EditorState->HexGrid.Cells[Index], EditorState->Settings);
                     if(Result.VisualsChanged) TriangulateMesh(&EditorState->HexGrid);
-                    if(Result.CollisionsChanged) EditorState->HexGrid.CollisionMesh = CollisionMeshFromHexMesh(&EditorState->HexGrid.HexMesh);
+                    if(Result.CollisionsChanged) CollisionMeshFromHexMesh(&EditorState->HexGrid.CollisionMesh, &EditorState->HexGrid.HexMesh);
                 }
             }
         }
@@ -209,7 +210,7 @@ EditorStateUpdate(app * App) {
 
     //Crashed Game @TODO hunt for this bug
     if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_R)) {
-        App->EditorState.HexGrid.HexMesh = InitHexMesh(1);
+        InitHexMesh(&App->EditorState.HexGrid.HexMesh, 1);
     }
 
     sprintf(Buffer, "%d/%d Vertices", EditorState->HexGrid.HexMesh.VerticesCount, MAX_HEX_VERTICES);
