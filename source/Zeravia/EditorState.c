@@ -94,13 +94,15 @@ EditCell(hex_cell * Cell, hex_edit_settings Settings) {
     if(Cell->Elevation != Settings.Elevation) {
         Cell->Elevation = Settings.Elevation;
         Cell->Position.y = Cell->Elevation * HEX_ELEVATION_STEP;
+        v3 Sample = Noise3DSample(Cell->Position);
+        Cell->Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
         Result.VisualsChanged = 1;
         Result.CollisionsChanged = 1;
     }
     return Result;
 }
 
-global b32 DebugCollisions = 1;
+global b32 DebugCollisions = 0;
 
 static void
 EditorStateUpdate(app * App) {
@@ -148,7 +150,7 @@ EditorStateUpdate(app * App) {
 
     CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "ViewPosition", Camera->Position);
     CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "LightColour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "LightPosition", v3(0.f, 8.f, 0.f));
+    CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "LightPosition", v3(3.f, 8.f, 3.f));
 
 
     hex_mesh HexMesh = App->EditorState.HexGrid.HexMesh;
@@ -205,7 +207,7 @@ EditorStateUpdate(app * App) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    //in case of breaking CURRENTLY UNTESTED
+    //Crashed Game @TODO hunt for this bug
     if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_R)) {
         App->EditorState.HexGrid.HexMesh = InitHexMesh(1);
     }

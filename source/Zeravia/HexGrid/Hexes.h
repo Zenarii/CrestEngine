@@ -22,6 +22,9 @@ const global v3 HexCorners[] = {
 
 #define HEX_SOLID_FACTOR 0.7f
 #define HEX_BLEND_FACTOR (1.f - HEX_SOLID_FACTOR)
+#define HEX_NUDGE_STRENGTH 0.5f
+#define HEX_ELEVATION_NUDGE_STRENGTH 0.2f
+#define HEX_NOISE_SCALE 0.03f
 
 #define HEX_ELEVATION_STEP 0.4f
 #define HEX_MAX_ELEVATION 4
@@ -48,6 +51,8 @@ GetHexEdgeType(i32 Elevation1, i32 Elevation2) {
     }
     return Result;
 }
+
+
 
 typedef enum hex_direction {
     HEX_DIRECTION_SE,

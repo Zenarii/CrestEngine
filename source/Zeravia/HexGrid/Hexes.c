@@ -131,9 +131,20 @@ DrawHexMesh(C3DRenderer * Renderer, hex_mesh * Mesh) {
     Creating the mesh
 */
 
+internal v3
+NudgeVertex(v3 Vertex) {
+    v3 ScaledVertex = CrestV3Scale(Vertex, HEX_NOISE_SCALE);
+    v3 Sample = Noise3DSample(ScaledVertex);
+    Sample = CrestV3Scale(Sample, HEX_NUDGE_STRENGTH);
+    //Note(Zen): Don't change heights so cell tops flat
+    Sample.y = 0.f;
+    v3 Result = CrestV3Add(Vertex, Sample);
+    return Result;
+}
+
 //Note(Zen): Push different colours after this function
 internal void
-AddTriangleToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
+AddTriangleToHexMeshUnnudged(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
     Assert((Mesh->VerticesCount <= MAX_HEX_VERTICES - 3));
 
     v3 Colour = v3(1.f, 1.f, 1.f);
@@ -149,13 +160,20 @@ AddTriangleToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
 }
 
 internal void
+AddTriangleToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
+    p0 = NudgeVertex(p0);
+    p1 = NudgeVertex(p1);
+    p2 = NudgeVertex(p2);
+
+    AddTriangleToHexMeshUnnudged(Mesh, p0, p1, p2);
+}
+
+internal void
 AddTriangleColour3(hex_mesh * Mesh, v3 c1, v3 c2, v3 c3) {
     Mesh->VerticesCount -= 3;
     Mesh->Vertices[Mesh->VerticesCount++].Colour = c1;
     Mesh->Vertices[Mesh->VerticesCount++].Colour = c2;
     Mesh->Vertices[Mesh->VerticesCount++].Colour = c3;
-
-
 }
 
 internal void
@@ -163,9 +181,9 @@ AddTriangleColour(hex_mesh * Mesh, v3 Colour) {
     AddTriangleColour3(Mesh, Colour, Colour, Colour);
 }
 
-//TODO(Zen): Make this work with indices later on
+
 internal void
-AddQuadToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
+AddQuadToHexMeshUnnudged(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
     Assert(Mesh->VerticesCount <= MAX_HEX_VERTICES - 6);
 
     v3 Colour = v3(1.f, 1.f, 1.f);
@@ -182,6 +200,16 @@ AddQuadToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
     Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p3, Normal, Colour, v2(0.1f, 0.1f), 0);
     Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p0, Normal, Colour, v2(0.1f, 0.1f), 0);
     Mesh->Vertices[Mesh->VerticesCount++] = HexMeshVertex(p2, Normal, Colour, v2(0.1f, 0.1f), 0);
+}
+
+internal void
+AddQuadToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
+    p0 = NudgeVertex(p0);
+    p1 = NudgeVertex(p1);
+    p2 = NudgeVertex(p2);
+    p3 = NudgeVertex(p3);
+
+    AddQuadToHexMeshUnnudged(Mesh, p0, p1, p2, p3);
 }
 
 internal void
@@ -413,7 +441,9 @@ TriangulateConnection(hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v
             v3 p2 = CrestV3Add(p1, Bridge);
             v3 p3 = CrestV3Add(p0, Bridge);
 
-            p2.y = p3.y = Neighbour.Elevation * HEX_ELEVATION_STEP;
+            p2.y = p3.y = Neighbour.Position.y;
+
+
             if(GetHexEdgeType(Cell.Elevation, Neighbour.Elevation) == HEX_EDGE_TERRACE) {
                 TriangulateEdgeTerraces(Mesh, p1, p0, Cell, p2, p3, Neighbour);
             }
@@ -426,7 +456,7 @@ TriangulateConnection(hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v
                 hex_cell NextNeighbour = *Cell.Neighbours[NextDirection];
 
                 v3 p4 = CrestV3Add(p1, GetBridgeLocation(Direction + 1));
-                p4.y = NextNeighbour.Elevation * HEX_ELEVATION_STEP;
+                p4.y = NextNeighbour.Position.y;
                 //Note(Zen): Deduce orientation
                 if(Cell.Elevation <= Neighbour.Elevation) {
                     if(Cell.Elevation <= NextNeighbour.Elevation) {
