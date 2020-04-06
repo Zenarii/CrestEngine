@@ -3,9 +3,52 @@ internal hex_cell
 CreateCell(int x, int z) {
     hex_cell Result = {0};
     Result.Position = v3((x + z * 0.5f - z/2) * HEX_INNER_DIAMETER, 0.f, z * HEX_OUTER_RADIUS * 1.5f);
-    Result.Colour = v3(1.f, 1.f, 1.f);
+    v3 Sample = Noise3DSample(Result.Position);
+    Result.Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
+    Result.Colour = v3(0.8f, 0.6f, 0.7f);
     return Result;
 }
+
+
+internal void
+AddCellsToHexGrid(hex_grid * Grid) {
+    for(i32 z = 0; z < Grid->Height; ++z) {
+        for(i32 x = 0; x < Grid->Width; ++x) {
+
+            i32 Index = z * HEX_MAX_WIDTH_IN_CELLS + x;
+            Grid->Cells[Index] = CreateCell(x, z);
+
+            hex_cell * Cell = &Grid->Cells[Index];
+            Cell->Index = Index;
+
+            if(x > 0) {
+                Cell->Neighbours[HEX_DIRECTION_W] = &Grid->Cells[Index - 1];
+                Grid->Cells[Index - 1].Neighbours[HEX_DIRECTION_E] = Cell;
+            }
+            if(z > 0) {
+                if((z % 2) == 0) {
+                    Cell->Neighbours[HEX_DIRECTION_NE] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS];
+                    Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS].Neighbours[HEX_DIRECTION_SW] = Cell;
+
+                    if(x > 0) {
+                        Cell->Neighbours[HEX_DIRECTION_NW] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS - 1];
+                        Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS - 1].Neighbours[HEX_DIRECTION_SE] = Cell;
+                    }
+                }
+                else {
+                    Cell->Neighbours[HEX_DIRECTION_NW] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS];
+                    Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS].Neighbours[HEX_DIRECTION_SE] = Cell;
+
+                    if(x < HEX_MAX_WIDTH_IN_CELLS - 1) {
+                        Cell->Neighbours[HEX_DIRECTION_NE] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS + 1];
+                        Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS + 1].Neighbours[HEX_DIRECTION_SW] = Cell;
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 //Note(Zen): For some reason C doesn't have a round function apparently?
 internal i32
@@ -47,12 +90,22 @@ CartesianToHexCoords(r32 x, r32 z) {
 
 internal i32
 GetCellIndex(hex_coordinates Coords) {
-    u32 Result = Coords.z * HEX_CHUNK_WIDTH + Coords.x + (Coords.z/2);
-    if(Result > HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT) return -1;
+    u32 Result = Coords.z * HEX_MAX_WIDTH_IN_CELLS + Coords.x + (Coords.z/2);
+    if(Result > HEX_MAX_CHUNKS * HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT) return -1;
 
     return Result;
 }
 
+internal i32
+GetChunkIndexFromCellIndex(i32 CellIndex) {
+    i32 CellPositionInRow = CellIndex % HEX_MAX_WIDTH_IN_CELLS;
+    i32 CellPositionInColumn = CellIndex / HEX_MAX_WIDTH_IN_CELLS;
+
+    i32 ChunkX = CellPositionInRow / HEX_CHUNK_WIDTH;
+    i32 ChunkZ = CellPositionInColumn / HEX_CHUNK_HEIGHT;
+
+    return ChunkZ * HEX_MAX_CHUNKS_WIDE + ChunkX;
+}
 
 /*
 Collisions Calculations:
@@ -118,10 +171,10 @@ RayTriangleIntersect(v3 RayOrigin, v3 RayDirection, collision_triangle * Triangl
 */
 
 internal void
-DrawHexMesh(C3DRenderer * Renderer, hex_mesh * Mesh) {
-    glUseProgram(Mesh->Shader);
+DrawHexMesh(hex_grid * Grid, hex_mesh * Mesh) {
+    glUseProgram(Grid->MeshShader);
 
-    glBindTextureUnit(0, Renderer->Textures[0]);
+    glBindTextureUnit(0, Grid->MeshTexture);
 
     glBindVertexArray(Mesh->VAO);
     glDrawArrays(GL_TRIANGLES, 0, Mesh->VerticesCount);
@@ -539,13 +592,13 @@ TriangulateCell(hex_mesh * Mesh, hex_cell Cell) {
 }
 
 internal void
-TriangulateMesh(hex_grid * Grid) {
+TriangulateMesh(hex_grid * Grid, hex_grid_chunk * Chunk) {
     //this will be the chunk's mesh later on
-    hex_mesh * Mesh = &Grid->HexMesh;
+    hex_mesh * Mesh = &Chunk->HexMesh;
     Mesh->VerticesCount = 0;
-    for(i32 x = 0; x < HEX_CHUNK_WIDTH; ++x) {
-        for(i32 z = 0; z < HEX_CHUNK_HEIGHT; ++z) {
-            hex_cell Cell = Grid->Cells[z * HEX_CHUNK_WIDTH + x];
+    for(i32 x = Chunk->X * HEX_CHUNK_WIDTH; x < HEX_CHUNK_WIDTH * (Chunk->X + 1); ++x) {
+        for(i32 z = Chunk->Z * HEX_CHUNK_HEIGHT; z < HEX_CHUNK_HEIGHT * (Chunk->Z + 1); ++z) {
+            hex_cell Cell = Grid->Cells[z * HEX_CHUNK_WIDTH * HEX_MAX_CHUNKS_HIGH + x];
             TriangulateCell(Mesh, Cell);
         }
     }
@@ -562,7 +615,6 @@ internal void
 InitHexMesh(hex_mesh * Mesh, b32 ForEditor) {
     //Probably a way to make all the meshes use the same shader
     //May not matter, in the game state map will be one whole opaque mesh
-    Mesh->Shader = CrestShaderInit("../assets/hex_shader.vs", "../assets/hex_shader.fs");
     {
         glGenVertexArrays(1, &Mesh->VAO);
         glBindVertexArray(Mesh->VAO);
@@ -592,13 +644,6 @@ InitHexMesh(hex_mesh * Mesh, b32 ForEditor) {
         glEnableVertexAttribArray(4);
     }
 
-    //Note(Zen): Set up Texture Array
-    {
-        glUseProgram(Mesh->Shader);
-        i32 Location = glGetUniformLocation(Mesh->Shader, "Images");
-        int samplers[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-        glUniform1iv(Location, 16, samplers);
-    }
 }
 
 internal void
@@ -610,4 +655,76 @@ CollisionMeshFromHexMesh(collision_mesh * CollisionMesh, hex_mesh * Mesh) {
                                                  Mesh->Vertices[3 * Index + 2].Position);
     }
     CollisionMesh->TriangleCount = Index;
+}
+
+internal void
+AddLargeCollisionMeshToChunk(hex_grid_chunk * Chunk) {
+    r32 MinX = Chunk->X * HEX_CHUNK_WIDTH * HEX_INNER_DIAMETER - HEX_INNER_RADIUS - HEX_NUDGE_STRENGTH;
+    r32 MaxX = MinX + HEX_CHUNK_WIDTH * HEX_INNER_DIAMETER + HEX_INNER_RADIUS + 2.f * HEX_NUDGE_STRENGTH;
+
+    r32 MinY = -HEX_ELEVATION_NUDGE_STRENGTH;
+    r32 MaxY = (r32)HEX_MAX_ELEVATION * HEX_ELEVATION_STEP + HEX_ELEVATION_STEP;
+
+    r32 MinZ = Chunk->Z * HEX_CHUNK_HEIGHT * HEX_OUTER_DIAMETER - 1.5f * HEX_OUTER_DIAMETER * Chunk->Z - HEX_OUTER_RADIUS * 0.5f - HEX_NUDGE_STRENGTH;
+    r32 MaxZ = (Chunk->Z + 1) * HEX_CHUNK_HEIGHT * HEX_OUTER_DIAMETER - 1.5f * HEX_OUTER_DIAMETER * (Chunk->Z + 1) + HEX_NUDGE_STRENGTH + HEX_OUTER_RADIUS;
+
+    //top face
+    Chunk->LargeCollisionMesh.Triangles[0] = CreateTriangle(
+        v3(MinX, MaxY, MinZ),
+        v3(MinX, MaxY, MaxZ),
+        v3(MaxX, MaxY, MinZ)
+    );
+    Chunk->LargeCollisionMesh.Triangles[1] = CreateTriangle(
+        v3(MaxX, MaxY, MaxZ),
+        v3(MinX, MaxY, MaxZ),
+        v3(MaxX, MaxY, MinZ)
+    );
+
+    //Back Face
+    Chunk->LargeCollisionMesh.Triangles[2] = CreateTriangle(
+        v3(MinX, MinY, MinZ),
+        v3(MinX, MaxY, MinZ),
+        v3(MaxX, MaxY, MinZ)
+    );
+    Chunk->LargeCollisionMesh.Triangles[3] = CreateTriangle(
+        v3(MaxX, MinY, MinZ),
+        v3(MinX, MinY, MinZ),
+        v3(MaxX, MaxY, MinZ)
+    );
+
+    //Front Face
+    Chunk->LargeCollisionMesh.Triangles[4] = CreateTriangle(
+        v3(MinX, MinY, MaxZ),
+        v3(MinX, MaxY, MaxZ),
+        v3(MaxX, MaxY, MaxZ)
+    );
+    Chunk->LargeCollisionMesh.Triangles[5] = CreateTriangle(
+        v3(MaxX, MinY, MaxZ),
+        v3(MinX, MinY, MaxZ),
+        v3(MaxX, MaxY, MaxZ)
+    );
+
+    //Left Face
+    Chunk->LargeCollisionMesh.Triangles[6] = CreateTriangle(
+        v3(MinX, MinY, MinZ),
+        v3(MinX, MaxY, MinZ),
+        v3(MinX, MaxY, MaxZ)
+    );
+    Chunk->LargeCollisionMesh.Triangles[7] = CreateTriangle(
+        v3(MinX, MinY, MinZ),
+        v3(MinX, MinY, MaxZ),
+        v3(MinX, MaxY, MaxZ)
+    );
+
+    //Right Face
+    Chunk->LargeCollisionMesh.Triangles[8] = CreateTriangle(
+        v3(MaxX, MinY, MinZ),
+        v3(MaxX, MaxY, MinZ),
+        v3(MaxX, MaxY, MaxZ)
+    );
+    Chunk->LargeCollisionMesh.Triangles[9] = CreateTriangle(
+        v3(MaxX, MinY, MinZ),
+        v3(MaxX, MinY, MaxZ),
+        v3(MaxX, MaxY, MaxZ)
+    );
 }

@@ -5,49 +5,33 @@ EditorStateInit(app * App) {
     editor_state * State = &App->EditorState;
     State->Camera = CameraInit();
 
-    //Note(Zen): Create the hex mesh
-    App->EditorState.HexGrid.CollisionMesh.TriangleCount = 0;
+
+    hex_grid * Grid = &App->EditorState.HexGrid;
+    {
+        Grid->MeshShader = CrestShaderInit("../assets/hex_shader.vs", "../assets/hex_shader.fs");
+        glUseProgram(Grid->MeshShader);
+        i32 Location = glGetUniformLocation(Grid->MeshShader, "Images");
+        int samplers[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+        glUniform1iv(Location, 16, samplers);
+
+        Grid->MeshTexture = CasLoadTexture("../assets/White.png", GL_LINEAR);
+    }
+    Grid->Width = 22;
+    Grid->Height = HEX_MAX_CHUNKS_HIGH * HEX_CHUNK_HEIGHT;
+    AddCellsToHexGrid(Grid);
     hex_cell * Cells = App->EditorState.HexGrid.Cells;
-
-    InitHexMesh(&App->EditorState.HexGrid.HexMesh, 1);
-
-    //Setup hex grid
-    for(i32 z = 0; z < HEX_CHUNK_HEIGHT; ++z) {
-        for(i32 x = 0; x < HEX_CHUNK_WIDTH; ++x) {
-            i32 Index = z * HEX_CHUNK_WIDTH + x;
-            Cells[Index] = CreateCell(x, z);
-            hex_cell * Cell = &Cells[Index];
-            //Connect the cells to their Neighbours
-            if(x > 0) {
-                Cell->Neighbours[HEX_DIRECTION_W] = &Cells[Index - 1];
-                Cells[Index - 1].Neighbours[HEX_DIRECTION_E] = Cell;
-            }
-
-            if(z > 0) {
-                if((z % 2) == 0) {
-                    Cell->Neighbours[HEX_DIRECTION_NE] = &Cells[Index - HEX_CHUNK_WIDTH];
-                    Cells[Index - HEX_CHUNK_WIDTH].Neighbours[HEX_DIRECTION_SW] = Cell;
-
-                    if(x > 0) {
-                        Cell->Neighbours[HEX_DIRECTION_NW] = &Cells[Index - HEX_CHUNK_WIDTH - 1];
-                        Cells[Index - HEX_CHUNK_WIDTH - 1].Neighbours[HEX_DIRECTION_SE] = Cell;
-                    }
-                }
-                else {
-                    Cell->Neighbours[HEX_DIRECTION_NW] = &Cells[Index - HEX_CHUNK_WIDTH];
-                    Cells[Index - HEX_CHUNK_WIDTH].Neighbours[HEX_DIRECTION_SE] = Cell;
-
-                    if(x < HEX_CHUNK_WIDTH - 1) {
-                        Cell->Neighbours[HEX_DIRECTION_NE] = &Cells[Index - HEX_CHUNK_WIDTH + 1];
-                        Cells[Index - HEX_CHUNK_WIDTH + 1].Neighbours[HEX_DIRECTION_SW] = Cell;
-                    }
-                }
-            }
+    for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
+        for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
+            hex_grid_chunk * Chunk = &App->EditorState.HexGrid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x];
+            Chunk->X = x;
+            Chunk->Z = z;
+            InitHexMesh(&Chunk->HexMesh, 1);
+            TriangulateMesh(Grid, Chunk);
+            CollisionMeshFromHexMesh(&Chunk->CollisionMesh, &Chunk->HexMesh);
+            AddLargeCollisionMeshToChunk(Chunk);
         }
     }
 
-    TriangulateMesh(&App->EditorState.HexGrid);
-    CollisionMeshFromHexMesh(&State->HexGrid.CollisionMesh, &State->HexGrid.HexMesh);
     //Set default editor settings
     State->Settings.Colour = EditorColourV[EDITOR_COLOUR_COUNT-1];
     State->Settings.Elevation = 1;
@@ -79,31 +63,74 @@ doEditorUI(CrestUI * ui, hex_edit_settings Settings) {
     return Settings;
 }
 
-typedef struct edit_cell_result edit_cell_result;
-struct edit_cell_result {
-    b32 VisualsChanged;
-    b32 CollisionsChanged;
-};
 
-internal edit_cell_result
+internal b32
 EditCell(hex_cell * Cell, hex_edit_settings Settings) {
-    edit_cell_result Result = {0};
+    b32 Result = 0;
     if(!CrestV3Equals(Cell->Colour, Settings.Colour)) {
         Cell->Colour = Settings.Colour;
-        Result.VisualsChanged = 1;
+        Result = 1;
     }
     if(Cell->Elevation != Settings.Elevation) {
         Cell->Elevation = Settings.Elevation;
         Cell->Position.y = Cell->Elevation * HEX_ELEVATION_STEP;
         v3 Sample = Noise3DSample(Cell->Position);
         Cell->Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
-        Result.VisualsChanged = 1;
-        Result.CollisionsChanged = 1;
+        Result = 1;
     }
     return Result;
 }
 
+internal b32
+CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settings, ray_cast RayCast) {
+    b32 CollidedWithThisChunk = 0;
+    hex_grid_chunk * Chunk = &Grid->Chunks[ChunkIndex];
+
+    for(i32 TriIndex = 0; TriIndex < Chunk->CollisionMesh.TriangleCount; ++TriIndex) {
+        collision_triangle Triangle = Chunk->CollisionMesh.Triangles[TriIndex];
+        collision_result Hit = RayTriangleIntersect(RayCast.Origin, RayCast.Direction, &Triangle);
+
+        if(Hit.DidIntersect) {
+            CollidedWithThisChunk = 1;
+            hex_coordinates SelectedHex = CartesianToHexCoords(Hit.IntersectionPoint.x, Hit.IntersectionPoint.z);
+            i32 CellIndex = GetCellIndex(SelectedHex);
+            //change the colour
+            if(CellIndex > -1) {
+                b32 Result = EditCell(&Grid->Cells[CellIndex], Settings);
+                if(Result) {
+                    TriangulateMesh(Grid, Chunk);
+                    CollisionMeshFromHexMesh(&Chunk->CollisionMesh, &Chunk->HexMesh);
+
+                    for(i32 i = 0; i < 6; ++i) {
+                        if(Grid->Cells[CellIndex].Neighbours[i]) {
+                            hex_cell Neighbour = *Grid->Cells[CellIndex].Neighbours[i];
+                            i32 NeighbourChunkIndex = GetChunkIndexFromCellIndex(Neighbour.Index);
+                            if(NeighbourChunkIndex != ChunkIndex) {
+                                TriangulateMesh(Grid, &Grid->Chunks[NeighbourChunkIndex]);
+                                CollisionMeshFromHexMesh(&Grid->Chunks[NeighbourChunkIndex].CollisionMesh, &Grid->Chunks[NeighbourChunkIndex].HexMesh);
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    return CollidedWithThisChunk;
+}
+
+internal b32
+CheckRayThroughChunk(hex_grid_chunk * Chunk, ray_cast RayCast) {
+    for(i32 i = 0; i < 10; ++i) {
+        collision_result Result = RayTriangleIntersect(RayCast.Origin, RayCast.Direction, &Chunk->LargeCollisionMesh.Triangles[i]);
+        if(Result.DidIntersect) return 1;
+    }
+    return 0;
+}
+
 global b32 DebugCollisions = 0;
+global b32 DebugLargeCollions = 0;
 
 static void
 EditorStateUpdate(app * App) {
@@ -133,7 +160,7 @@ EditorStateUpdate(app * App) {
     if(App->KeyDown[KEY_E]) Camera->Rotation   -= 3 * App->Delta;
     //Note(Zen): Clamp camera angle
     if(Camera->Rotation > PI * 0.5f) Camera->Rotation = PI * 0.5f;
-    if(Camera->Rotation < PI * 0.25f) Camera->Rotation = PI * 0.25f;
+    if(Camera->Rotation < PI * 0.1f) Camera->Rotation = PI * 0.1f;
 
 
     EditorState->Settings = doEditorUI(&App->UI, EditorState->Settings);
@@ -145,17 +172,18 @@ EditorStateUpdate(app * App) {
     matrix View = ViewMatrixFromCamera(Camera);
     matrix Model = IdentityMatrix;
 
-    CrestShaderSetMatrix(EditorState->HexGrid.HexMesh.Shader, "View", &View);
-    CrestShaderSetMatrix(EditorState->HexGrid.HexMesh.Shader, "Model", &Model);
-    CrestShaderSetMatrix(EditorState->HexGrid.HexMesh.Shader, "Projection", &Projection);
+    CrestShaderSetMatrix(EditorState->HexGrid.MeshShader, "View", &View);
+    CrestShaderSetMatrix(EditorState->HexGrid.MeshShader, "Model", &Model);
+    CrestShaderSetMatrix(EditorState->HexGrid.MeshShader, "Projection", &Projection);
 
-    CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "ViewPosition", Camera->Position);
-    CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "LightColour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(EditorState->HexGrid.HexMesh.Shader, "LightPosition", v3(3.f, 8.f, 3.f));
+    CrestShaderSetV3(EditorState->HexGrid.MeshShader, "ViewPosition", Camera->Position);
+    CrestShaderSetV3(EditorState->HexGrid.MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(EditorState->HexGrid.MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
 
-
-    hex_mesh HexMesh = App->EditorState.HexGrid.HexMesh;
-    DrawHexMesh(&App->Renderer, &HexMesh);
+    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+        hex_mesh * HexMesh = &App->EditorState.HexGrid.Chunks[i].HexMesh;
+        DrawHexMesh(&App->EditorState.HexGrid, HexMesh);
+    }
 
     //Note(Zen): Check collisions
     v4 RayClip = v4(0, 0, -1.f, 1.f);
@@ -169,51 +197,74 @@ EditorStateUpdate(app * App) {
     v3 RayDirection = CrestV3Normalise(v3(RayWorld.x, RayWorld.y, RayWorld.z));
 
     v3 RayOrigin = Camera->Position;
+
+    ray_cast RayCast = {RayOrigin, RayDirection};
+
     //Note(Zen): Check for collisions
     char Buffer[32];
     if(App->LeftMouseDown && !App->UI.IsMouseOver) {
-        for(i32 TriIndex = 0; TriIndex < App->EditorState.HexGrid.CollisionMesh.TriangleCount; ++TriIndex) {
-            collision_triangle Triangle = App->EditorState.HexGrid.CollisionMesh.Triangles[TriIndex];
-            collision_result Hit = RayTriangleIntersect(RayOrigin, RayDirection, &Triangle);
+        for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
+            for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
+                i32 Index = z * HEX_MAX_CHUNKS_WIDE + x;
+                hex_grid_chunk * Chunk = &App->EditorState.HexGrid.Chunks[Index];
 
-
-            if(Hit.DidIntersect) {
-                hex_coordinates SelectedHex = CartesianToHexCoords(Hit.IntersectionPoint.x, Hit.IntersectionPoint.z);
-                i32 Index = GetCellIndex(SelectedHex);
-                //change the colour
-                if(Index > -1) {
-                    edit_cell_result Result = EditCell(&EditorState->HexGrid.Cells[Index], EditorState->Settings);
-                    if(Result.VisualsChanged) TriangulateMesh(&EditorState->HexGrid);
-                    if(Result.CollisionsChanged) CollisionMeshFromHexMesh(&EditorState->HexGrid.CollisionMesh, &EditorState->HexGrid.HexMesh);
+                b32 HitChunk = CheckRayThroughChunk(Chunk, RayCast);
+                if(HitChunk) {
+                    //CheckCollisionsOnChunk will also edit the cell atm
+                    b32 HitCell = CheckCollisionsOnChunk(Index, &App->EditorState.HexGrid, EditorState->Settings, RayCast);
+                    if(HitCell) goto EditStateEndOfCollisions;
                 }
+
             }
         }
+        EditStateEndOfCollisions:;
     }
+
+
+    CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
+    CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
+    CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
 
     //Note(Zen): Draw the Collision Shapes
     DebugCollisions ^= AppKeyJustDown(KEY_T);
     if(DebugCollisions) {
-        CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
-        CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
-        CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
-
-
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        for(i32 TriIndex = 0; TriIndex < App->EditorState.HexGrid.CollisionMesh.TriangleCount; ++TriIndex) {
-            collision_triangle Triangle = App->EditorState.HexGrid.CollisionMesh.Triangles[TriIndex];
-            C3DDrawTri(&App->Renderer, Triangle.Vertex0, Triangle.Vertex1, Triangle.Vertex2, v3(1.f, 0.f, 0.f));
+        for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
+            for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
+                collision_mesh * CollisionMesh = &App->EditorState.HexGrid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x].CollisionMesh;
+                for(i32 TriIndex = 0; TriIndex < CollisionMesh->TriangleCount; ++TriIndex) {
+                    collision_triangle Triangle = CollisionMesh->Triangles[TriIndex];
+                    C3DDrawTri(&App->Renderer, Triangle.Vertex0, Triangle.Vertex1, Triangle.Vertex2, v3(1.f, 0.f, 0.f));
+                }
+            }
         }
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    //Crashed Game @TODO hunt for this bug
-    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_R)) {
-        InitHexMesh(&App->EditorState.HexGrid.HexMesh, 1);
+    DebugLargeCollions ^= AppKeyJustDown(KEY_P);
+    if(DebugLargeCollions) {
+        C3DFlush(&App->Renderer);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
+            for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
+                for(i32 i = 0; i < 10; ++i) {
+                    large_collision_mesh * LargeCollisionMesh = &App->EditorState.HexGrid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x].LargeCollisionMesh;
+
+                    collision_triangle Triangle = LargeCollisionMesh->Triangles[i];
+                    C3DDrawTri(&App->Renderer, Triangle.Vertex0, Triangle.Vertex1, Triangle.Vertex2, v3(0.f, 0.9f, 1.f));
+                }
+            }
+        }
+        C3DFlush(&App->Renderer);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    sprintf(Buffer, "%d/%d Vertices", EditorState->HexGrid.HexMesh.VerticesCount, MAX_HEX_VERTICES);
-    CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10.f, App->ScreenHeight - 42.f, 128, 32.f), Buffer);
+    // From Before Chunk Rework
+    // if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_R)) {
+    //     InitHexMesh(&App->EditorState.HexGrid.HexMesh, 1);
+    // }
+
 }
 #undef UI_ID_OFFSET

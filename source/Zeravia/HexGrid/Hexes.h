@@ -109,6 +109,7 @@ struct hex_coordinates {
 
 typedef struct hex_cell hex_cell;
 struct hex_cell {
+    i32 Index; //Position in hex_grid's cell array
     i32 Elevation;
     v3 Position;
     v3 Colour;
@@ -118,6 +119,12 @@ struct hex_cell {
 
 //Collisions
 #define MAX_COLLISION_TRIANGLES 4096
+
+typedef struct ray_cast ray_cast;
+struct ray_cast {
+    v3 Origin;
+    v3 Direction;
+};
 
 typedef struct collision_triangle collision_triangle;
 struct collision_triangle {
@@ -132,22 +139,34 @@ struct collision_mesh {
     collision_triangle Triangles[MAX_COLLISION_TRIANGLES];
 };
 
+//Used to see if a chunk has been edited before using the finer chunks
+typedef struct large_collision_mesh large_collision_mesh;
+struct large_collision_mesh {
+    collision_triangle Triangles[10]; //6 sides of a cube but don't need the bottom face
+};
+
 /*
     World Storage
 */
 
 typedef struct hex_grid_chunk hex_grid_chunk;
 struct hex_grid_chunk {
-    hex_cell Cells[HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT];
+    i32 X, Z;
     hex_mesh HexMesh;
     collision_mesh CollisionMesh;
+    large_collision_mesh LargeCollisionMesh;
 };
 
 
-#define HEX_MAX_CHUNKS 128
+#define HEX_MAX_CHUNKS_WIDE 4
+#define HEX_MAX_WIDTH_IN_CELLS (HEX_MAX_CHUNKS_WIDE * HEX_CHUNK_WIDTH)
+#define HEX_MAX_CHUNKS_HIGH 4
+#define HEX_MAX_CHUNKS (HEX_MAX_CHUNKS_WIDE * HEX_MAX_CHUNKS_HIGH)
 
 typedef struct hex_grid hex_grid;
 struct hex_grid {
-    i32 Width, Height;
-    hex_grid_chunk[HEX_MAX_CHUNKS];
+    u32 MeshShader, MeshTexture;
+    i32 Width, Height; //In cells
+    hex_cell Cells[HEX_MAX_CHUNKS * HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT];
+    hex_grid_chunk Chunks[HEX_MAX_CHUNKS];
 };
