@@ -18,7 +18,9 @@ global v3 EditorColourV[] = {
 
 typedef struct hex_edit_settings hex_edit_settings;
 struct hex_edit_settings {
+    b32 EditColour;
     v3 Colour;
+    b32 EditElevation;
     i32 Elevation;
 };
 

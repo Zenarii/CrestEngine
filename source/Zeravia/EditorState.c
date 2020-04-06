@@ -33,8 +33,10 @@ EditorStateInit(app * App) {
     }
 
     //Set default editor settings
+    State->Settings.EditColour = 0;
     State->Settings.Colour = EditorColourV[EDITOR_COLOUR_COUNT-1];
-    State->Settings.Elevation = 1;
+    State->Settings.EditElevation = 0;
+    State->Settings.Elevation = 0;
 }
 
 internal hex_edit_settings
@@ -46,17 +48,20 @@ doEditorUI(CrestUI * ui, hex_edit_settings Settings) {
         Colours
     */
 
-    for(i32 ColourIndex = 0; ColourIndex < EDITOR_COLOUR_COUNT; ++ColourIndex) {
-        Settings.Colour = CrestUIButton(ui, GENERIC_ID(ColourIndex), EditorColourString[ColourIndex])
-                              ? EditorColourV[ColourIndex] : Settings.Colour;
+    Settings.EditColour = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditColour, "Colour");
+    if(Settings.EditColour) {
+        for(i32 ColourIndex = 0; ColourIndex < EDITOR_COLOUR_COUNT; ++ColourIndex) {
+            Settings.Colour = CrestUIButton(ui, GENERIC_ID(ColourIndex), EditorColourString[ColourIndex])
+                                  ? EditorColourV[ColourIndex] : Settings.Colour;
+        }
     }
-
     /*
         Elevation
     */
-
-    Settings.Elevation = CrestUISliderInt(ui, GENERIC_ID(0), Settings.Elevation, HEX_MAX_ELEVATION, "Elevation");
-
+    Settings.EditElevation = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditElevation, "Elevation");
+    if(Settings.EditElevation) {
+        Settings.Elevation = CrestUISliderInt(ui, GENERIC_ID(0), Settings.Elevation, HEX_MAX_ELEVATION, "Elevation");
+    }
     CrestUIPopRow(ui);
     CrestUIPopPanel(ui);
 
@@ -67,11 +72,11 @@ doEditorUI(CrestUI * ui, hex_edit_settings Settings) {
 internal b32
 EditCell(hex_cell * Cell, hex_edit_settings Settings) {
     b32 Result = 0;
-    if(!CrestV3Equals(Cell->Colour, Settings.Colour)) {
+    if(Settings.EditColour && !CrestV3Equals(Cell->Colour, Settings.Colour)) {
         Cell->Colour = Settings.Colour;
         Result = 1;
     }
-    if(Cell->Elevation != Settings.Elevation) {
+    if(Settings.EditElevation && (Cell->Elevation != Settings.Elevation)) {
         Cell->Elevation = Settings.Elevation;
         Cell->Position.y = Cell->Elevation * HEX_ELEVATION_STEP;
         v3 Sample = Noise3DSample(Cell->Position);

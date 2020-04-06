@@ -176,6 +176,16 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
                 CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
+            case CREST_UI_TOGGLE_BUTTON: {
+                v4 colour = Widget->On ? DefaultStyle.ToggleButtonColour : DefaultStyle.ButtonColour;
+                r32 CheckBoxPosition = Widget->rect.width + Widget->rect.x - 30.f;
+
+                CrestPushFilledRectD(Renderer, colour, v3(CheckBoxPosition, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.height, Widget->rect.height));
+                CrestPushBorder(Renderer, DefaultStyle.ButtonBorderColour, v3(CheckBoxPosition, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.height, Widget->rect.height));
+
+                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+            } break;
+
             case CREST_UI_SLIDER: {
                 CrestPushFilledRectD(Renderer, DefaultStyle.ButtonColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width, Widget->rect.height));
                 CrestPushFilledRectD(Renderer, DefaultStyle.ButtonHotColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width * Widget->Value, Widget->rect.height));
@@ -258,6 +268,66 @@ internal b32
 CrestUIButton(CrestUI *ui, CrestUIID ID, char * Text) {
     v4 rect = GetNextAutoLayoutPosition(ui);
     return CrestUIButtonP(ui, ID, rect, Text);
+}
+
+internal b32
+CrestUIToggleButtonP(CrestUI * ui, CrestUIID ID, v4 rect, b32 On, char * Text) {
+    b32 Pressed = 0;
+
+    b32 MouseOver = (ui->MouseX >= rect.x &&
+                       ui->MouseY >= rect.y &&
+                       ui->MouseX <= rect.x + rect.width&&
+                       ui->MouseY <= rect.y + rect.height);
+    ui->IsMouseOver = MouseOver ? 1 : ui->IsMouseOver;
+
+    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver && CrestUIIDEquals(CrestUIIDNull(), ui->hot)) {
+        ui->hot = ID;
+    }
+    else if(CrestUIIDEquals(ui->hot, ID) && !MouseOver) {
+        ui->hot = CrestUIIDNull();
+    }
+
+    if(CrestUIIDEquals(ui->active, ID)) {
+        if(!ui->LeftMouseDown) {
+            Pressed = CrestUIIDEquals(ui->hot, ID);
+            ui->active = CrestUIIDNull();
+        }
+        if(!CrestUIIDEquals(ui->hot, ID)) {
+            ui->active = CrestUIIDNull();
+        }
+    }
+    else {
+        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown && CrestUIIDEquals(CrestUIIDNull(), ui->active)) {
+            ui->active = ID;
+        }
+    }
+
+    if(Pressed) On = !On;
+
+    CrestUIWidget *Widget = ui->Widgets + ui->Count++;
+    Widget->id = ID;
+    Widget->Type = CREST_UI_TOGGLE_BUTTON;
+    Widget->TextFloat = CREST_UI_LEFT;
+    Widget->rect = rect;
+    Widget->On = On;
+    strcpy(Widget->Text, Text);
+
+    if(ui->PanelStackPosition) {
+        Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
+    }
+    else {
+        Widget->Precedence = 0.f;
+    }
+
+
+    return On;
+}
+
+
+internal b32
+CrestUIToggleButton(CrestUI * ui, CrestUIID ID, b32 On, char * Text) {
+    v4 rect = GetNextAutoLayoutPosition(ui);
+    return CrestUIToggleButtonP(ui, ID, rect, On, Text);
 }
 
 internal r32
