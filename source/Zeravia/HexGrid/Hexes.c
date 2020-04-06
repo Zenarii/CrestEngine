@@ -39,7 +39,7 @@ AddCellsToHexGrid(hex_grid * Grid) {
                     Cell->Neighbours[HEX_DIRECTION_NW] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS];
                     Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS].Neighbours[HEX_DIRECTION_SE] = Cell;
 
-                    if(x < HEX_MAX_WIDTH_IN_CELLS - 1) {
+                    if(x < Grid->Width - 1) {
                         Cell->Neighbours[HEX_DIRECTION_NE] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS + 1];
                         Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS + 1].Neighbours[HEX_DIRECTION_SW] = Cell;
                     }

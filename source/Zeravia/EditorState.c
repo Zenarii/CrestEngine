@@ -16,7 +16,7 @@ EditorStateInit(app * App) {
 
         Grid->MeshTexture = CasLoadTexture("../assets/White.png", GL_LINEAR);
     }
-    Grid->Width = 22;
+    Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
     Grid->Height = HEX_MAX_CHUNKS_HIGH * HEX_CHUNK_HEIGHT;
     AddCellsToHexGrid(Grid);
     hex_cell * Cells = App->EditorState.HexGrid.Cells;
