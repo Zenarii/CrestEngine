@@ -22,6 +22,7 @@ struct hex_edit_settings {
     v3 Colour;
     b32 EditElevation;
     i32 Elevation;
+    i32 BrushSize;
 };
 
 

@@ -2,10 +2,13 @@
 internal hex_cell
 CreateCell(int x, int z) {
     hex_cell Result = {0};
+
     Result.Position = v3((x + z * 0.5f - z/2) * HEX_INNER_DIAMETER, 0.f, z * HEX_OUTER_RADIUS * 1.5f);
     v3 Sample = Noise3DSample(Result.Position);
     Result.Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
+
     Result.Colour = v3(0.8f, 0.6f, 0.7f);
+
     return Result;
 }
 
@@ -646,15 +649,61 @@ InitHexMesh(hex_mesh * Mesh, b32 ForEditor) {
 
 }
 
+/*
+    Generating Collision Meshes
+*/
+
 internal void
-CollisionMeshFromHexMesh(collision_mesh * CollisionMesh, hex_mesh * Mesh) {
-    u32 Index = 0;
-    for(; 3 * Index < Mesh->VerticesCount; ++Index) {
-        CollisionMesh->Triangles[Index] = CreateTriangle(Mesh->Vertices[3 * Index].Position,
-                                                 Mesh->Vertices[3 * Index + 1].Position,
-                                                 Mesh->Vertices[3 * Index + 2].Position);
+TriangulateCollisionConnection(collision_mesh * CollisionMesh, v3 p0, v3 p1, hex_cell Cell, i32 Direction) {
+    if(Direction < HEX_DIRECTION_NW) {
+        hex_direction NextDirection = Direction + 1;
+        if(Cell.Neighbours[Direction]) {
+            hex_cell Neighbour = *Cell.Neighbours[Direction];
+
+            v3 Bridge = GetBridgeLocation(Direction);
+            Bridge.y = Neighbour.Position.y - Cell.Position.y;
+            v3 p2 = CrestV3Add(p1, Bridge);
+            v3 p3 = CrestV3Add(p0, Bridge);
+
+            CollisionMesh->Triangles[CollisionMesh->TriangleCount++] = CreateTriangle(
+                NudgeVertex(p0), NudgeVertex(p1), NudgeVertex(p2)
+            );
+            CollisionMesh->Triangles[CollisionMesh->TriangleCount++] = CreateTriangle(
+                NudgeVertex(p2), NudgeVertex(p3), NudgeVertex(p0)
+            );
+        }
     }
-    CollisionMesh->TriangleCount = Index;
+}
+
+internal void
+TriangulateCollisionCell(collision_mesh * CollisionMesh, hex_cell Cell) {
+    v3 Center = Cell.Position;
+    for(i32 Direction = 0; Direction < 6; ++Direction) {
+        i32 NextDirection = (Direction + 1) % 6;
+        v3 p0 = CrestV3Add(Center, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR));
+        v3 p1 = CrestV3Add(Center, CrestV3Scale(HexCorners[NextDirection], HEX_SOLID_FACTOR));
+
+        CollisionMesh->Triangles[CollisionMesh->TriangleCount++] = CreateTriangle(
+            Center,
+            NudgeVertex(p0),
+            NudgeVertex(p1)
+        );
+        TriangulateCollisionConnection(CollisionMesh, p0, p1, Cell, Direction);
+    }
+}
+
+internal void
+CollisionMeshFromChunk(hex_grid * Grid, i32 ChunkIndex) {
+    hex_grid_chunk * Chunk = &Grid->Chunks[ChunkIndex];
+    collision_mesh * CollisionMesh = &Chunk->CollisionMesh;
+    CollisionMesh->TriangleCount = 0;
+    for(i32 x = Chunk->X * HEX_CHUNK_WIDTH; x < HEX_CHUNK_WIDTH * (Chunk->X + 1); ++x) {
+        for(i32 z = Chunk->Z * HEX_CHUNK_HEIGHT; z < HEX_CHUNK_HEIGHT * (Chunk->Z + 1); ++z) {
+            hex_cell Cell = Grid->Cells[z * HEX_CHUNK_WIDTH * HEX_MAX_CHUNKS_HIGH + x];
+            TriangulateCollisionCell(CollisionMesh, Cell);
+        }
+    }
+
 }
 
 internal void

@@ -23,7 +23,7 @@ const global v3 HexCorners[] = {
 #define HEX_BLEND_FACTOR (1.f - HEX_SOLID_FACTOR)
 #define HEX_NUDGE_STRENGTH 0.2f
 #define HEX_ELEVATION_NUDGE_STRENGTH 0.15f
-#define HEX_NOISE_SCALE 0.15f
+#define HEX_NOISE_SCALE 0.25f
 
 #define HEX_ELEVATION_STEP 0.3f
 #define HEX_MAX_ELEVATION 4

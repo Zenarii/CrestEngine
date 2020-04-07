@@ -27,7 +27,7 @@ EditorStateInit(app * App) {
             Chunk->Z = z;
             InitHexMesh(&Chunk->HexMesh, 1);
             TriangulateMesh(Grid, Chunk);
-            CollisionMeshFromHexMesh(&Chunk->CollisionMesh, &Chunk->HexMesh);
+            CollisionMeshFromChunk(Grid, z * HEX_MAX_CHUNKS_WIDE + x);
             AddLargeCollisionMeshToChunk(Chunk);
         }
     }
@@ -37,13 +37,15 @@ EditorStateInit(app * App) {
     State->Settings.Colour = EditorColourV[EDITOR_COLOUR_COUNT-1];
     State->Settings.EditElevation = 0;
     State->Settings.Elevation = 0;
+    State->Settings.BrushSize = 0;
+
 }
 
 internal hex_edit_settings
 doEditorUI(CrestUI * ui, hex_edit_settings Settings) {
 
     CrestUIPushPanel(ui, v2(10.f, 10.f), -0.1f);
-    CrestUIPushRow(ui, v2(10.f, 10.f), v2(128, 32), 1);
+    CrestUIPushRow(ui, v2(10.f, 10.f), v2(150, 32), 1);
     /*
         Colours
     */
@@ -62,6 +64,8 @@ doEditorUI(CrestUI * ui, hex_edit_settings Settings) {
     if(Settings.EditElevation) {
         Settings.Elevation = CrestUISliderInt(ui, GENERIC_ID(0), Settings.Elevation, HEX_MAX_ELEVATION, "Elevation");
     }
+    Settings.BrushSize = 0;//CrestUISliderInt(ui, GENERIC_ID(0), Settings.BrushSize, 4, "BrushSize");
+
     CrestUIPopRow(ui);
     CrestUIPopPanel(ui);
 
@@ -87,6 +91,31 @@ EditCell(hex_cell * Cell, hex_edit_settings Settings) {
 }
 
 internal b32
+EditCells(hex_grid * Grid, i32 StartCellIndex, hex_edit_settings Settings) {
+    hex_cell * StartCell = &Grid->Cells[StartCellIndex];
+    i32 CenterX = StartCellIndex % HEX_MAX_WIDTH_IN_CELLS;
+    i32 CenterZ = StartCellIndex / HEX_MAX_WIDTH_IN_CELLS;
+
+    b32 EditedACell = 0;
+
+    for(i32 r = 0, z = CenterZ - Settings.BrushSize; z <= CenterZ; ++z, ++r) {
+        for(i32 x = CenterX - r; x <= CenterX + Settings.BrushSize; ++x) {
+            i32 CellIndex = z * HEX_MAX_WIDTH_IN_CELLS + x;
+            EditedACell = EditCell(&Grid->Cells[CellIndex], Settings) ? 1 : EditedACell;
+        }
+    }
+
+    for(i32 r = 0, z = CenterZ + Settings.BrushSize; z > CenterZ; --z, ++r) {
+        for(i32 x = CenterX - Settings.BrushSize; x <= CenterX + r; ++x) {
+            i32 CellIndex = z * HEX_MAX_WIDTH_IN_CELLS + x;
+            EditedACell = EditCell(&Grid->Cells[CellIndex], Settings) ? 1 : EditedACell;
+        }
+    }
+
+    return EditedACell;
+}
+
+internal b32
 CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settings, ray_cast RayCast) {
     b32 CollidedWithThisChunk = 0;
     hex_grid_chunk * Chunk = &Grid->Chunks[ChunkIndex];
@@ -101,10 +130,10 @@ CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settin
             i32 CellIndex = GetCellIndex(SelectedHex);
             //change the colour
             if(CellIndex > -1) {
-                b32 Result = EditCell(&Grid->Cells[CellIndex], Settings);
+                b32 Result = EditCells(Grid, CellIndex, Settings);
                 if(Result) {
                     TriangulateMesh(Grid, Chunk);
-                    CollisionMeshFromHexMesh(&Chunk->CollisionMesh, &Chunk->HexMesh);
+                    CollisionMeshFromChunk(Grid, ChunkIndex);
 
                     for(i32 i = 0; i < 6; ++i) {
                         if(Grid->Cells[CellIndex].Neighbours[i]) {
@@ -112,7 +141,7 @@ CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settin
                             i32 NeighbourChunkIndex = GetChunkIndexFromCellIndex(Neighbour.Index);
                             if(NeighbourChunkIndex != ChunkIndex) {
                                 TriangulateMesh(Grid, &Grid->Chunks[NeighbourChunkIndex]);
-                                CollisionMeshFromHexMesh(&Grid->Chunks[NeighbourChunkIndex].CollisionMesh, &Grid->Chunks[NeighbourChunkIndex].HexMesh);
+                                CollisionMeshFromChunk(Grid, NeighbourChunkIndex);
                             }
                         }
                     }
