@@ -32,6 +32,9 @@ const global v3 HexCorners[] = {
 #define HEX_HORIZONTAL_TERRACE_SIZE (1.f/(r32)HEX_TERRACE_STEPS)
 #define HEX_VERTICAL_TERRACE_SIZE (1.f/(r32)(HEX_TERRACES + 1))
 
+#define HEX_WATER_ELEVATION_OFFSET -0.4f
+#define HEX_WATER_COLOUR v3(0.1f, 0.2f, 0.8f)
+
 typedef enum hex_edge_type {
     HEX_EDGE_FLAT,
     HEX_EDGE_TERRACE,
@@ -100,6 +103,7 @@ struct hex_mesh {
     //hex_mesh_vertex Vertices[MAX_HEX_VERTICES];
 };
 
+
 typedef struct hex_coordinates hex_coordinates;
 struct hex_coordinates {
     int x;
@@ -111,6 +115,7 @@ typedef struct hex_cell hex_cell;
 struct hex_cell {
     i32 Index; //Position in hex_grid's cell array
     i32 Elevation;
+    i32 WaterLevel;
     v3 Position;
     v3 Colour;
     hex_cell * Neighbours[HEX_DIRECTION_COUNT];
@@ -153,6 +158,7 @@ typedef struct hex_grid_chunk hex_grid_chunk;
 struct hex_grid_chunk {
     i32 X, Z;
     hex_mesh HexMesh;
+    hex_mesh WaterMesh;
     collision_mesh CollisionMesh;
     large_collision_mesh LargeCollisionMesh;
 };
@@ -172,6 +178,7 @@ typedef struct temporary_hex_mesh {
 typedef struct hex_grid hex_grid;
 struct hex_grid {
     u32 MeshShader, MeshTexture;
+    u32 WaterShader, WaterTexture;
     i32 Width, Height; //In cells
     hex_cell Cells[HEX_MAX_CHUNKS * HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT];
     hex_grid_chunk Chunks[HEX_MAX_CHUNKS];

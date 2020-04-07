@@ -15,6 +15,12 @@ EditorStateInit(app * App) {
         glUniform1iv(Location, 16, samplers);
 
         Grid->MeshTexture = CasLoadTexture("../assets/White.png", GL_LINEAR);
+
+        Grid->WaterShader = CrestShaderInit("../assets/hex_water_shader.vs", "../assets/hex_water_shader.fs");
+        glUseProgram(Grid->WaterShader);
+        Location = glGetUniformLocation(Grid->WaterShader, "Images");
+        glUniform1iv(Location, 16, samplers);
+        Grid->WaterTexture = Grid->MeshTexture;
     }
     Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
     Grid->Height = HEX_MAX_CHUNKS_HIGH * HEX_CHUNK_HEIGHT;
@@ -25,8 +31,10 @@ EditorStateInit(app * App) {
             hex_grid_chunk * Chunk = &App->EditorState.HexGrid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x];
             Chunk->X = x;
             Chunk->Z = z;
-            InitHexMesh(&Chunk->HexMesh, 1);
+            InitHexMesh(&Chunk->HexMesh);
             TriangulateMesh(Grid, Chunk);
+            InitHexMesh(&Chunk->WaterMesh);
+            TriangulateWaterMesh(Grid, Chunk);
             CollisionMeshFromChunk(Grid, z * HEX_MAX_CHUNKS_WIDE + x);
             AddLargeCollisionMeshToChunk(Chunk);
         }
@@ -38,18 +46,12 @@ EditorStateInit(app * App) {
     State->Settings.EditElevation = 0;
     State->Settings.Elevation = 0;
     State->Settings.BrushSize = 0;
-
+    State->Settings.EditWater = 0;
+    State->Settings.WaterLevel = 0;
 }
 
 internal hex_edit_settings
-doEditorUI(CrestUI * ui, hex_edit_settings Settings) {
-
-    CrestUIPushPanel(ui, v2(10.f, 10.f), -0.1f);
-    CrestUIPushRow(ui, v2(10.f, 10.f), v2(150, 32), 1);
-    /*
-        Colours
-    */
-
+doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
     Settings.EditColour = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditColour, "Colour");
     if(Settings.EditColour) {
         for(i32 ColourIndex = 0; ColourIndex < EDITOR_COLOUR_COUNT; ++ColourIndex) {
@@ -66,27 +68,76 @@ doEditorUI(CrestUI * ui, hex_edit_settings Settings) {
     }
     Settings.BrushSize = 0;//CrestUISliderInt(ui, GENERIC_ID(0), Settings.BrushSize, 4, "BrushSize");
 
+    return Settings;
+}
+
+internal hex_edit_settings
+doEditorUITerrainFeatures(CrestUI * ui, hex_edit_settings Settings) {
+    Settings.EditWater = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditWater, "Water:");
+    if(Settings.EditWater) Settings.WaterLevel = CrestUISliderInt(ui, GENERIC_ID(0), Settings.WaterLevel, HEX_MAX_ELEVATION, "Water Level");
+
+    return Settings;
+}
+
+internal hex_edit_settings
+doEditorUI(CrestUI * ui, hex_edit_settings Settings, r32 ScreenWidth) {
+    CrestUIPushPanel(ui, v2(1.f, 1.f), -0.1f);
+    CrestUIPushRow(ui, v2(1.f, 1.f), v2(150, 32.f), EDIT_MODE_COUNT);
+    {
+        Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Terrain") ? EDIT_MODE_TERRAIN : Settings.EditMode;
+        Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Features") ? EDIT_MODE_TERRAIN_FEATURES : Settings.EditMode;
+    }
+    CrestUIPopRow(ui);
+    CrestUIPopPanel(ui);
+
+    CrestUIPushPanel(ui, v2(10.f, 47.f), -0.1f);
+    CrestUIPushRow(ui, v2(10.f, 47.f), v2(150, 32), 1);
+    /*
+        Colours
+    */
+    if(Settings.EditMode == EDIT_MODE_TERRAIN) Settings = doEditorUITerrain(ui, Settings);
+    else if (Settings.EditMode == EDIT_MODE_TERRAIN_FEATURES) Settings = doEditorUITerrainFeatures(ui, Settings);
+
     CrestUIPopRow(ui);
     CrestUIPopPanel(ui);
 
     return Settings;
 }
 
-
 internal b32
-EditCell(hex_cell * Cell, hex_edit_settings Settings) {
+EditCellTerrain(hex_cell * Cell, hex_edit_settings Settings) {
     b32 Result = 0;
     if(Settings.EditColour && !CrestV3Equals(Cell->Colour, Settings.Colour)) {
         Cell->Colour = Settings.Colour;
-        Result = 1;
+        Result |= EDITSTATE_EDITED_MESH;
     }
     if(Settings.EditElevation && (Cell->Elevation != Settings.Elevation)) {
         Cell->Elevation = Settings.Elevation;
         Cell->Position.y = Cell->Elevation * HEX_ELEVATION_STEP;
         v3 Sample = Noise3DSample(Cell->Position);
         Cell->Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
-        Result = 1;
+        Result |= (EDITSTATE_EDITED_COLLISIONS | EDITSTATE_EDITED_MESH);
     }
+    return Result;
+}
+
+internal b32
+EditCellTerrainFeatures(hex_cell * Cell, hex_edit_settings Settings) {
+    b32 Result = EDITSTATE_EDITED_WATER;
+    if(Settings.EditWater && Settings.WaterLevel > Cell->Elevation) {
+        Cell->WaterLevel = Settings.WaterLevel;
+        Result |= EDITSTATE_EDITED_WATER;
+    }
+    return Result;
+}
+
+
+
+internal b32
+EditCell(hex_cell * Cell, hex_edit_settings Settings) {
+    b32 Result = 0;
+    if(Settings.EditMode == EDIT_MODE_TERRAIN) Result |= EditCellTerrain(Cell, Settings);
+    else if(Settings.EditMode == EDIT_MODE_TERRAIN_FEATURES) Result |= EditCellTerrainFeatures(Cell, Settings);
     return Result;
 }
 
@@ -130,18 +181,40 @@ CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settin
             i32 CellIndex = GetCellIndex(SelectedHex);
             //change the colour
             if(CellIndex > -1) {
-                b32 Result = EditCells(Grid, CellIndex, Settings);
-                if(Result) {
+                b32 Result = EditCell(&Grid->Cells[CellIndex], Settings);
+                if(Result & EDITSTATE_EDITED_MESH) {
                     TriangulateMesh(Grid, Chunk);
-                    CollisionMeshFromChunk(Grid, ChunkIndex);
-
+                    //Note(Zen): Edit any neighbouring chunks that require it
                     for(i32 i = 0; i < 6; ++i) {
                         if(Grid->Cells[CellIndex].Neighbours[i]) {
                             hex_cell Neighbour = *Grid->Cells[CellIndex].Neighbours[i];
                             i32 NeighbourChunkIndex = GetChunkIndexFromCellIndex(Neighbour.Index);
                             if(NeighbourChunkIndex != ChunkIndex) {
                                 TriangulateMesh(Grid, &Grid->Chunks[NeighbourChunkIndex]);
+                            }
+                        }
+                    }
+                }
+                if(Result & EDITSTATE_EDITED_COLLISIONS) {
+                    CollisionMeshFromChunk(Grid, ChunkIndex);
+                    for(i32 i = 0; i < 6; ++i) {
+                        if(Grid->Cells[CellIndex].Neighbours[i]) {
+                            hex_cell Neighbour = *Grid->Cells[CellIndex].Neighbours[i];
+                            i32 NeighbourChunkIndex = GetChunkIndexFromCellIndex(Neighbour.Index);
+                            if(NeighbourChunkIndex != ChunkIndex) {
                                 CollisionMeshFromChunk(Grid, NeighbourChunkIndex);
+                            }
+                        }
+                    }
+                }
+                if(Result & EDITSTATE_EDITED_WATER) {
+                    TriangulateWaterMesh(Grid, Chunk);
+                    for(i32 i = 0; i < 6; ++i) {
+                        if(Grid->Cells[CellIndex].Neighbours[i]) {
+                            hex_cell Neighbour = *Grid->Cells[CellIndex].Neighbours[i];
+                            i32 NeighbourChunkIndex = GetChunkIndexFromCellIndex(Neighbour.Index);
+                            if(NeighbourChunkIndex != ChunkIndex) {
+                                TriangulateWaterMesh(Grid, &Grid->Chunks[NeighbourChunkIndex]);
                             }
                         }
                     }
@@ -197,7 +270,7 @@ EditorStateUpdate(app * App) {
     if(Camera->Rotation < PI * 0.1f) Camera->Rotation = PI * 0.1f;
 
 
-    EditorState->Settings = doEditorUI(&App->UI, EditorState->Settings);
+    EditorState->Settings = doEditorUI(&App->UI, EditorState->Settings, App->ScreenWidth);
 
 
     //Note(Zen): Draw the grid.
@@ -214,9 +287,22 @@ EditorStateUpdate(app * App) {
     CrestShaderSetV3(EditorState->HexGrid.MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
     CrestShaderSetV3(EditorState->HexGrid.MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
 
+    CrestShaderSetMatrix(EditorState->HexGrid.WaterShader, "View", &View);
+    CrestShaderSetMatrix(EditorState->HexGrid.WaterShader, "Model", &Model);
+    CrestShaderSetMatrix(EditorState->HexGrid.WaterShader, "Projection", &Projection);
+
+    CrestShaderSetV3(EditorState->HexGrid.WaterShader, "ViewPosition", Camera->Position);
+    CrestShaderSetV3(EditorState->HexGrid.WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(EditorState->HexGrid.WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
+
+
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         hex_mesh * HexMesh = &App->EditorState.HexGrid.Chunks[i].HexMesh;
         DrawHexMesh(&App->EditorState.HexGrid, HexMesh);
+    }
+    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+        hex_mesh * WaterMesh = &App->EditorState.HexGrid.Chunks[i].WaterMesh;
+        DrawWaterMesh(&App->EditorState.HexGrid, WaterMesh);
     }
 
     //Note(Zen): Check collisions
@@ -294,11 +380,6 @@ EditorStateUpdate(app * App) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-
-    // From Before Chunk Rework
-    // if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_R)) {
-    //     InitHexMesh(&App->EditorState.HexGrid.HexMesh, 1);
-    // }
 
 }
 #undef UI_ID_OFFSET

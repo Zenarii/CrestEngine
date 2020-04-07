@@ -8,6 +8,8 @@ CreateCell(int x, int z) {
     Result.Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
 
     Result.Colour = v3(0.8f, 0.6f, 0.7f);
+    Result.WaterLevel = 0;
+
 
     return Result;
 }
@@ -178,6 +180,16 @@ DrawHexMesh(hex_grid * Grid, hex_mesh * Mesh) {
     glUseProgram(Grid->MeshShader);
 
     glBindTextureUnit(0, Grid->MeshTexture);
+
+    glBindVertexArray(Mesh->VAO);
+    glDrawArrays(GL_TRIANGLES, 0, Mesh->VerticesCount);
+}
+
+internal void
+DrawWaterMesh(hex_grid * Grid, hex_mesh * Mesh) {
+    glUseProgram(Grid->WaterShader);
+
+    glBindTextureUnit(0, Grid->WaterTexture);
 
     glBindVertexArray(Mesh->VAO);
     glDrawArrays(GL_TRIANGLES, 0, Mesh->VerticesCount);
@@ -616,34 +628,132 @@ TriangulateMesh(hex_grid * Grid, hex_grid_chunk * Chunk) {
 }
 
 internal void
-InitHexMesh(hex_mesh * Mesh, b32 ForEditor) {
-        glGenVertexArrays(1, &Mesh->VAO);
-        glBindVertexArray(Mesh->VAO);
+InitHexMesh(hex_mesh * Mesh) {
+    glGenVertexArrays(1, &Mesh->VAO);
+    glBindVertexArray(Mesh->VAO);
 
 
-        glGenBuffers(1, &Mesh->VBO);
-        glBindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(hex_mesh_vertex) * MAX_HEX_VERTICES, 0, GL_DYNAMIC_DRAW);
+    glGenBuffers(1, &Mesh->VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(hex_mesh_vertex) * MAX_HEX_VERTICES, 0, GL_DYNAMIC_DRAW);
 
-        //Position
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), 0);
-        glEnableVertexAttribArray(0);
+    //Position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), 0);
+    glEnableVertexAttribArray(0);
 
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void*)offsetof(hex_mesh_vertex, Normal));
-        glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void*)offsetof(hex_mesh_vertex, Normal));
+    glEnableVertexAttribArray(1);
 
-        //Colour
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, Colour));
-        glEnableVertexAttribArray(2);
+    //Colour
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, Colour));
+    glEnableVertexAttribArray(2);
 
-        //Texture
-        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, TextureCoord));
-        glEnableVertexAttribArray(3);
+    //Texture
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, TextureCoord));
+    glEnableVertexAttribArray(3);
 
-        //Texture ID
-        glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, TextureID));
-        glEnableVertexAttribArray(4);
+    //Texture ID
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, TextureID));
+    glEnableVertexAttribArray(4);
 }
+
+/*
+    Generating Water Meshes
+*/
+
+internal void
+TriangulateWaterConnection(temporary_hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v3 p0, v3 p1) {
+    if(Cell.Neighbours[Direction]) {
+        hex_cell Neighbour = *Cell.Neighbours[Direction];
+        if(Neighbour.WaterLevel <= Neighbour.Elevation) return;
+        v3 Bridge = GetBridgeLocation(Direction);
+
+        v3 p2 = CrestV3Add(p1, Bridge);
+        v3 p3 = CrestV3Add(p0, Bridge);
+
+        v3 n0 = NudgeVertex(p0);
+        v3 n1 = NudgeVertex(p1);
+        v3 n2 = NudgeVertex(p2);
+        v3 n3 = NudgeVertex(p3);
+
+        n1.y = n0.y = (Cell.WaterLevel + HEX_WATER_ELEVATION_OFFSET) * HEX_ELEVATION_STEP;
+        n2.y = n3.y = (Neighbour.WaterLevel + HEX_WATER_ELEVATION_OFFSET) * HEX_ELEVATION_STEP;
+        AddQuadToHexMeshUnnudged(Mesh, n1, n0, n3, n2);
+        AddQuadColour(Mesh, HEX_WATER_COLOUR);
+    }
+}
+
+internal void
+TriangulateWaterCorner(temporary_hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v3 p1) {
+    if(Cell.Neighbours[Direction] && Cell.Neighbours[Direction+1]) {
+        hex_cell Neighbour = *Cell.Neighbours[Direction];
+        hex_cell NextNeighbour = *Cell.Neighbours[Direction+1];
+        if((Neighbour.WaterLevel <= Neighbour.Elevation) || (NextNeighbour.WaterLevel <= NextNeighbour.Elevation)) return;
+        v3 Bridge0 = GetBridgeLocation(Direction);
+        v3 Bridge1 = GetBridgeLocation(Direction+1);
+
+        v3 p2 = CrestV3Add(p1, Bridge0);
+        v3 p3 = CrestV3Add(p1, Bridge1);
+
+        v3 n0 = NudgeVertex(p1);
+        v3 n1 = NudgeVertex(p2);
+        v3 n2 = NudgeVertex(p3);
+        n0.y = n1.y = n2.y = (Cell.WaterLevel + HEX_WATER_ELEVATION_OFFSET) * HEX_ELEVATION_STEP;
+
+
+        AddTriangleToHexMeshUnnudged(Mesh, n0, n1, n2);
+        AddTriangleColour(Mesh, HEX_WATER_COLOUR);
+    }
+}
+
+internal void
+TriangulateWaterCell(temporary_hex_mesh * Mesh, hex_cell Cell) {
+    v3 Center = Cell.Position;
+    Center.y = (Cell.WaterLevel + HEX_WATER_ELEVATION_OFFSET) * HEX_ELEVATION_STEP;
+    v3 Colour = HEX_WATER_COLOUR;
+    for(i32 Direction = 0; Direction < 6; ++Direction) {
+        i32 NextDirection = (Direction + 1) % 6;
+        v3 p0 = CrestV3Add(Center, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR));
+        v3 p1 = CrestV3Add(Center, CrestV3Scale(HexCorners[NextDirection], HEX_SOLID_FACTOR));
+        v3 n0 = NudgeVertex(p0);
+        v3 n1 = NudgeVertex(p1);
+
+        n1.y = n0.y = p1.y = p0.y = Center.y;
+
+        AddTriangleToHexMeshUnnudged(Mesh, Center, n0, n1);
+        AddTriangleColour(Mesh, Colour);
+
+        if(Direction <= HEX_DIRECTION_NE) {
+            TriangulateWaterConnection(Mesh, Cell, Direction, p0, p1);
+        }
+        if(Direction <= HEX_DIRECTION_E) {
+            TriangulateWaterCorner(Mesh, Cell, Direction, p1);
+        }
+    }
+}
+
+internal void
+TriangulateWaterMesh(hex_grid * Grid, hex_grid_chunk * Chunk) {
+    //this will be the chunk's mesh later on
+    hex_mesh * Mesh = &Chunk->WaterMesh;
+    temporary_hex_mesh TempMesh = {0};
+    for(i32 x = Chunk->X * HEX_CHUNK_WIDTH; x < HEX_CHUNK_WIDTH * (Chunk->X + 1); ++x) {
+        for(i32 z = Chunk->Z * HEX_CHUNK_HEIGHT; z < HEX_CHUNK_HEIGHT * (Chunk->Z + 1); ++z) {
+            hex_cell Cell = Grid->Cells[z * HEX_CHUNK_WIDTH * HEX_MAX_CHUNKS_HIGH + x];
+            if(Cell.WaterLevel > Cell.Elevation) {
+                TriangulateWaterCell(&TempMesh, Cell);
+            }
+        }
+    }
+
+    glBindVertexArray(Mesh->VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, TempMesh.VerticesCount * sizeof(hex_mesh_vertex), TempMesh.Vertices);
+
+    Mesh->VerticesCount = TempMesh.VerticesCount;
+}
+
 
 /*
     Generating Collision Meshes
