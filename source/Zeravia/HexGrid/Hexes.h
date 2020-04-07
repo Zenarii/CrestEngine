@@ -95,9 +95,9 @@ HexMeshVertexInit(v3 P, v3 N, v3 C, v2 TC, r32 TID) {
 
 typedef struct hex_mesh hex_mesh;
 struct hex_mesh {
-    u32 VAO, VBO, Shader;
+    u32 VAO, VBO;
     u32 VerticesCount;
-    hex_mesh_vertex Vertices[MAX_HEX_VERTICES];
+    //hex_mesh_vertex Vertices[MAX_HEX_VERTICES];
 };
 
 typedef struct hex_coordinates hex_coordinates;
@@ -162,6 +162,12 @@ struct hex_grid_chunk {
 #define HEX_MAX_WIDTH_IN_CELLS (HEX_MAX_CHUNKS_WIDE * HEX_CHUNK_WIDTH)
 #define HEX_MAX_CHUNKS_HIGH 4
 #define HEX_MAX_CHUNKS (HEX_MAX_CHUNKS_WIDE * HEX_MAX_CHUNKS_HIGH)
+
+
+typedef struct temporary_hex_mesh {
+    u32 VerticesCount;
+    hex_mesh_vertex Vertices[MAX_HEX_VERTICES];
+} temporary_hex_mesh;
 
 typedef struct hex_grid hex_grid;
 struct hex_grid {

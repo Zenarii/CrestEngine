@@ -210,7 +210,7 @@ NudgeVertex(v3 Vertex) {
 
 //Note(Zen): Push different colours after this function
 internal void
-AddTriangleToHexMeshUnnudged(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
+AddTriangleToHexMeshUnnudged(temporary_hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
     Assert((Mesh->VerticesCount <= MAX_HEX_VERTICES - 3));
 
     v3 Colour = v3(1.f, 1.f, 1.f);
@@ -226,7 +226,7 @@ AddTriangleToHexMeshUnnudged(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
 }
 
 internal void
-AddTriangleToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
+AddTriangleToHexMesh(temporary_hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
     p0 = NudgeVertex(p0);
     p1 = NudgeVertex(p1);
     p2 = NudgeVertex(p2);
@@ -235,7 +235,7 @@ AddTriangleToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2) {
 }
 
 internal void
-AddTriangleColour3(hex_mesh * Mesh, v3 c1, v3 c2, v3 c3) {
+AddTriangleColour3(temporary_hex_mesh * Mesh, v3 c1, v3 c2, v3 c3) {
     Mesh->VerticesCount -= 3;
     Mesh->Vertices[Mesh->VerticesCount++].Colour = c1;
     Mesh->Vertices[Mesh->VerticesCount++].Colour = c2;
@@ -243,13 +243,13 @@ AddTriangleColour3(hex_mesh * Mesh, v3 c1, v3 c2, v3 c3) {
 }
 
 internal void
-AddTriangleColour(hex_mesh * Mesh, v3 Colour) {
+AddTriangleColour(temporary_hex_mesh * Mesh, v3 Colour) {
     AddTriangleColour3(Mesh, Colour, Colour, Colour);
 }
 
 
 internal void
-AddQuadToHexMeshUnnudged(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
+AddQuadToHexMeshUnnudged(temporary_hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
     Assert(Mesh->VerticesCount <= MAX_HEX_VERTICES - 6);
 
     v3 Colour = v3(1.f, 1.f, 1.f);
@@ -269,7 +269,7 @@ AddQuadToHexMeshUnnudged(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
 }
 
 internal void
-AddQuadToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
+AddQuadToHexMesh(temporary_hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
     p0 = NudgeVertex(p0);
     p1 = NudgeVertex(p1);
     p2 = NudgeVertex(p2);
@@ -279,7 +279,7 @@ AddQuadToHexMesh(hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
 }
 
 internal void
-AddQuadColour4(hex_mesh * Mesh, v3 c0, v3 c1, v3 c2, v3 c3) {
+AddQuadColour4(temporary_hex_mesh * Mesh, v3 c0, v3 c1, v3 c2, v3 c3) {
     Mesh->VerticesCount -= 6;
     Mesh->Vertices[Mesh->VerticesCount++].Colour = c0;
     Mesh->Vertices[Mesh->VerticesCount++].Colour = c1;
@@ -290,12 +290,12 @@ AddQuadColour4(hex_mesh * Mesh, v3 c0, v3 c1, v3 c2, v3 c3) {
 }
 
 internal void
-AddQuadColour2(hex_mesh * Mesh, v3 c01, v3 c23) {
+AddQuadColour2(temporary_hex_mesh * Mesh, v3 c01, v3 c23) {
     AddQuadColour4(Mesh, c01, c01, c23, c23);
 }
 
 internal void
-AddQuadColour(hex_mesh * Mesh, v3 Colour) {
+AddQuadColour(temporary_hex_mesh * Mesh, v3 Colour) {
     AddQuadColour4(Mesh, Colour, Colour, Colour, Colour);
 }
 
@@ -336,7 +336,7 @@ GetBridgeLocation(hex_direction Direction) {
 
 
 internal void
-TriangulateEdgeFan(hex_mesh * Mesh, v3 Center, hex_edge_vertices Edge, v3 Colour) {
+TriangulateEdgeFan(temporary_hex_mesh * Mesh, v3 Center, hex_edge_vertices Edge, v3 Colour) {
     AddTriangleToHexMesh(Mesh, Center, Edge.p0, Edge.p1);
     AddTriangleColour(Mesh, Colour);
     AddTriangleToHexMesh(Mesh, Center, Edge.p1, Edge.p2);
@@ -346,7 +346,7 @@ TriangulateEdgeFan(hex_mesh * Mesh, v3 Center, hex_edge_vertices Edge, v3 Colour
 }
 
 internal void
-TriangulateEdgeStrip(hex_mesh * Mesh, hex_edge_vertices Edge0, v3 Colour0, hex_edge_vertices Edge1,  v3 Colour1) {
+TriangulateEdgeStrip(temporary_hex_mesh * Mesh, hex_edge_vertices Edge0, v3 Colour0, hex_edge_vertices Edge1,  v3 Colour1) {
     AddQuadToHexMesh(Mesh, Edge0.p1, Edge0.p0, Edge1.p0, Edge1.p1);
     AddQuadColour2(Mesh, Colour0, Colour1);
     AddQuadToHexMesh(Mesh, Edge0.p2, Edge0.p1, Edge1.p1, Edge1.p2);
@@ -356,7 +356,7 @@ TriangulateEdgeStrip(hex_mesh * Mesh, hex_edge_vertices Edge0, v3 Colour0, hex_e
 }
 
 internal void
-TriangulateEdgeTerraces(hex_mesh * Mesh, hex_edge_vertices StartEdge, hex_cell StartCell, hex_edge_vertices EndEdge, hex_cell EndCell) {
+TriangulateEdgeTerraces(temporary_hex_mesh * Mesh, hex_edge_vertices StartEdge, hex_cell StartCell, hex_edge_vertices EndEdge, hex_cell EndCell) {
      hex_edge_vertices Edge1 = TerraceEdgePositionLerp(StartEdge, EndEdge, 1);
      v3 c1 = TerraceColourLerp(StartCell.Colour, EndCell.Colour, 1);
 
@@ -376,7 +376,7 @@ TriangulateEdgeTerraces(hex_mesh * Mesh, hex_edge_vertices StartEdge, hex_cell S
 }
 
 internal void
-TriangulateCornerTerraces(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+TriangulateCornerTerraces(temporary_hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
  v3 Left, hex_cell LeftCell, v3 Right, hex_cell RightCell) {
     v3 p2 = TerracePositionLerp(Bottom, Left, 1);
     v3 p3 = TerracePositionLerp(Bottom, Right, 1);
@@ -406,7 +406,7 @@ TriangulateCornerTerraces(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
 }
 
 internal void
-TriangulateBoundaryTriangle(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+TriangulateBoundaryTriangle(temporary_hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
  v3 Left, hex_cell LeftCell, v3 Boundary, v3 BoundaryColour) {
       v3 p1 = TerracePositionLerp(Bottom, Left, 1);
       v3 c1 = TerraceColourLerp(BottomCell.Colour, LeftCell.Colour, 1);
@@ -433,7 +433,7 @@ TriangulateBoundaryTriangle(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
 //TODO(Zen): Instead of all the terraces goign to a point,
 //keep them level up untill they reach the cliff
 internal void
-TriangulateCornerTerracesCliff(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+TriangulateCornerTerracesCliff(temporary_hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
  v3 Left, hex_cell LeftCell, v3 Right, hex_cell RightCell) {
      r32 BoundaryScale = 1.f / (RightCell.Elevation - BottomCell.Elevation);
      BoundaryScale = (BoundaryScale > 0.f) ? BoundaryScale : - BoundaryScale;
@@ -454,7 +454,7 @@ TriangulateCornerTerracesCliff(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
 }
 
 internal void
-TriangulateCornerCliffTerraces(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+TriangulateCornerCliffTerraces(temporary_hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
  v3 Left, hex_cell LeftCell, v3 Right, hex_cell RightCell) {
      r32 BoundaryScale = 1.f / (LeftCell.Elevation - BottomCell.Elevation);
      BoundaryScale = (BoundaryScale > 0.f) ? BoundaryScale : - BoundaryScale;
@@ -475,7 +475,7 @@ TriangulateCornerCliffTerraces(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
 }
 
 internal void
-TriangulateCorner(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
+TriangulateCorner(temporary_hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
  v3 Left, hex_cell LeftCell, v3 Right, hex_cell RightCell) {
     hex_edge_type RightEdgeType = GetHexEdgeType(BottomCell.Elevation, RightCell.Elevation);
     hex_edge_type LeftEdgeType = GetHexEdgeType(BottomCell.Elevation, LeftCell.Elevation);
@@ -523,7 +523,7 @@ TriangulateCorner(hex_mesh * Mesh, v3 Bottom, hex_cell BottomCell,
 }
 
 internal void
-TriangulateConnection(hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, hex_edge_vertices Edge0) {
+TriangulateConnection(temporary_hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, hex_edge_vertices Edge0) {
     if(Direction < HEX_DIRECTION_NW) {
         hex_direction NextDirection = Direction + 1;
         if(Cell.Neighbours[Direction]) {
@@ -575,7 +575,7 @@ TriangulateConnection(hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, h
 
 
 internal void
-TriangulateCell(hex_mesh * Mesh, hex_cell Cell) {
+TriangulateCell(temporary_hex_mesh * Mesh, hex_cell Cell) {
     v3 Center = Cell.Position;
     v3 Colour = Cell.Colour;
     for(i32 Direction = 0; Direction < 6; ++Direction) {
@@ -594,38 +594,36 @@ TriangulateCell(hex_mesh * Mesh, hex_cell Cell) {
     }
 }
 
+
 internal void
 TriangulateMesh(hex_grid * Grid, hex_grid_chunk * Chunk) {
     //this will be the chunk's mesh later on
     hex_mesh * Mesh = &Chunk->HexMesh;
-    Mesh->VerticesCount = 0;
+    temporary_hex_mesh TempMesh = {0};
     for(i32 x = Chunk->X * HEX_CHUNK_WIDTH; x < HEX_CHUNK_WIDTH * (Chunk->X + 1); ++x) {
         for(i32 z = Chunk->Z * HEX_CHUNK_HEIGHT; z < HEX_CHUNK_HEIGHT * (Chunk->Z + 1); ++z) {
             hex_cell Cell = Grid->Cells[z * HEX_CHUNK_WIDTH * HEX_MAX_CHUNKS_HIGH + x];
-            TriangulateCell(Mesh, Cell);
+            TriangulateCell(&TempMesh, Cell);
         }
     }
 
-    glUseProgram(Mesh->Shader);
     glBindVertexArray(Mesh->VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, Mesh->VerticesCount * sizeof(hex_mesh_vertex), Mesh->Vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, TempMesh.VerticesCount * sizeof(hex_mesh_vertex), TempMesh.Vertices);
 
+    Mesh->VerticesCount = TempMesh.VerticesCount;
 }
 
 internal void
 InitHexMesh(hex_mesh * Mesh, b32 ForEditor) {
-    //Probably a way to make all the meshes use the same shader
-    //May not matter, in the game state map will be one whole opaque mesh
-    {
         glGenVertexArrays(1, &Mesh->VAO);
         glBindVertexArray(Mesh->VAO);
 
 
         glGenBuffers(1, &Mesh->VBO);
         glBindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Mesh->Vertices), Mesh->Vertices, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(hex_mesh_vertex) * MAX_HEX_VERTICES, 0, GL_DYNAMIC_DRAW);
 
         //Position
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), 0);
@@ -645,8 +643,6 @@ InitHexMesh(hex_mesh * Mesh, b32 ForEditor) {
         //Texture ID
         glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(hex_mesh_vertex), (void *)offsetof(hex_mesh_vertex, TextureID));
         glEnableVertexAttribArray(4);
-    }
-
 }
 
 /*
