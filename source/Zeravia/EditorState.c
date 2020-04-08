@@ -21,6 +21,7 @@ EditorStateInit(app * App) {
         Location = glGetUniformLocation(Grid->WaterShader, "Images");
         glUniform1iv(Location, 16, samplers);
         Grid->WaterTexture = CasLoadTexture("../assets/WaterTexture.png", GL_LINEAR);
+
     }
     Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
     Grid->Height = HEX_MAX_CHUNKS_HIGH * HEX_CHUNK_HEIGHT;
@@ -116,15 +117,15 @@ EditCellTerrain(hex_cell * Cell, hex_edit_settings Settings) {
         Cell->Position.y = Cell->Elevation * HEX_ELEVATION_STEP;
         v3 Sample = Noise3DSample(Cell->Position);
         Cell->Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
-        Result |= (EDITSTATE_EDITED_COLLISIONS | EDITSTATE_EDITED_MESH);
+        Result |= (EDITSTATE_EDITED_COLLISIONS | EDITSTATE_EDITED_MESH | EDITSTATE_EDITED_WATER);
     }
     return Result;
 }
 
 internal b32
 EditCellTerrainFeatures(hex_cell * Cell, hex_edit_settings Settings) {
-    b32 Result = EDITSTATE_EDITED_WATER;
-    if(Settings.EditWater && Settings.WaterLevel > Cell->Elevation) {
+    b32 Result = 0;
+    if(Settings.EditWater && Settings.WaterLevel != Cell->WaterLevel) {
         Cell->WaterLevel = Settings.WaterLevel;
         Result |= EDITSTATE_EDITED_WATER;
     }
