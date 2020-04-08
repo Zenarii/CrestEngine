@@ -10,10 +10,20 @@ uniform sampler2D Images[16];
 uniform vec3 LightPosition;
 uniform vec3 LightColour;
 uniform vec3 ViewPosition;
+uniform float Time;
 
 out vec4 FragColour;
 
+float LineariseDepth(float depth) {
+    float z = depth * 2.0 - 1.0;
+    return (2.0 * near * far) / (far + near - z * (far -near));
+}
+
+
 void main() {
+    vec2 uv = TextureCoord;
+    uv.y += Time * 0.05;
+
     //Ambient
     float AmbientStrength = 0.3;
     vec3 Ambient = LightColour * AmbientStrength;
@@ -35,5 +45,6 @@ void main() {
     vec3 Result = (Ambient + Diffuse + Specular) * Colour;
 
     int index = int(TextureID);
-    FragColour = texture(Images[index], TextureCoord) * vec4(Result, 0.6);
+    FragColour = texture(Images[index], uv) * vec4(Colour, 1.0) + vec4(Result, 0.6);
+    FragColour.a = 0.6;
 }

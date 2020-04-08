@@ -16,11 +16,12 @@ uniform mat4 Projection;
 uniform mat4 Model;
 uniform mat4 View;
 
+
 void main() {
     gl_Position = Projection * View * Model * vec4(inPosition, 1.0);
     FragPos = vec3(Model * vec4(inPosition, 1.0));
     Colour = inColour;
-    TextureCoord = inTextureCoord;
+    TextureCoord = inPosition.xz * 0.25f;
     TextureID = inTextureID;
     //Undo any non-uniform scaling
     Normal = mat3(transpose(inverse(Model))) * inNormal;

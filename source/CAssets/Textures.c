@@ -6,10 +6,8 @@ CasLoadTexture(const char * Path, GLenum Filter) {
     glBindTexture(GL_TEXTURE_2D, Texture);
 
     //Note(Zen): Set the wrapping options
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    const v4 BorderColour = {1.f, 1.f, 0.f, 1.f};
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &BorderColour.elements[0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     //Note(Zen): Set Filtering
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, Filter);
@@ -28,6 +26,14 @@ CasLoadTexture(const char * Path, GLenum Filter) {
         }
         else if (NumberOfChannels == 3) {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  Width, Height, 0, GL_RGB,  GL_UNSIGNED_BYTE, Data);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+        else if(NumberOfChannels == 2) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG,  Width, Height, 0, GL_RG,  GL_UNSIGNED_BYTE, Data);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+        else if(NumberOfChannels == 1) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,  Width, Height, 0, GL_RED,  GL_UNSIGNED_BYTE, Data);
             glGenerateMipmap(GL_TEXTURE_2D);
         }
         else {

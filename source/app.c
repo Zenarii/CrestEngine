@@ -24,6 +24,7 @@
 typedef struct app {
     b32 Initialised;
     r32 Delta;
+    r32 TotalTime;
     r32 ScreenWidth;
     r32 ScreenHeight;
     v2 MousePosition;
@@ -92,6 +93,7 @@ AppUpdate(Platform * platform) {
         App->ScreenWidth = platform->ScreenWidth;
         App->ScreenHeight = platform->ScreenHeight;
         App->Delta = 1.f / platform->TargetFPS;
+        App->TotalTime += App->Delta;
         memcpy(App->KeyWasDown, App->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         App->MousePosition = v2(platform->MouseEndX, platform->MouseEndY);

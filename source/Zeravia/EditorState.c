@@ -20,7 +20,7 @@ EditorStateInit(app * App) {
         glUseProgram(Grid->WaterShader);
         Location = glGetUniformLocation(Grid->WaterShader, "Images");
         glUniform1iv(Location, 16, samplers);
-        Grid->WaterTexture = Grid->MeshTexture;
+        Grid->WaterTexture = CasLoadTexture("../assets/WaterTexture.png", GL_LINEAR);
     }
     Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
     Grid->Height = HEX_MAX_CHUNKS_HIGH * HEX_CHUNK_HEIGHT;
@@ -294,7 +294,7 @@ EditorStateUpdate(app * App) {
     CrestShaderSetV3(EditorState->HexGrid.WaterShader, "ViewPosition", Camera->Position);
     CrestShaderSetV3(EditorState->HexGrid.WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
     CrestShaderSetV3(EditorState->HexGrid.WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
-
+    CrestShaderSetFloat(EditorState->HexGrid.WaterShader, "Time", App->TotalTime);
 
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         hex_mesh * HexMesh = &App->EditorState.HexGrid.Chunks[i].HexMesh;
