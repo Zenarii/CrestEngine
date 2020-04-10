@@ -259,7 +259,18 @@ AddTriangleColour(temporary_hex_mesh * Mesh, v3 Colour) {
     AddTriangleColour3(Mesh, Colour, Colour, Colour);
 }
 
+internal void
+AddTriangleUVs3(temporary_hex_mesh * Mesh, v2 uv1, v2 uv2, v2 uv3) {
+    Mesh->VerticesCount -= 3;
+    Mesh->Vertices[Mesh->VerticesCount++].TextureCoord = uv1;
+    Mesh->Vertices[Mesh->VerticesCount++].TextureCoord = uv2;
+    Mesh->Vertices[Mesh->VerticesCount++].TextureCoord = uv3;
+}
 
+internal void
+AddTriangleUVs(temporary_hex_mesh * Mesh, v2 uv) {
+    AddTriangleUVs3(Mesh, uv, uv, uv);
+}
 internal void
 AddQuadToHexMeshUnnudged(temporary_hex_mesh * Mesh, v3 p0, v3 p1, v3 p2, v3 p3) {
     Assert(Mesh->VerticesCount <= MAX_HEX_VERTICES - 6);
@@ -310,6 +321,23 @@ internal void
 AddQuadColour(temporary_hex_mesh * Mesh, v3 Colour) {
     AddQuadColour4(Mesh, Colour, Colour, Colour, Colour);
 }
+
+internal void
+AddQuadUvs4(temporary_hex_mesh * Mesh, v2 uv0, v2 uv1, v2 uv2, v2 uv3) {
+    Mesh->VerticesCount -= 6;
+    Mesh->Vertices[Mesh->VerticesCount++].TextureCoord = uv0;
+    Mesh->Vertices[Mesh->VerticesCount++].TextureCoord = uv1;
+    Mesh->Vertices[Mesh->VerticesCount++].TextureCoord = uv2;
+    Mesh->Vertices[Mesh->VerticesCount++].TextureCoord = uv3;
+    Mesh->Vertices[Mesh->VerticesCount++].TextureCoord = uv0;
+    Mesh->Vertices[Mesh->VerticesCount++].TextureCoord = uv2;
+}
+
+internal void
+AddQuadUvs(temporary_hex_mesh * Mesh, v2 uv) {
+    AddQuadUvs4(Mesh, uv, uv, uv, uv);
+}
+
 
 internal v3
 TerracePositionLerp(v3 a, v3 b, u32 Step) {
@@ -663,7 +691,7 @@ InitHexMesh(hex_mesh * Mesh) {
 
 internal void
 TriangulateWaterConnection(temporary_hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v3 p0, v3 p1) {
-    if(Cell.Neighbours[Direction]) {
+    if(Cell.Neighbours[Direction] && Direction <= HEX_DIRECTION_NE) {
         hex_cell Neighbour = *Cell.Neighbours[Direction];
         if(Neighbour.WaterLevel <= Neighbour.Elevation) return;
         v3 Bridge = GetBridgeLocation(Direction);
@@ -680,12 +708,13 @@ TriangulateWaterConnection(temporary_hex_mesh * Mesh, hex_cell Cell, hex_directi
         n2.y = n3.y = (Neighbour.WaterLevel + HEX_WATER_ELEVATION_OFFSET) * HEX_ELEVATION_STEP;
         AddQuadToHexMeshUnnudged(Mesh, n1, n0, n3, n2);
         AddQuadColour(Mesh, HEX_WATER_COLOUR);
+        AddQuadUvs(Mesh, v2(0.f, 0.f));
     }
 }
 
 internal void
 TriangulateWaterCorner(temporary_hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v3 p1) {
-    if(Cell.Neighbours[Direction] && Cell.Neighbours[Direction+1]) {
+    if(Direction <= HEX_DIRECTION_E && Cell.Neighbours[Direction] && Cell.Neighbours[Direction+1]) {
         hex_cell Neighbour = *Cell.Neighbours[Direction];
         hex_cell NextNeighbour = *Cell.Neighbours[Direction+1];
         if((Neighbour.WaterLevel <= Neighbour.Elevation) || (NextNeighbour.WaterLevel <= NextNeighbour.Elevation)) return;
@@ -703,7 +732,57 @@ TriangulateWaterCorner(temporary_hex_mesh * Mesh, hex_cell Cell, hex_direction D
 
         AddTriangleToHexMeshUnnudged(Mesh, n0, n1, n2);
         AddTriangleColour(Mesh, HEX_WATER_COLOUR);
+        AddTriangleUVs(Mesh, v2(0.f, 0.f));
     }
+}
+
+internal void
+TriangulateShoreCorner(temporary_hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v3 p1) {
+    if(Cell.Neighbours[Direction] && Cell.Neighbours[(Direction+1)%6]) {
+        hex_cell Neighbour = *Cell.Neighbours[Direction];
+        hex_cell NextNeighbour = *Cell.Neighbours[(Direction+1)%6];
+
+        v3 Bridge0 = GetBridgeLocation(Direction);
+        v3 Bridge1 = GetBridgeLocation(Direction+1);
+        if(Direction == HEX_DIRECTION_SW) Bridge1 = GetBridgeLocation(0);
+        v3 p2 = CrestV3Add(p1, Bridge0);
+        v3 p3 = CrestV3Add(p1, Bridge1);
+
+        v3 n0 = NudgeVertex(p1);
+        v3 n1 = NudgeVertex(p2);
+        v3 n2 = NudgeVertex(p3);
+        n0.y = n1.y = n2.y = (Cell.WaterLevel + HEX_WATER_ELEVATION_OFFSET) * HEX_ELEVATION_STEP;
+
+
+        AddTriangleToHexMeshUnnudged(Mesh, n0, n1, n2);
+        AddTriangleColour(Mesh, HEX_WATER_COLOUR);
+        AddTriangleUVs3(Mesh,
+            v2(0.f, 0.f),
+            v2(0.f, 1.f),
+            (NextNeighbour.WaterLevel > NextNeighbour.Elevation) ? v2(0.f, 0.f) : v2(0.f, 1.f)
+        );
+    }
+}
+
+internal void
+TriangulateShoreConnection(temporary_hex_mesh * Mesh, hex_cell Cell, hex_direction Direction, v3 p0, v3 p1) {
+    hex_cell Neighbour = *Cell.Neighbours[Direction];
+
+    v3 Bridge = GetBridgeLocation(Direction);
+
+    v3 p2 = CrestV3Add(p1, Bridge);
+    v3 p3 = CrestV3Add(p0, Bridge);
+
+    v3 n0 = NudgeVertex(p0);
+    v3 n1 = NudgeVertex(p1);
+    v3 n2 = NudgeVertex(p2);
+    v3 n3 = NudgeVertex(p3);
+
+    n1.y = n0.y = (Cell.WaterLevel + HEX_WATER_ELEVATION_OFFSET) * HEX_ELEVATION_STEP;
+    n2.y = n3.y = n1.y;
+    AddQuadToHexMeshUnnudged(Mesh, n1, n0, n3, n2);
+    AddQuadColour(Mesh, HEX_WATER_COLOUR);
+    AddQuadUvs4(Mesh, v2(0.f, 0.f), v2(0.f, 0.f), v2(0.f, 1.f), v2(0.f, 1.f));
 }
 
 internal void
@@ -722,12 +801,18 @@ TriangulateWaterCell(temporary_hex_mesh * Mesh, hex_cell Cell) {
 
         AddTriangleToHexMeshUnnudged(Mesh, Center, n0, n1);
         AddTriangleColour(Mesh, Colour);
+        AddTriangleUVs(Mesh, v2(0.f, 0.f));
 
-        if(Direction <= HEX_DIRECTION_NE) {
-            TriangulateWaterConnection(Mesh, Cell, Direction, p0, p1);
-        }
-        if(Direction <= HEX_DIRECTION_E) {
-            TriangulateWaterCorner(Mesh, Cell, Direction, p1);
+
+        if(Cell.Neighbours[Direction]) {
+            if(Cell.Neighbours[Direction]->WaterLevel > Cell.Neighbours[Direction]->Elevation) {
+                TriangulateWaterConnection(Mesh, Cell, Direction, p0, p1);
+                TriangulateWaterCorner(Mesh, Cell, Direction, p1);
+            }
+            else {
+                TriangulateShoreConnection(Mesh, Cell, Direction, p0, p1);
+                TriangulateShoreCorner(Mesh, Cell, Direction, p1);
+            }
         }
     }
 }

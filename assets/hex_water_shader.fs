@@ -5,6 +5,7 @@ in vec2 TextureCoord;
 in float TextureID;
 in vec3 Normal;
 in vec3 FragPos;
+in vec2 WorldPos;
 
 uniform sampler2D Images[16];
 uniform vec3 LightPosition;
@@ -17,11 +18,11 @@ out vec4 FragColour;
 
 void main() {
     int index = int(TextureID);
-    vec2 uv1 = TextureCoord;
+    vec2 uv1 = WorldPos;
     uv1.y += Time * 0.2;
     vec4 Noise1 = texture(Images[index], uv1 * 0.25);
 
-    vec2 uv2 = TextureCoord;
+    vec2 uv2 = WorldPos;
     uv2.x += Time * 0.2;
     vec4 Noise2 = texture(Images[index], uv2 * 0.25);
 
@@ -30,6 +31,21 @@ void main() {
 
     float Waves = mix(Noise1.z, Noise1.y, BlendWave) + mix(Noise2.x, Noise2.y, BlendWave);
     Waves = smoothstep(0.1, 2.5, Waves);
+
+
+    float Shore = TextureCoord.y;
+    vec2 ShoreNoiseUV = TextureCoord + Time * 0.1;
+    vec4 ShoreNoise = texture(Images[index], ShoreNoiseUV);
+    float Distortion = ShoreNoise.x * (1.0-Shore);
+
+    float Foam = sin((Distortion + Shore) * 10.0 - Time * 0.1);
+	Foam *= Foam * Shore;
+
+
+    /*
+        Lighting
+    */
+
 
     //Ambient
     float AmbientStrength = 0.3;
@@ -51,6 +67,7 @@ void main() {
 
     vec3 Result = (Ambient + Diffuse + Specular) * Colour;
 
-    FragColour = vec4(Waves * 0.2, Waves * 0.6, Waves, 1.0)  + vec4(Result, 1.0);
+    FragColour = Foam + vec4(Waves * 0.2, Waves * 0.6, Waves, 1.0)  + vec4(Result, 1.0);
     FragColour.a = 0.3;
+    //FragColour = vec4(TextureCoord, 0.0, 1.0);
 }

@@ -11,6 +11,7 @@ out vec3 Colour;
 out vec2 TextureCoord;
 out float TextureID;
 out vec3 FragPos;
+out vec2 WorldPos;
 
 uniform mat4 Projection;
 uniform mat4 Model;
@@ -19,11 +20,13 @@ uniform float Time;
 
 void main() {
     vec3 Position = inPosition;
-    Position.y += 0.05 * sin(Position.x + Position.y + Time);
+    WorldPos = inPosition.xz;
+    Position.y += 0.05 * sin(Position.x + Position.y + Time) * (1-inTextureCoord.y);
     gl_Position = Projection * View * Model * vec4(Position, 1.0);
+
     FragPos = vec3(Model * vec4(inPosition, 1.0));
     Colour = inColour;
-    TextureCoord = inPosition.xz * 0.25f;
+    TextureCoord = inTextureCoord;
 
     TextureID = inTextureID;
     //Undo any non-uniform scaling
