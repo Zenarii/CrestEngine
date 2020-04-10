@@ -20,7 +20,7 @@ EditorStateInit(app * App) {
         glUseProgram(Grid->WaterShader);
         Location = glGetUniformLocation(Grid->WaterShader, "Images");
         glUniform1iv(Location, 16, samplers);
-        Grid->WaterTexture = CasLoadTexture("../assets/WaterTexture.png", GL_LINEAR);
+        Grid->WaterTexture = CasLoadTexture("../assets/NoiseTexture.png", GL_LINEAR);
 
     }
     Grid->Width = HEX_MAX_WIDTH_IN_CELLS;

@@ -14,15 +14,22 @@ uniform float Time;
 
 out vec4 FragColour;
 
-float LineariseDepth(float depth) {
-    float z = depth * 2.0 - 1.0;
-    return (2.0 * near * far) / (far + near - z * (far -near));
-}
-
 
 void main() {
-    vec2 uv = TextureCoord;
-    uv.y += Time * 0.05;
+    int index = int(TextureID);
+    vec2 uv1 = TextureCoord;
+    uv1.y += Time * 0.2;
+    vec4 Noise1 = texture(Images[index], uv1 * 0.25);
+
+    vec2 uv2 = TextureCoord;
+    uv2.x += Time * 0.2;
+    vec4 Noise2 = texture(Images[index], uv2 * 0.25);
+
+    float BlendWave = sin((TextureCoord.x + TextureCoord.y) * 0.1 + Time + Noise1.y + Noise2.z);
+    BlendWave *= BlendWave;
+
+    float Waves = mix(Noise1.z, Noise1.y, BlendWave) + mix(Noise2.x, Noise2.y, BlendWave);
+    Waves = smoothstep(0.1, 2.5, Waves);
 
     //Ambient
     float AmbientStrength = 0.3;
@@ -44,7 +51,6 @@ void main() {
 
     vec3 Result = (Ambient + Diffuse + Specular) * Colour;
 
-    int index = int(TextureID);
-    FragColour = texture(Images[index], uv) * vec4(Colour, 1.0) + vec4(Result, 0.6);
-    FragColour.a = 0.6;
+    FragColour = vec4(Waves * 0.2, Waves * 0.6, Waves, 1.0)  + vec4(Result, 1.0);
+    FragColour.a = 0.3;
 }
