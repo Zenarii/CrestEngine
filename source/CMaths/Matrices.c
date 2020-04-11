@@ -113,6 +113,12 @@ CrestMatrixScale3(v3 S) {
     return Result;
 }
 
+internal matrix
+CrestMatrixTranspose(matrix In) {
+    matrix Result = CrestMatrixInitC(In.Row1, In.Row2, In.Row3, In.Row4);
+    return Result;
+}
+
 internal v4
 CrestMatrixMultipyV4(matrix Matrix, v4 Vector) {
     v4 Result = {0};

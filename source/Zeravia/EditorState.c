@@ -50,6 +50,8 @@ EditorStateInit(app * App) {
     State->Settings.BrushSize = 0;
     State->Settings.EditWater = 0;
     State->Settings.WaterLevel = 0;
+
+    CrestParseOBJ("My Very Long String ;)");
 }
 
 internal hex_edit_settings
@@ -307,15 +309,15 @@ EditorStateUpdate(app * App) {
         Draw Meshes
     */
 
-    // for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-    //     hex_mesh * HexMesh = &EditorState->HexGrid.Chunks[i].HexMesh;
-    //     DrawHexMesh(&EditorState->HexGrid, HexMesh);
-    // }
+    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+        hex_mesh * HexMesh = &EditorState->HexGrid.Chunks[i].HexMesh;
+        DrawHexMesh(&EditorState->HexGrid, HexMesh);
+    }
     DrawFeatureSet(&EditorState->HexGrid.Features);
-    // for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-    //     hex_mesh * WaterMesh = &App->EditorState.HexGrid.Chunks[i].WaterMesh;
-    //     DrawWaterMesh(&App->EditorState.HexGrid, WaterMesh);
-    // }
+    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+        hex_mesh * WaterMesh = &App->EditorState.HexGrid.Chunks[i].WaterMesh;
+        DrawWaterMesh(&App->EditorState.HexGrid, WaterMesh);
+    }
 
     //Note(Zen): Check collisions
     v4 RayClip = v4(0, 0, -1.f, 1.f);

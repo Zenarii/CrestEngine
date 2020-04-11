@@ -15,6 +15,7 @@
 #include "ui/ui.c"
 
 #include "CAssets/Textures.c"
+#include "CAssets/Models.c"
 #include "C3D/3DRenderer.c"
 
 #include "Zeravia/Zeravia.h"
