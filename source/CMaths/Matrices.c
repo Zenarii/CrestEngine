@@ -103,6 +103,16 @@ CrestMatrixTranslation(v3 Translation) {
 
 #define TranslateMatrix(Matrix, TranslationVector)
 
+internal matrix
+CrestMatrixScale3(v3 S) {
+    matrix Result = {0};
+    Result.Row1 = v4(S.x, 0.f, 0.f, 0.f);
+    Result.Row2 = v4(0.f, S.y, 0.f, 0.f);
+    Result.Row3 = v4(0.f, 0.f, S.z, 0.f);
+    Result.Row4 = v4(0.f, 0.f, 0.f, 1.f);
+    return Result;
+}
+
 internal v4
 CrestMatrixMultipyV4(matrix Matrix, v4 Vector) {
     v4 Result = {0};
@@ -115,6 +125,7 @@ CrestMatrixMultipyV4(matrix Matrix, v4 Vector) {
 }
 
 internal r32
+
 CrestMatrixDeterminant(matrix m) {
     r32 det = 0.f;
 

@@ -84,7 +84,7 @@ CrestUIRendererLoadFont(ui_renderer * UIRenderer, const char * FontPath) {
 
 internal void
 CrestPushText(ui_renderer * UIRenderer, v3 Position, const char * Text) {
-    glEnable(GL_TEXTURE_2D);
+    //glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, UIRenderer->FontTex);
 
     float x = Position.x;
@@ -218,7 +218,7 @@ CrestUIRender(ui_renderer * UIRenderer) {
     //Note(Zen): Draw text
     {
         glUseProgram(UIRenderer->TextShader);
-        glEnable(GL_TEXTURE_2D);
+        //glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, UIRenderer->FontTex);
         CrestShaderSetFloat(UIRenderer->TextShader, "RendererWidth", UIRenderer->Width);
         CrestShaderSetFloat(UIRenderer->TextShader, "RendererHeight", UIRenderer->Height);

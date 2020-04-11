@@ -301,22 +301,21 @@ EditorStateUpdate(app * App) {
 
 
     CrestShaderSetMatrix(EditorState->HexGrid.Features.Shader, "View", &View);
-    CrestShaderSetMatrix(EditorState->HexGrid.Features.Shader, "Model", &Model);
     CrestShaderSetMatrix(EditorState->HexGrid.Features.Shader, "Projection", &Projection);
 
     /*
-        Draw Shit
+        Draw Meshes
     */
 
-    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * HexMesh = &EditorState->HexGrid.Chunks[i].HexMesh;
-        DrawHexMesh(&EditorState->HexGrid, HexMesh);
-    }
+    // for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+    //     hex_mesh * HexMesh = &EditorState->HexGrid.Chunks[i].HexMesh;
+    //     DrawHexMesh(&EditorState->HexGrid, HexMesh);
+    // }
     DrawFeatureSet(&EditorState->HexGrid.Features);
-    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * WaterMesh = &App->EditorState.HexGrid.Chunks[i].WaterMesh;
-        DrawWaterMesh(&App->EditorState.HexGrid, WaterMesh);
-    }
+    // for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+    //     hex_mesh * WaterMesh = &App->EditorState.HexGrid.Chunks[i].WaterMesh;
+    //     DrawWaterMesh(&App->EditorState.HexGrid, WaterMesh);
+    // }
 
     //Note(Zen): Check collisions
     v4 RayClip = v4(0, 0, -1.f, 1.f);
