@@ -26,6 +26,7 @@ EditorStateInit(app * App) {
     Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
     Grid->Height = HEX_MAX_CHUNKS_HIGH * HEX_CHUNK_HEIGHT;
     AddCellsToHexGrid(Grid);
+    Grid->Features = InitFeatureSet();
     hex_cell * Cells = App->EditorState.HexGrid.Cells;
     for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
         for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
@@ -273,8 +274,9 @@ EditorStateUpdate(app * App) {
 
     EditorState->Settings = doEditorUI(&App->UI, EditorState->Settings, App->ScreenWidth);
 
-
-    //Note(Zen): Draw the grid.
+    /*
+        Set Uniforms
+    */
     r32 Ratio = App->ScreenWidth / App->ScreenHeight;
     matrix Projection = CrestMatrixPerspective(PI * 0.5f, Ratio, 0.1f, 100.f);
     matrix View = ViewMatrixFromCamera(Camera);
@@ -297,10 +299,20 @@ EditorStateUpdate(app * App) {
     CrestShaderSetV3(EditorState->HexGrid.WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
     CrestShaderSetFloat(EditorState->HexGrid.WaterShader, "Time", App->TotalTime);
 
+
+    CrestShaderSetMatrix(EditorState->HexGrid.Features.Shader, "View", &View);
+    CrestShaderSetMatrix(EditorState->HexGrid.Features.Shader, "Model", &Model);
+    CrestShaderSetMatrix(EditorState->HexGrid.Features.Shader, "Projection", &Projection);
+
+    /*
+        Draw Shit
+    */
+
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * HexMesh = &App->EditorState.HexGrid.Chunks[i].HexMesh;
-        DrawHexMesh(&App->EditorState.HexGrid, HexMesh);
+        hex_mesh * HexMesh = &EditorState->HexGrid.Chunks[i].HexMesh;
+        DrawHexMesh(&EditorState->HexGrid, HexMesh);
     }
+    DrawFeatureSet(&EditorState->HexGrid.Features);
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         hex_mesh * WaterMesh = &App->EditorState.HexGrid.Chunks[i].WaterMesh;
         DrawWaterMesh(&App->EditorState.HexGrid, WaterMesh);
