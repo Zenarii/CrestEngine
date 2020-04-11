@@ -50,8 +50,6 @@ EditorStateInit(app * App) {
     State->Settings.BrushSize = 0;
     State->Settings.EditWater = 0;
     State->Settings.WaterLevel = 0;
-
-    CrestParseOBJ("My Very Long String ;)");
 }
 
 internal hex_edit_settings
@@ -260,10 +258,7 @@ EditorStateUpdate(app * App) {
     };
 
     //Note(Zen): Camera Controls
-    if(App->KeyDown[KEY_W]) {
-        Camera->Position.z -= CAMERA_SPEED * App->Delta;
-        OutputDebugStringA("W");
-    }
+    if(App->KeyDown[KEY_W]) Camera->Position.z -= CAMERA_SPEED * App->Delta;
     if(App->KeyDown[KEY_S]) Camera->Position.z += CAMERA_SPEED * App->Delta;
     if(App->KeyDown[KEY_A]) Camera->Position.x -= CAMERA_SPEED * App->Delta;
     if(App->KeyDown[KEY_D]) Camera->Position.x += CAMERA_SPEED * App->Delta;
@@ -304,7 +299,9 @@ EditorStateUpdate(app * App) {
 
     CrestShaderSetMatrix(EditorState->HexGrid.Features.Shader, "View", &View);
     CrestShaderSetMatrix(EditorState->HexGrid.Features.Shader, "Projection", &Projection);
-
+    CrestShaderSetV3(EditorState->HexGrid.Features.Shader, "LightColour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(EditorState->HexGrid.Features.Shader, "LightPosition", v3(3.f, 8.f, 3.f));
+    CrestShaderSetV3(EditorState->HexGrid.Features.Shader, "ViewPosition", Camera->Position);
     /*
         Draw Meshes
     */
