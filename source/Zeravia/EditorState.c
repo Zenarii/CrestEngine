@@ -69,6 +69,13 @@ doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
     if(Settings.EditElevation) {
         Settings.Elevation = CrestUISliderInt(ui, GENERIC_ID(0), Settings.Elevation, HEX_MAX_ELEVATION, "Elevation");
     }
+    /*
+        Water Editing
+    */
+    Settings.EditWater = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditWater, "Water:");
+    if(Settings.EditWater) Settings.WaterLevel = CrestUISliderInt(ui, GENERIC_ID(0), Settings.WaterLevel, HEX_MAX_ELEVATION, "Water Level");
+
+    
     Settings.BrushSize = 0;//CrestUISliderInt(ui, GENERIC_ID(0), Settings.BrushSize, 4, "BrushSize");
 
     return Settings;
@@ -76,9 +83,9 @@ doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
 
 internal hex_edit_settings
 doEditorUITerrainFeatures(CrestUI * ui, hex_edit_settings Settings) {
-    Settings.EditWater = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditWater, "Water:");
+
     Settings.EditTrees = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditTrees, "Trees:");
-    if(Settings.EditWater) Settings.WaterLevel = CrestUISliderInt(ui, GENERIC_ID(0), Settings.WaterLevel, HEX_MAX_ELEVATION, "Water Level");
+
     if(Settings.EditTrees) Settings.FeatureDensity = CrestUISliderInt(ui, GENERIC_ID(0), Settings.FeatureDensity, 6, "Density");
 
     return Settings;
@@ -123,16 +130,17 @@ EditCellTerrain(hex_cell * Cell, hex_edit_settings Settings) {
         Cell->Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
         Result |= (EDITSTATE_EDITED_COLLISIONS | EDITSTATE_EDITED_MESH | EDITSTATE_EDITED_WATER);
     }
+    if(Settings.EditWater && Settings.WaterLevel != Cell->WaterLevel) {
+        Cell->WaterLevel = Settings.WaterLevel;
+        Result |= EDITSTATE_EDITED_WATER;
+    }
     return Result;
 }
 
 internal b32
 EditCellTerrainFeatures(hex_cell * Cell, hex_feature_set * FeatureSet, hex_edit_settings Settings) {
     b32 Result = 0;
-    if(Settings.EditWater && Settings.WaterLevel != Cell->WaterLevel) {
-        Cell->WaterLevel = Settings.WaterLevel;
-        Result |= EDITSTATE_EDITED_WATER;
-    }
+
     if(Settings.EditTrees) {
         if(Cell->FeatureIndex && Settings.FeatureDensity == 0) {
             ClearFeaturesFromCell(FeatureSet, Cell, 1);
