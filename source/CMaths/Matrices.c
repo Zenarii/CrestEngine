@@ -43,6 +43,15 @@ CrestMatrixInitC(v4 Column1, v4 Column2, v4 Column3, v4 Column4) {
 #define MatrixC(C1, C2, C3, C4) CrestMatrixInitC(C1, C2, C3, C4)
 
 internal matrix
+CrestMatrixIdentity() {
+    matrix Result = {1.f, 0.f, 0.f, 0.f,
+                     0.f, 1.f, 0.f, 0.f,
+                     0.f, 0.f, 1.f, 0.f,
+                     0.f, 0.f, 0.f, 1.f};
+    return Result;
+}
+
+internal matrix
 CrestM4MultM4(matrix m1, matrix m2) {
   matrix result = {0};
   for(int n = 0; n < 4; ++n) {

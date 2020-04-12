@@ -23,7 +23,7 @@ const global v3 HexCorners[] = {
 #define HEX_BLEND_FACTOR (1.f - HEX_SOLID_FACTOR)
 #define HEX_NUDGE_STRENGTH 0.2f
 #define HEX_ELEVATION_NUDGE_STRENGTH 0.15f
-#define HEX_NOISE_SCALE 0.25f
+#define HEX_NOISE_SCALE 0.5f
 
 #define HEX_ELEVATION_STEP 0.3f
 #define HEX_MAX_ELEVATION 4
@@ -116,8 +116,13 @@ struct hex_cell {
     i32 Index; //Position in hex_grid's cell array
     i32 Elevation;
     i32 WaterLevel;
-    v3 Position;
     v3 Colour;
+    v3 Position;
+
+
+    i32 FeatureIndex;
+    hex_feature_type FeatureType;
+
     hex_cell * Neighbours[HEX_DIRECTION_COUNT];
 };
 
@@ -184,5 +189,5 @@ struct hex_grid {
     hex_cell Cells[HEX_MAX_CHUNKS * HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT];
     hex_grid_chunk Chunks[HEX_MAX_CHUNKS];
 
-    hex_feature_set Features;
+    hex_feature_set FeatureSet;
 };

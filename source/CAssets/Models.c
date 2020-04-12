@@ -59,8 +59,10 @@ CrestParseOBJ(char * Data) {
     char * LineStart = Data;
     char * LineEnd = Data;
 
-    while(*LineEnd != '\0') {
+    i32 LineNum = 0;
 
+    while(*LineEnd != '\0') {
+        LineNum++;
         //Note(Zen): Get line
         while (*LineEnd != '\n' && *LineEnd != '\0') ++LineEnd;
 
@@ -142,15 +144,12 @@ CrestParseOBJ(char * Data) {
 
 
                 Result.Vertices[VerticesCount++] = Vertex;
-
-                if(!i) {
-                    Result.Vertices[VerticesCount].Position = v3(0.f, 0.f, 0.f);
-                }
             }
         }
         else {
-            OutputDebugStringA("Failed to read line: ");
-            //OutputDebugStringA(LineStart);
+            char Out[32] = {0};
+            sprintf(Out, "OBJ: Failed to read line (%d)\n", LineNum);
+            OutputDebugStringA(Out);
         }
 
         LineStart = ++LineEnd;

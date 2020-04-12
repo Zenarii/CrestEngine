@@ -123,12 +123,16 @@ AppUpdate(Platform * platform) {
     //FPS
     #define APP_FPS_PANEL_WIDTH 200
     CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 16.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
-    char Buffer[32];
-    sprintf(Buffer, "Time for frame:%2.fms", platform->TimeTakenForFrame);
-    CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
-    sprintf(Buffer, "FPS:%3.f/s", 1.f/App->Delta);
-    CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
+    {
+        char Buffer[32];
+        sprintf(Buffer, "Time for frame:%2.fms", platform->TimeTakenForFrame);
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
+        sprintf(Buffer, "FPS:%3.f/s", 1.f/App->Delta);
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
+    }
     CrestUIPopRow(&App->UI);
+
+
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
 
 

@@ -10,7 +10,6 @@ CreateCell(int x, int z) {
     Result.Colour = v3(0.8f, 0.6f, 0.7f);
     Result.WaterLevel = 0;
 
-
     return Result;
 }
 

@@ -1,4 +1,4 @@
-#define MAX_FEATURE_SET_SIZE 64
+#define MAX_FEATURE_SET_SIZE 128
 
 typedef enum hex_feature_type hex_feature_type;
 enum hex_feature_type {
@@ -7,8 +7,12 @@ enum hex_feature_type {
 
     HEX_FEATURE_COUNT
 };
-
-
+typedef struct hex_feature hex_feature;
+struct hex_feature {
+    u32 Count;
+    u32 MeshVertices;
+    matrix Model[MAX_FEATURE_SET_SIZE];
+};
 
 typedef struct hex_feature_set hex_feature_set;
 struct hex_feature_set {
@@ -16,6 +20,7 @@ struct hex_feature_set {
     u32 VAOs[HEX_FEATURE_COUNT];
     u32 VBOs[HEX_FEATURE_COUNT];
     u32 InstancedVBOs[HEX_FEATURE_COUNT];
-    #define HexFeature(Name) matrix Name##Set[MAX_FEATURE_SET_SIZE];
-    #include "HexFeatures.inc"
+
+    hex_feature Features[HEX_FEATURE_COUNT];
+
 };
