@@ -186,37 +186,43 @@ CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settin
                 b32 Result = EditCell(&Grid->Cells[CellIndex], Settings);
                 if(Result & EDITSTATE_EDITED_MESH) {
                     TriangulateMesh(Grid, Chunk);
+                    i32 PreviousChunkIndex = -1;
                     //Note(Zen): Edit any neighbouring chunks that require it
                     for(i32 i = 0; i < 6; ++i) {
                         if(Grid->Cells[CellIndex].Neighbours[i]) {
                             hex_cell Neighbour = *Grid->Cells[CellIndex].Neighbours[i];
                             i32 NeighbourChunkIndex = GetChunkIndexFromCellIndex(Neighbour.Index);
-                            if(NeighbourChunkIndex != ChunkIndex) {
+                            if(NeighbourChunkIndex != ChunkIndex && NeighbourChunkIndex != PreviousChunkIndex) {
                                 TriangulateMesh(Grid, &Grid->Chunks[NeighbourChunkIndex]);
+                                PreviousChunkIndex = NeighbourChunkIndex;
                             }
                         }
                     }
                 }
                 if(Result & EDITSTATE_EDITED_COLLISIONS) {
                     CollisionMeshFromChunk(Grid, ChunkIndex);
+                    i32 PreviousChunkIndex = -1;
                     for(i32 i = 0; i < 6; ++i) {
                         if(Grid->Cells[CellIndex].Neighbours[i]) {
                             hex_cell Neighbour = *Grid->Cells[CellIndex].Neighbours[i];
                             i32 NeighbourChunkIndex = GetChunkIndexFromCellIndex(Neighbour.Index);
-                            if(NeighbourChunkIndex != ChunkIndex) {
+                            if(NeighbourChunkIndex != ChunkIndex && NeighbourChunkIndex != PreviousChunkIndex) {
                                 CollisionMeshFromChunk(Grid, NeighbourChunkIndex);
+                                PreviousChunkIndex = NeighbourChunkIndex;
                             }
                         }
                     }
                 }
                 if(Result & EDITSTATE_EDITED_WATER) {
                     TriangulateWaterMesh(Grid, Chunk);
+                    i32 PreviousChunkIndex = -1;
                     for(i32 i = 0; i < 6; ++i) {
                         if(Grid->Cells[CellIndex].Neighbours[i]) {
                             hex_cell Neighbour = *Grid->Cells[CellIndex].Neighbours[i];
                             i32 NeighbourChunkIndex = GetChunkIndexFromCellIndex(Neighbour.Index);
-                            if(NeighbourChunkIndex != ChunkIndex) {
+                            if(NeighbourChunkIndex != ChunkIndex && NeighbourChunkIndex != PreviousChunkIndex) {
                                 TriangulateWaterMesh(Grid, &Grid->Chunks[NeighbourChunkIndex]);
+                                PreviousChunkIndex = NeighbourChunkIndex;
                             }
                         }
                     }
