@@ -119,9 +119,7 @@ struct hex_cell {
     v3 Colour;
     v3 Position;
 
-
-    i32 FeatureIndex;
-    hex_feature_type FeatureType;
+    hex_feature_type Features[HEX_DIRECTION_COUNT];
 
     hex_cell * Neighbours[HEX_DIRECTION_COUNT];
 };

@@ -26,7 +26,7 @@ EditorStateInit(app * App) {
     Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
     Grid->Height = HEX_MAX_CHUNKS_HIGH * HEX_CHUNK_HEIGHT;
     AddCellsToHexGrid(Grid);
-    Grid->FeatureSet = InitFeatureSet();
+    InitFeatureSet(&Grid->FeatureSet);
     hex_cell * Cells = App->EditorState.HexGrid.Cells;
     for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
         for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
@@ -44,7 +44,7 @@ EditorStateInit(app * App) {
 
     //Set default editor settings
     State->Settings.EditColour = 0;
-    State->Settings.Colour = EditorColourV[EDITOR_COLOUR_COUNT-1];
+    State->Settings.Colour = EditorColourV[0];
     State->Settings.EditElevation = 0;
     State->Settings.Elevation = 0;
     State->Settings.BrushSize = 0;
@@ -75,7 +75,7 @@ doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
     Settings.EditWater = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditWater, "Water:");
     if(Settings.EditWater) Settings.WaterLevel = CrestUISliderInt(ui, GENERIC_ID(0), Settings.WaterLevel, HEX_MAX_ELEVATION, "Water Level");
 
-    
+
     Settings.BrushSize = 0;//CrestUISliderInt(ui, GENERIC_ID(0), Settings.BrushSize, 4, "BrushSize");
 
     return Settings;
@@ -142,11 +142,11 @@ EditCellTerrainFeatures(hex_cell * Cell, hex_feature_set * FeatureSet, hex_edit_
     b32 Result = 0;
 
     if(Settings.EditTrees) {
-        if(Cell->FeatureIndex && Settings.FeatureDensity == 0) {
-            ClearFeaturesFromCell(FeatureSet, Cell, 1);
-        }
-        else if(Cell->FeatureIndex == 0 && Settings.FeatureDensity != 0){
-            AddFeaturesToCell(FeatureSet, Cell, 1); // also send density
+
+        ClearFeaturesFromCell(FeatureSet, Cell);
+
+        if(Settings.FeatureDensity != 0){
+            AddFeaturesToCell(FeatureSet, Cell, 1, 0); // also send density
         }
     }
     return Result;
@@ -417,9 +417,5 @@ EditorStateUpdate(app * App) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-
-    char FeatureCount[16] = {0};
-    sprintf(FeatureCount,"%d/%d", EditorState->HexGrid.FeatureSet.Features[1].Count, MAX_FEATURE_SET_SIZE);
-    CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(500, 100, 150, 32), FeatureCount);
 }
 #undef UI_ID_OFFSET

@@ -1,22 +1,26 @@
-internal hex_feature_set
-InitFeatureSet() {
-    hex_feature_set Result = {0};
+internal i32
+FeatureIndexFromCell(hex_cell Cell, hex_direction Direction) {
+    return Cell.Index * HEX_DIRECTION_COUNT + Direction;
+}
+
+internal void
+InitFeatureSet(hex_feature_set * Result) {
+
     //load each mesh from a set of paths
     //then put into a vbo
-    glGenVertexArrays(HEX_FEATURE_COUNT, Result.VAOs);
-    glGenBuffers(HEX_FEATURE_COUNT, Result.VBOs);
-    glGenBuffers(HEX_FEATURE_COUNT, Result.InstancedVBOs);
+    glGenVertexArrays(HEX_FEATURE_COUNT, Result->VAOs);
+    glGenBuffers(HEX_FEATURE_COUNT, Result->VBOs);
+    glGenBuffers(HEX_FEATURE_COUNT, Result->InstancedVBOs);
 
     for(int i = 1; i < HEX_FEATURE_COUNT; ++i) {
         char * MeshData = CrestLoadFileAsString("../assets/FeatureModels/tree.obj");
         mesh Mesh = CrestParseOBJ(MeshData);
-        Result.Features[i].MeshVertices = Mesh.VerticesCount;
+        Result->Features[i].MeshVertices = Mesh.VerticesCount;
         free(MeshData);
-        Result.Features[i].Count = 0;
 
-        glBindVertexArray(Result.VAOs[i]);
+        glBindVertexArray(Result->VAOs[i]);
 
-        glBindBuffer(GL_ARRAY_BUFFER, Result.VBOs[i]);
+        glBindBuffer(GL_ARRAY_BUFFER, Result->VBOs[i]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(Mesh), Mesh.Vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(mesh_vertex), 0);
         glEnableVertexAttribArray(0);
@@ -24,8 +28,8 @@ InitFeatureSet() {
         glEnableVertexAttribArray(1);
 
 
-        glBindBuffer(GL_ARRAY_BUFFER, Result.InstancedVBOs[i]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Result.Features[i].Model[0], GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, Result->InstancedVBOs[i]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Result->Features[i].Model[0], GL_DYNAMIC_DRAW);
 
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(float), 0);
@@ -42,39 +46,40 @@ InitFeatureSet() {
         glVertexAttribDivisor(5, 1);
 
     }
-    Result.Shader = CrestShaderInit("../assets/Shaders/hex_feature_shader.vs",
+    Result->Shader = CrestShaderInit("../assets/Shaders/hex_feature_shader.vs",
                                     "../assets/Shaders/hex_feature_shader.fs");
-
-    return Result;
 }
 
 internal void
-AddFeaturesToCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type) {
-    //Add Mesh
-    hex_feature * Feature = &Set->Features[Type];
-    if(Feature->Count >= MAX_FEATURE_SET_SIZE) return; //TODO(Zen): Logging
-    matrix Model = CrestMatrixTranslation(Cell->Position);
-    Feature->Model[Feature->Count] = CrestMatrixTranspose(Model);
+AddFeaturesToCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type, i32 Density) {
+    i32 DirectionsToPlace = rand() & ((1<<7) - 1);
+    for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
+        if((1<<Direction) & DirectionsToPlace) {
+            Cell->Features[Direction] = Type;
+            matrix Model = CrestMatrixTranslation(CrestV3Add(Cell->Position, HexCorners[Direction]));
+            Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixTranspose(Model);
+        }
+    }
+
     glBindVertexArray(Set->VAOs[Type]);
     glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[Type]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, (Feature->Count + 1) * sizeof(matrix), &Feature->Model[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Set->Features[Type].Model[0]);
 
-    //Adjust Cell
-    Cell->FeatureType = Type;
-    Cell->FeatureIndex = Feature->Count;
-
-    Feature->Count++;
 }
 
 internal void
-ClearFeaturesFromCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type) {
-    hex_feature * Feature = &Set->Features[Type];
-    Assert(Feature->Count != 0);
-    Feature->Model[Cell->FeatureIndex] = Feature->Model[--Feature->Count];
+ClearFeaturesFromCell(hex_feature_set * Set, hex_cell * Cell) {
+    for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
+        hex_feature_type Type = Cell->Features[Direction];
+        Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixZero();
+        Cell->Features[Direction] = 0;
+        
+    }
 
-    Cell->FeatureType = 0;
-    Cell->FeatureIndex = 0;
-
+    //HARDCODE(Zen): Lets make sure this works with just trees first
+    glBindVertexArray(Set->VAOs[HEX_FEATURE_Tree]);
+    glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[HEX_FEATURE_Tree]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Set->Features[HEX_FEATURE_Tree].Model[0]);
 }
 
 
@@ -84,6 +89,6 @@ DrawFeatureSet(hex_feature_set * FeatureSet) {
     glUseProgram(FeatureSet->Shader);
     for(i32 i = 1; i < HEX_FEATURE_COUNT; ++i) {
         glBindVertexArray(FeatureSet->VAOs[i]);
-        glDrawArraysInstanced(GL_TRIANGLES, 0, FeatureSet->Features[i].MeshVertices, FeatureSet->Features[i].Count);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, FeatureSet->Features[i].MeshVertices, MAX_FEATURE_SET_SIZE);
     }
 }

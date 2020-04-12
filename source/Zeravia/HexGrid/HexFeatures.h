@@ -1,4 +1,5 @@
-#define MAX_FEATURE_SET_SIZE 128
+//CHUNK_WIDTH * CHUNK_HEIGHT * MAX CHUNKS if you change this must
+#define MAX_FEATURE_SET_SIZE (35 * 16 * 6)
 
 typedef enum hex_feature_type hex_feature_type;
 enum hex_feature_type {
@@ -9,7 +10,6 @@ enum hex_feature_type {
 };
 typedef struct hex_feature hex_feature;
 struct hex_feature {
-    u32 Count;
     u32 MeshVertices;
     matrix Model[MAX_FEATURE_SET_SIZE];
 };
