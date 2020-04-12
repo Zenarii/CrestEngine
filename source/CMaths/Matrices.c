@@ -52,6 +52,12 @@ CrestMatrixIdentity() {
 }
 
 internal matrix
+CrestMatrixZero() {
+    matrix Result = {0};
+    return Result;
+}
+
+internal matrix
 CrestM4MultM4(matrix m1, matrix m2) {
   matrix result = {0};
   for(int n = 0; n < 4; ++n) {

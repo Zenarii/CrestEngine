@@ -12,12 +12,6 @@ TODO(Zen): UI customisation
 easily use different styles (still render in a single call)
 padding in rows/columns
 
-TODO(Zen): Other features
-Panels on top of other panels
-Figure out depth drawing.
- - Sort Triangles?
- - Give panels certain "z-indexes" and increase this for the rectangles drawn?
-
 TODO(Zen): Testing
 Test explicitly pushing multiple rows
 
@@ -52,7 +46,7 @@ global CrestUIStyle DefaultStyle = {
     .HeaderColour = {0.9f, 0.3f, 0.f, 1.f},
     .HeaderBorderColour = {0.7f, 0.7f, 0.75f, 1.0f},
     .PanelColour = {0.1f, 0.1f, 0.1f, 0.6f},
-    .ToggleButtonColour = {1.f, 215.f/255.f, 0.f, 1.f}
+    .ToggleButtonColour = {1.f, 215.f/255.f, 0.5f, 1.f}
 };
 
 
