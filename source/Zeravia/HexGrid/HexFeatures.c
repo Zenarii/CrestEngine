@@ -5,7 +5,6 @@ FeatureIndexFromCell(hex_cell Cell, hex_direction Direction) {
 
 internal void
 InitFeatureSet(hex_feature_set * Result) {
-
     //load each mesh from a set of paths
     //then put into a vbo
     glGenVertexArrays(HEX_FEATURE_COUNT, Result->VAOs);
@@ -13,7 +12,7 @@ InitFeatureSet(hex_feature_set * Result) {
     glGenBuffers(HEX_FEATURE_COUNT, Result->InstancedVBOs);
 
     for(int i = 1; i < HEX_FEATURE_COUNT; ++i) {
-        char * MeshData = CrestLoadFileAsString("../assets/FeatureModels/tree.obj");
+        char * MeshData = CrestLoadFileAsString(HexFeaturePaths[i]);
         mesh Mesh = CrestParseOBJ(MeshData);
         Result->Features[i].MeshVertices = Mesh.VerticesCount;
         free(MeshData);
@@ -48,6 +47,12 @@ InitFeatureSet(hex_feature_set * Result) {
     }
     Result->Shader = CrestShaderInit("../assets/Shaders/hex_feature_shader.vs",
                                     "../assets/Shaders/hex_feature_shader.fs");
+
+    CrestShaderSetV3(Result->Shader, "Material.Ambient", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(Result->Shader, "Material.Diffuse", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(Result->Shader, "Material.Specular", v3(1.f, 1.f, 1.f));
+    CrestShaderSetFloat(Result->Shader, "Material.Shininess", 8.f);
+
 }
 
 internal v3
@@ -69,16 +74,17 @@ NudgeFeature(v3 Position) {
 internal void
 AddFeaturesToCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type, i32 Density) {
     Cell->FeatureDensity = Density;
+    Cell->FeatureType = Type;
     i32 DirectionsList[] = {0, 1, 2, 3, 4, 5};
     CrestShuffleArray(DirectionsList, 6);
-
+    //DirectionsList[0] = 0;
     for(i32 i = 0; i < Density; ++i) {
         hex_direction Direction = DirectionsList[i];
         Cell->Features[Direction] = Type;
         v3 ModelPosition = CrestV3Add(Cell->Position, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR * 0.5f));
         ModelPosition = NudgeFeature(ModelPosition);
-        r32 ModelRotation = (RandomNoise3D(ModelPosition) * 2 - 1) * PI;
-        r32 ModelScale = 0.9f + 0.2f * RandomNoise3D(CrestV3Scale(ModelPosition, 2.f));
+        r32 ModelRotation = PI + (Direction * PI/3.f);//(RandomNoise3D(ModelPosition) * 2 - 1) * PI;
+        r32 ModelScale = 0.9f + 0.2f * RandomNoise3D(CrestV3Scale(ModelPosition, 2.f * FEATURES_NOISE_SCALE));
         matrix Model = CrestM4MultM4(CrestMatrixRotation(ModelRotation, CREST_AXIS_Y), CrestMatrixScale(ModelScale));
         Model = CrestM4MultM4(CrestMatrixTranslation(ModelPosition), Model);
         Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixTranspose(Model);
@@ -99,15 +105,13 @@ ClearFeaturesFromCell(hex_feature_set * Set, hex_cell * Cell) {
 
     }
 
-    //POTENTIAL OPTIMISATION, reset for all types but only for the cell's matrices
-    //rather than all of the matrices
-    for(hex_feature_type Type = 1; Type < HEX_FEATURE_COUNT; ++Type) {
-        glBindVertexArray(Set->VAOs[Type]);
-        glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[Type]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Set->Features[Type].Model[0]);
-    }
+    glBindVertexArray(Set->VAOs[Cell->FeatureType]);
+    glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[Cell->FeatureType]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Set->Features[Cell->FeatureType].Model[0]);
+
 
     Cell->FeatureDensity = 0;
+    Cell->FeatureType = 0;
 }
 
 

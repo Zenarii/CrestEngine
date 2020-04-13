@@ -55,7 +55,7 @@ EditorStateInit(app * App) {
 
 internal hex_edit_settings
 doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
-    Settings.EditColour = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditColour, "Colour");
+    Settings.EditColour = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditColour, "Colour:");
     if(Settings.EditColour) {
         for(i32 ColourIndex = 0; ColourIndex < EDITOR_COLOUR_COUNT; ++ColourIndex) {
             Settings.Colour = CrestUIButton(ui, GENERIC_ID(ColourIndex), EditorColourString[ColourIndex])
@@ -65,7 +65,7 @@ doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
     /*
         Elevation
     */
-    Settings.EditElevation = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditElevation, "Elevation");
+    Settings.EditElevation = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditElevation, "Elevation:");
     if(Settings.EditElevation) {
         Settings.Elevation = CrestUISliderInt(ui, GENERIC_ID(0), Settings.Elevation, HEX_MAX_ELEVATION, "Elevation");
     }
@@ -83,10 +83,11 @@ doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
 
 internal hex_edit_settings
 doEditorUITerrainFeatures(CrestUI * ui, hex_edit_settings Settings) {
+    #define HexFeature(Name) Settings.EditFeature = CrestUIToggleButton(ui, GENERIC_ID(HEX_FEATURE_##Name), Settings.EditFeature == HEX_FEATURE_##Name, #Name "s:") ? HEX_FEATURE_##Name : Settings.EditFeature;
+    #include "HexGrid/HexFeatures.inc"
 
-    Settings.EditTrees = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditTrees, "Trees:");
 
-    if(Settings.EditTrees) Settings.FeatureDensity = CrestUISliderInt(ui, GENERIC_ID(0), Settings.FeatureDensity, 6, "Density");
+    Settings.FeatureDensity = CrestUISliderInt(ui, GENERIC_ID(0), Settings.FeatureDensity, 6, "Density");
 
     return Settings;
 }
@@ -141,14 +142,15 @@ internal b32
 EditCellTerrainFeatures(hex_cell * Cell, hex_feature_set * FeatureSet, hex_edit_settings Settings) {
     b32 Result = 0;
 
-    if(Settings.EditTrees) {
-        if(Settings.FeatureDensity && (Settings.FeatureDensity != Cell->FeatureDensity)){
+    if(Settings.EditFeature) {
+        if((Settings.FeatureDensity != Cell->FeatureDensity) || (Settings.EditFeature != Cell->FeatureType)) {
             ClearFeaturesFromCell(FeatureSet, Cell);
-            AddFeaturesToCell(FeatureSet, Cell, 1, Settings.FeatureDensity); // also send density
+            AddFeaturesToCell(FeatureSet, Cell, Settings.EditFeature, Settings.FeatureDensity); //hardcode(Zen): always trees rn
         }
     }
-
-    if(Settings.FeatureDensity == 0) ClearFeaturesFromCell(FeatureSet, Cell);
+    else {
+        ClearFeaturesFromCell(FeatureSet, Cell);
+    }
 
     return Result;
 }
@@ -328,8 +330,8 @@ EditorStateUpdate(app * App) {
 
     CrestShaderSetMatrix(EditorState->HexGrid.FeatureSet.Shader, "View", &View);
     CrestShaderSetMatrix(EditorState->HexGrid.FeatureSet.Shader, "Projection", &Projection);
-    CrestShaderSetV3(EditorState->HexGrid.FeatureSet.Shader, "LightColour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(EditorState->HexGrid.FeatureSet.Shader, "LightPosition", v3(3.f, 8.f, 3.f));
+    CrestShaderSetV3(EditorState->HexGrid.FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(EditorState->HexGrid.FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
     CrestShaderSetV3(EditorState->HexGrid.FeatureSet.Shader, "ViewPosition", Camera->Position);
     /*
         Draw Meshes

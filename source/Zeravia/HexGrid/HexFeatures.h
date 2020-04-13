@@ -10,6 +10,14 @@ enum hex_feature_type {
 
     HEX_FEATURE_COUNT
 };
+
+//Note(Zen): This assumes that a features .obj file name is
+//the same as used in the HexFeatures.inc file
+global char * HexFeaturePaths[] = {
+    #define HexFeature(Name) "../assets/FeatureModels/" #Name ".obj",
+    #include "HexFeatures.inc"
+};
+
 typedef struct hex_feature hex_feature;
 struct hex_feature {
     u32 MeshVertices;

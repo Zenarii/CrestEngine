@@ -21,6 +21,23 @@ struct mesh {
 /*
     OBJ
 */
+
+typedef struct material material;
+struct material {
+    v3 Ambient;
+    v3 Diffuse;
+    v3 Specular;
+    r32 Shininess;
+};
+
+typedef struct parsed_obj_format parsed_obj_format;
+struct parsed_obj_format {
+    mesh Mesh;
+    i32 UsedMaterials;
+    material Materials[4];
+};
+
+
 internal b32
 CrestStringCompare(char * String1, char * String2, i32 Length) {
     b32 Result = 1;
@@ -44,9 +61,9 @@ GetNextWord(char * WordStart) {
     return WordEnd;
 }
 
-internal mesh
+internal parsed_obj_format
 CrestParseOBJ(char * Data) {
-    mesh Result = {0};
+    parsed_obj_format Result = {0};
     u32 VerticesCount = 0;
 
     v3 TempPositions[CREST_MESH_MAX_VERTICES] = {0};
@@ -116,7 +133,19 @@ CrestParseOBJ(char * Data) {
             TempNormals[NormalsCount++] = Normal;
         }
         else if(CrestStringCompare(WordStart, "vt", WordLength) && WordLength == 2) {
-            //Add to texture Coords
+            v2 Uv = {0};
+            WordStart = ++WordEnd;
+            WordEnd = GetNextWord(WordStart);
+
+            Uv.x = atof(WordStart);
+
+
+            WordStart = ++WordEnd;
+            WordEnd = GetNextWord(WordStart);
+
+            Uv.y = atof(WordStart);
+
+            TempTexCoords[TexCoordsCount++] = Uv;
         }
         else if(CrestStringCompare(WordStart, "f", WordLength) && WordLength == 1) {
             //for now only works with triangles

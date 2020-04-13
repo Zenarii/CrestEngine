@@ -120,6 +120,7 @@ struct hex_cell {
     v3 Position;
 
     i32 FeatureDensity;
+    hex_feature_type FeatureType;
     hex_feature_type Features[HEX_DIRECTION_COUNT];
 
     hex_cell * Neighbours[HEX_DIRECTION_COUNT];
