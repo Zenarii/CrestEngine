@@ -34,7 +34,7 @@ NoiseFastFloor(r32 x) {
 
 
 /*
-    3D Noise
+    Simplex Noise
 */
 global v3 SimplexNoise3DGradients[] = {{1,1,0},{-1,1,0},{1,-1,0},{-1,-1,0},
                                        {1,0,1},{-1,0,1},{1,0,-1},{-1,0,-1},
@@ -162,5 +162,26 @@ Noise3DSample(v3 Input) {
     Sample.x = SimplexNoise3D(v3(Input.x + Input.x, Input.y + Input.x, Input.z + Input.x));
     Sample.y = SimplexNoise3D(v3(Input.x + Input.y, Input.y + Input.y, Input.z + Input.y));
     Sample.z = SimplexNoise3D(v3(Input.x + Input.z, Input.y + Input.z, Input.z + Input.z));
+    return Sample;
+}
+
+/*
+    Random Noise
+*/
+#include "NoiseHashGrid.inc"
+
+internal r32
+RandomNoise3D(v3 Input) {
+    i32 x = (i32)Input.x % HASH_GRID_SIZE;
+    i32 z = (i32)Input.z % HASH_GRID_SIZE;
+    return HashNoiseGrid[x + z * HASH_GRID_SIZE];
+}
+
+internal v3
+NoiseRandom3DSample(v3 Input) {
+    v3 Sample = {0};
+    Sample.x = RandomNoise3D(v3(Input.x + Input.x, 0, Input.z + Input.x));
+    Sample.y = RandomNoise3D(v3(Input.x + Input.y, 0, Input.z + Input.y));
+    Sample.z = RandomNoise3D(v3(Input.x + Input.z, 0, Input.z + Input.z));
     return Sample;
 }

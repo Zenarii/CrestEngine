@@ -50,6 +50,19 @@ InitFeatureSet(hex_feature_set * Result) {
                                     "../assets/Shaders/hex_feature_shader.fs");
 }
 
+internal v3
+NudgeFeature(v3 Position) {
+    v3 ScaledPosition = CrestV3Scale(Position, FEATURES_NOISE_SCALE);
+    v3 Sample = NoiseRandom3DSample(ScaledPosition);
+    //Sample in range [0..1] so convert to [-1..1]
+    Sample.y = 0;
+    Sample.x = 2 * Sample.x - 1;
+    Sample.z = 2 * Sample.z - 1;
+    Sample = CrestV3Scale(Sample, FEATURES_NUDGE_STRENGTH);
+    v3 Result = CrestV3Add(Position, Sample);
+    return Result;
+}
+
 internal void
 AddFeaturesToCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type, i32 Density) {
     Cell->FeatureDensity = Density;
@@ -59,8 +72,7 @@ AddFeaturesToCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type,
         if((1<<Direction) & DirectionsToPlace) {
             Cell->Features[Direction] = Type;
             v3 ModelPosition = CrestV3Add(Cell->Position, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR * 0.5f));
-            //ModelPosition = NudgeFeature(ModelPosition);
-            //ModelPosition.y = Cell->Position.y;
+            ModelPosition = NudgeFeature(ModelPosition);
             matrix Model = CrestMatrixTranslation(ModelPosition);
             Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixTranspose(Model);
         }
@@ -82,6 +94,7 @@ ClearFeaturesFromCell(hex_feature_set * Set, hex_cell * Cell) {
     }
 
     //POTENTIAL OPTIMISATION, reset for all types but only for the cell's matrices
+    //rather than all of the matrices
     for(hex_feature_type Type = 1; Type < HEX_FEATURE_COUNT; ++Type) {
         glBindVertexArray(Set->VAOs[Type]);
         glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[Type]);

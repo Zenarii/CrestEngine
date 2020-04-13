@@ -233,6 +233,8 @@ CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settin
                             }
                         }
                     }
+                    //also clear the features on the tile
+                    ClearFeaturesFromCell(&Grid->FeatureSet, &Grid->Cells[CellIndex]);
                 }
                 if(Result & EDITSTATE_EDITED_WATER) {
                     TriangulateWaterMesh(Grid, Chunk);

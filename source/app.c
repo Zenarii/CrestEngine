@@ -93,7 +93,7 @@ AppUpdate(Platform * platform) {
         App->UIRenderer.Height = platform->ScreenHeight;
         App->ScreenWidth = platform->ScreenWidth;
         App->ScreenHeight = platform->ScreenHeight;
-        App->Delta = platform->TimeTaken;//1.f / platform->TargetFPS;
+        App->Delta = platform->TimeTaken;//1.f / platform->TargetFPS;//
         App->TotalTime += App->Delta;
         memcpy(App->KeyWasDown, App->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
@@ -125,9 +125,11 @@ AppUpdate(Platform * platform) {
     CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 16.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
     {
         char Buffer[32];
-        sprintf(Buffer, "Time for frame:%2.fms", platform->TimeTakenForFrame);
+        sprintf(Buffer, "Time for frame:%2.fms", platform->TimeTakenForFrame * 1000.f);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
-        sprintf(Buffer, "FPS:%3.f/s", 1.f/App->Delta);
+        sprintf(Buffer, "Time passed: %2.fms", App->Delta * 1000.f);
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
+        sprintf(Buffer, "FPS: %3.f/s", 1.f/App->Delta);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
     }
     CrestUIPopRow(&App->UI);
