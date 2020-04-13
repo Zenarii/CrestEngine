@@ -129,6 +129,11 @@ CrestMatrixScale3(v3 S) {
 }
 
 internal matrix
+CrestMatrixScale(r32 Scale) {
+    return CrestMatrixScale3(v3(Scale, Scale, Scale));
+}
+
+internal matrix
 CrestMatrixTranspose(matrix In) {
     matrix Result = CrestMatrixInitC(In.Row1, In.Row2, In.Row3, In.Row4);
     return Result;

@@ -63,19 +63,25 @@ NudgeFeature(v3 Position) {
     return Result;
 }
 
+//TODO Allow for directional features
+//to allow for decorations such as ports etc
+
 internal void
 AddFeaturesToCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type, i32 Density) {
     Cell->FeatureDensity = Density;
+    i32 DirectionsList[] = {0, 1, 2, 3, 4, 5};
+    CrestShuffleArray(DirectionsList, 6);
 
-    i32 DirectionsToPlace = rand() & ((1<<7) - 1);
-    for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
-        if((1<<Direction) & DirectionsToPlace) {
-            Cell->Features[Direction] = Type;
-            v3 ModelPosition = CrestV3Add(Cell->Position, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR * 0.5f));
-            ModelPosition = NudgeFeature(ModelPosition);
-            matrix Model = CrestMatrixTranslation(ModelPosition);
-            Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixTranspose(Model);
-        }
+    for(i32 i = 0; i < Density; ++i) {
+        hex_direction Direction = DirectionsList[i];
+        Cell->Features[Direction] = Type;
+        v3 ModelPosition = CrestV3Add(Cell->Position, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR * 0.5f));
+        ModelPosition = NudgeFeature(ModelPosition);
+        r32 ModelRotation = (RandomNoise3D(ModelPosition) * 2 - 1) * PI;
+        r32 ModelScale = 0.9f + 0.2f * RandomNoise3D(CrestV3Scale(ModelPosition, 2.f));
+        matrix Model = CrestM4MultM4(CrestMatrixRotation(ModelRotation, CREST_AXIS_Y), CrestMatrixScale(ModelScale));
+        Model = CrestM4MultM4(CrestMatrixTranslation(ModelPosition), Model);
+        Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixTranspose(Model);
     }
 
     glBindVertexArray(Set->VAOs[Type]);

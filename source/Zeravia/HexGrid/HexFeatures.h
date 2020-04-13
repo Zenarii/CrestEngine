@@ -1,6 +1,6 @@
 //CHUNK_WIDTH * CHUNK_HEIGHT * MAX CHUNKS if you change this must
 #define MAX_FEATURE_SET_SIZE (35 * 16 * 6)
-#define FEATURES_NOISE_SCALE 4.f
+#define FEATURES_NOISE_SCALE 8.f
 #define FEATURES_NUDGE_STRENGTH 0.1f
 
 typedef enum hex_feature_type hex_feature_type;
