@@ -52,11 +52,16 @@ InitFeatureSet(hex_feature_set * Result) {
 
 internal void
 AddFeaturesToCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type, i32 Density) {
+    Cell->FeatureDensity = Density;
+
     i32 DirectionsToPlace = rand() & ((1<<7) - 1);
     for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
         if((1<<Direction) & DirectionsToPlace) {
             Cell->Features[Direction] = Type;
-            matrix Model = CrestMatrixTranslation(CrestV3Add(Cell->Position, HexCorners[Direction]));
+            v3 ModelPosition = CrestV3Add(Cell->Position, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR * 0.5f));
+            //ModelPosition = NudgeFeature(ModelPosition);
+            //ModelPosition.y = Cell->Position.y;
+            matrix Model = CrestMatrixTranslation(ModelPosition);
             Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixTranspose(Model);
         }
     }
@@ -73,13 +78,17 @@ ClearFeaturesFromCell(hex_feature_set * Set, hex_cell * Cell) {
         hex_feature_type Type = Cell->Features[Direction];
         Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixZero();
         Cell->Features[Direction] = 0;
-        
+
     }
 
-    //HARDCODE(Zen): Lets make sure this works with just trees first
-    glBindVertexArray(Set->VAOs[HEX_FEATURE_Tree]);
-    glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[HEX_FEATURE_Tree]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Set->Features[HEX_FEATURE_Tree].Model[0]);
+    //POTENTIAL OPTIMISATION, reset for all types but only for the cell's matrices
+    for(hex_feature_type Type = 1; Type < HEX_FEATURE_COUNT; ++Type) {
+        glBindVertexArray(Set->VAOs[Type]);
+        glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[Type]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Set->Features[Type].Model[0]);
+    }
+
+    Cell->FeatureDensity = 0;
 }
 
 

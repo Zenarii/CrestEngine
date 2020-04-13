@@ -142,13 +142,14 @@ EditCellTerrainFeatures(hex_cell * Cell, hex_feature_set * FeatureSet, hex_edit_
     b32 Result = 0;
 
     if(Settings.EditTrees) {
-
-        ClearFeaturesFromCell(FeatureSet, Cell);
-
-        if(Settings.FeatureDensity != 0){
-            AddFeaturesToCell(FeatureSet, Cell, 1, 0); // also send density
+        if(Settings.FeatureDensity && (Settings.FeatureDensity != Cell->FeatureDensity)){
+            ClearFeaturesFromCell(FeatureSet, Cell);
+            AddFeaturesToCell(FeatureSet, Cell, 1, Settings.FeatureDensity); // also send density
         }
     }
+
+    if(Settings.FeatureDensity == 0) ClearFeaturesFromCell(FeatureSet, Cell);
+
     return Result;
 }
 
