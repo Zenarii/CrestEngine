@@ -18,6 +18,8 @@
 #include "CAssets/Models.c"
 #include "C3D/3DRenderer.c"
 
+#include "CRandom/Noise.c"
+
 #include "Zeravia/Zeravia.h"
 
 
