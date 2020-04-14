@@ -178,12 +178,16 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
 
             case CREST_UI_TOGGLE_BUTTON: {
                 v4 colour = Widget->On ? DefaultStyle.ToggleButtonColour : DefaultStyle.ButtonColour;
-                r32 CheckBoxPosition = Widget->rect.width + Widget->rect.x - 30.f;
+                v2 ToggleBoxSize = v2(Widget->rect.height - DefaultStyle.Padding.y,
+                                      Widget->rect.height - DefaultStyle.Padding.y);
+                v2 CheckBoxPosition = v2(Widget->rect.width + Widget->rect.x - ToggleBoxSize.x,
+                                         Widget->rect.y + DefaultStyle.Padding.y * 0.5f);
 
-                CrestPushFilledRectD(Renderer, colour, v3(CheckBoxPosition, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.height, Widget->rect.height));
-                CrestPushBorder(Renderer, DefaultStyle.ButtonBorderColour, v3(CheckBoxPosition, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.height, Widget->rect.height));
 
-                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+                CrestPushFilledRectD(Renderer, colour, v3(CheckBoxPosition.x, CheckBoxPosition.y, Widget->Precedence - 0.02f), ToggleBoxSize);
+                CrestPushBorder(Renderer, DefaultStyle.ButtonBorderColour, v3(CheckBoxPosition.x, CheckBoxPosition.y, Widget->Precedence - 0.03f), ToggleBoxSize);
+
+                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x + 2.f, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_SLIDER: {
