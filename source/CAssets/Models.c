@@ -61,9 +61,9 @@ GetNextWord(char * WordStart) {
     return WordEnd;
 }
 
-internal parsed_obj_format
+internal mesh
 CrestParseOBJ(char * Data) {
-    parsed_obj_format Result = {0};
+    mesh Result = {0};
     u32 VerticesCount = 0;
 
     v3 TempPositions[CREST_MESH_MAX_VERTICES] = {0};

@@ -1,6 +1,7 @@
 #define EDITSTATE_EDITED_MESH (1<<0)
 #define EDITSTATE_EDITED_COLLISIONS (1<<1)
 #define EDITSTATE_EDITED_WATER (1<<2)
+#define EDITSTATE_EDITED_FEATURES (1<<3)
 
 enum EditorColour {
     #define AddEditorColour(name, upper_name, r, g, b) EDITOR_COLOUR_##upper_name,

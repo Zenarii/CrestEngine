@@ -57,10 +57,10 @@ internal hex_edit_settings
 doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
     Settings.EditColour = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditColour, "Colour:");
     if(Settings.EditColour) {
-        for(i32 ColourIndex = 0; ColourIndex < EDITOR_COLOUR_COUNT; ++ColourIndex) {
-            Settings.Colour = CrestUIButton(ui, GENERIC_ID(ColourIndex), EditorColourString[ColourIndex])
-                                  ? EditorColourV[ColourIndex] : Settings.Colour;
-        }
+        #define AddEditorColour(name, upper_name, r, g, b) Settings.Colour = CrestUIToggleButton(ui, GENERIC_ID(EDITOR_COLOUR_##upper_name), \
+                                CrestV3Equals(Settings.Colour, EditorColourV[EDITOR_COLOUR_##upper_name]), #name) ? EditorColourV[EDITOR_COLOUR_##upper_name] : Settings.Colour;
+        #include "EditorColours.inc"
+        CrestUITextLabel(ui, GENERIC_ID(0), "");
     }
     /*
         Elevation
@@ -129,7 +129,8 @@ EditCellTerrain(hex_cell * Cell, hex_edit_settings Settings) {
         Cell->Position.y = Cell->Elevation * HEX_ELEVATION_STEP;
         v3 Sample = Noise3DSample(Cell->Position);
         Cell->Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
-        Result |= (EDITSTATE_EDITED_COLLISIONS | EDITSTATE_EDITED_MESH | EDITSTATE_EDITED_WATER);
+        Result |= (EDITSTATE_EDITED_COLLISIONS | EDITSTATE_EDITED_MESH
+                   | EDITSTATE_EDITED_WATER | EDITSTATE_EDITED_FEATURES);
     }
     if(Settings.EditWater && Settings.WaterLevel != Cell->WaterLevel) {
         Cell->WaterLevel = Settings.WaterLevel;
@@ -235,8 +236,6 @@ CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settin
                             }
                         }
                     }
-                    //also clear the features on the tile
-                    ClearFeaturesFromCell(&Grid->FeatureSet, &Grid->Cells[CellIndex]);
                 }
                 if(Result & EDITSTATE_EDITED_WATER) {
                     TriangulateWaterMesh(Grid, Chunk);
@@ -251,6 +250,12 @@ CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settin
                             }
                         }
                     }
+                }
+                if(Result & EDITSTATE_EDITED_FEATURES) {
+                    i32 FeatureDensity = Grid->Cells[CellIndex].FeatureDensity;
+                    hex_feature_type FeatureType = Grid->Cells[CellIndex].FeatureType;
+                    ClearFeaturesFromCell(&Grid->FeatureSet, &Grid->Cells[CellIndex]);
+                    AddFeaturesToCell(&Grid->FeatureSet, &Grid->Cells[CellIndex], FeatureType, FeatureDensity);
                 }
             }
             break;
