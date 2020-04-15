@@ -32,5 +32,4 @@ struct hex_feature_set {
     u32 InstancedVBOs[HEX_FEATURE_COUNT];
 
     hex_feature Features[HEX_FEATURE_COUNT];
-
 };

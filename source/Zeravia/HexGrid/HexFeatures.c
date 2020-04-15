@@ -11,47 +11,67 @@ InitFeatureSet(hex_feature_set * Result) {
     glGenBuffers(HEX_FEATURE_COUNT, Result->VBOs);
     glGenBuffers(HEX_FEATURE_COUNT, Result->InstancedVBOs);
 
+    material Materials[4 * (HEX_FEATURE_COUNT - 1)] = {0};
+
     for(int i = 1; i < HEX_FEATURE_COUNT; ++i) {
-        char * MeshData = CrestLoadFileAsString(HexFeaturePaths[i]);
-        mesh Mesh = CrestParseOBJ(MeshData);
-        Result->Features[i].MeshVertices = Mesh.VerticesCount;
-        free(MeshData);
+        char * ObjData = CrestLoadFileAsString(HexFeaturePaths[i]);
+        parsed_obj_format Obj = CrestParseOBJ(ObjData);
+        Result->Features[i].MeshVertices = Obj.Mesh.VerticesCount;
+
+        //Note(Zen): Convert material ID from ID offset in obj to offset from
+        //all materials
+        for(i32 j = 0; j < Obj.Mesh.VerticesCount; ++j) {
+            Obj.Mesh.Vertices[j].MaterialID += 4 * (i-1);
+        }
+        for(i32 j = 0; j < 4; ++j) {
+            Materials[4 * (i - 1) + j] = Obj.Materials[j];
+        }
+        free(ObjData);
 
         glBindVertexArray(Result->VAOs[i]);
 
         glBindBuffer(GL_ARRAY_BUFFER, Result->VBOs[i]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Mesh), Mesh.Vertices, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(mesh_vertex), 0);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(obj_mesh), Obj.Mesh.Vertices, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(obj_mesh_vertex), 0);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(mesh_vertex), (void *)offsetof(mesh_vertex, Normal));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(obj_mesh_vertex), (void *)offsetof(obj_mesh_vertex, Normal));
         glEnableVertexAttribArray(1);
-
+        glVertexAttribIPointer(2, 1, GL_INT, sizeof(obj_mesh_vertex), (void *)offsetof(obj_mesh_vertex, MaterialID));
+        glEnableVertexAttribArray(2);
 
         glBindBuffer(GL_ARRAY_BUFFER, Result->InstancedVBOs[i]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Result->Features[i].Model[0], GL_DYNAMIC_DRAW);
 
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(float), 0);
-        glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(float), (void *)sizeof(v4));
-        glEnableVertexAttribArray(4);
-        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(float), (void *)(2*sizeof(v4)));
-        glEnableVertexAttribArray(5);
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(float), (void *)(3*sizeof(v4)));
+        glEnableVertexAttribArray(2+1);
+        glVertexAttribPointer(2+1, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(float), 0);
+        glEnableVertexAttribArray(3+1);
+        glVertexAttribPointer(3+1, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(float), (void *)sizeof(v4));
+        glEnableVertexAttribArray(4+1);
+        glVertexAttribPointer(4+1, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(float), (void *)(2*sizeof(v4)));
+        glEnableVertexAttribArray(5+1);
+        glVertexAttribPointer(5+1, 4, GL_FLOAT, GL_FALSE, 16 * sizeof(float), (void *)(3*sizeof(v4)));
 
-        glVertexAttribDivisor(2, 1);
-        glVertexAttribDivisor(3, 1);
-        glVertexAttribDivisor(4, 1);
-        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(2+1, 1);
+        glVertexAttribDivisor(3+1, 1);
+        glVertexAttribDivisor(4+1, 1);
+        glVertexAttribDivisor(5+1, 1);
 
     }
     Result->Shader = CrestShaderInit("../assets/Shaders/hex_feature_shader.vs",
                                     "../assets/Shaders/hex_feature_shader.fs");
 
-    CrestShaderSetV3(Result->Shader, "Material.Ambient", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(Result->Shader, "Material.Diffuse", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(Result->Shader, "Material.Specular", v3(1.f, 1.f, 1.f));
-    CrestShaderSetFloat(Result->Shader, "Material.Shininess", 8.f);
+    for(i32 i = 0; i < (HEX_FEATURE_COUNT - 1) * 4; ++i) {
+        char UniformName[32];
+        sprintf(UniformName, "Material[%d].Ambient", i);
+        CrestShaderSetV3(Result->Shader, UniformName, Materials[i].Ambient);
+        sprintf(UniformName, "Material[%d].Diffuse", i);
+        CrestShaderSetV3(Result->Shader, UniformName, Materials[i].Diffuse);
+        sprintf(UniformName, "Material[%d].Specular", i);
+        CrestShaderSetV3(Result->Shader, UniformName, Materials[i].Specular);
+        sprintf(UniformName, "Material[%d].Shininess", i);
+        CrestShaderSetFloat(Result->Shader, UniformName, Materials[i].Shininess);
+
+    }
 
 }
 

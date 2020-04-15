@@ -28,4 +28,5 @@ OpenGLProc(UniformMatrix4fv, UNIFORMMATRIX4FV)
 OpenGLProc(Uniform3f, UNIFORM3F)
 OpenGLProc(VertexAttribDivisor, VERTEXATTRIBDIVISOR)
 OpenGLProc(DrawArraysInstanced, DRAWARRAYSINSTANCED)
+OpenGLProc(VertexAttribIPointer, VERTEXATTRIBIPOINTER)
 #undef OpenGLProc

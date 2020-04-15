@@ -36,13 +36,15 @@ struct hex_edit_settings {
     v3 Colour;
     b32 EditElevation;
     i32 Elevation;
-    i32 BrushSize;
-    //EDIT_MODE_TERRAIN_FEATURES
+
     b32 EditWater;
     i32 WaterLevel;
-
+    //EDIT_MODE_TERRAIN_FEATURES
     hex_feature_type EditFeature;
     i32 FeatureDensity;
+
+    //all
+    i32 BrushSize;
 };
 
 
