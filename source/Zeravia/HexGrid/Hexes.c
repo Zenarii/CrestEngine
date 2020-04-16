@@ -7,9 +7,36 @@ CreateCell(int x, int z) {
     v3 Sample = Noise3DSample(Result.Position);
     Result.Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
 
-    Result.WaterLevel = 0;
-
     return Result;
+}
+
+internal void
+AddNeighboursToCell(hex_grid * Grid, hex_cell * Cell, i32 x, i32 z) {
+    i32 Index = z * HEX_MAX_WIDTH_IN_CELLS + x;
+    if(x > 0) {
+        Cell->Neighbours[HEX_DIRECTION_W] = &Grid->Cells[Index - 1];
+        Grid->Cells[Index - 1].Neighbours[HEX_DIRECTION_E] = Cell;
+    }
+    if(z > 0) {
+        if((z % 2) == 0) {
+            Cell->Neighbours[HEX_DIRECTION_NE] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS];
+            Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS].Neighbours[HEX_DIRECTION_SW] = Cell;
+
+            if(x > 0) {
+                Cell->Neighbours[HEX_DIRECTION_NW] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS - 1];
+                Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS - 1].Neighbours[HEX_DIRECTION_SE] = Cell;
+            }
+        }
+        else {
+            Cell->Neighbours[HEX_DIRECTION_NW] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS];
+            Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS].Neighbours[HEX_DIRECTION_SE] = Cell;
+
+            if(x < Grid->Width - 1) {
+                Cell->Neighbours[HEX_DIRECTION_NE] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS + 1];
+                Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS + 1].Neighbours[HEX_DIRECTION_SW] = Cell;
+            }
+        }
+    }
 }
 
 
@@ -24,30 +51,7 @@ AddCellsToHexGrid(hex_grid * Grid) {
             hex_cell * Cell = &Grid->Cells[Index];
             Cell->Index = Index;
 
-            if(x > 0) {
-                Cell->Neighbours[HEX_DIRECTION_W] = &Grid->Cells[Index - 1];
-                Grid->Cells[Index - 1].Neighbours[HEX_DIRECTION_E] = Cell;
-            }
-            if(z > 0) {
-                if((z % 2) == 0) {
-                    Cell->Neighbours[HEX_DIRECTION_NE] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS];
-                    Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS].Neighbours[HEX_DIRECTION_SW] = Cell;
-
-                    if(x > 0) {
-                        Cell->Neighbours[HEX_DIRECTION_NW] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS - 1];
-                        Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS - 1].Neighbours[HEX_DIRECTION_SE] = Cell;
-                    }
-                }
-                else {
-                    Cell->Neighbours[HEX_DIRECTION_NW] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS];
-                    Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS].Neighbours[HEX_DIRECTION_SE] = Cell;
-
-                    if(x < Grid->Width - 1) {
-                        Cell->Neighbours[HEX_DIRECTION_NE] = &Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS + 1];
-                        Grid->Cells[Index - HEX_MAX_WIDTH_IN_CELLS + 1].Neighbours[HEX_DIRECTION_SW] = Cell;
-                    }
-                }
-            }
+            AddNeighboursToCell(Grid, Cell, x, z);
         }
     }
 }
@@ -995,7 +999,7 @@ AddLargeCollisionMeshToChunk(hex_grid_chunk * Chunk) {
     Saving and loading
 */
 #define BYTES_PER_CELL 6
-/*
+
 internal void
 SaveGridAsMap(hex_grid * Grid) {
     //Note(Zen): first 4 bytes are version number
@@ -1033,7 +1037,7 @@ SaveGridAsMap(hex_grid * Grid) {
 
         i32 Directions = 0;
         for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
-            Directions |= Grid->Cells[CellIndex].FeatureDirections[Direction] << Direction;
+            Directions |= Grid->Cells[CellIndex].Features[Direction] << Direction;
         }
 
         Buffer[Cursor++] = Directions;
@@ -1041,4 +1045,50 @@ SaveGridAsMap(hex_grid * Grid) {
 
     CrestWriteFile("Default.map", Buffer, Cursor);
 }
-*/
+
+
+internal void
+LoadGridFromMap(hex_grid * Grid) {
+    char * Buffer = CrestLoadFileAsString("Default.map");
+
+    //skip version num
+    Grid->Width = Buffer[4];
+    Grid->Height = Buffer[5];
+
+    i32 Cursor = 6;
+    for(i32 CellIndex = 0; CellIndex < HEX_CELL_COUNT; ++CellIndex) {
+        i32 x = CellIndex % HEX_MAX_WIDTH_IN_CELLS;
+        i32 z = CellIndex / HEX_MAX_WIDTH_IN_CELLS;
+
+        if(x >= Grid->Width || z >= Grid->Height) {
+            Cursor += BYTES_PER_CELL;
+            continue;
+        }
+
+        Grid->Cells[CellIndex].Index = CellIndex;
+        ClearFeaturesFromCell(&Grid->FeatureSet, &Grid->Cells[CellIndex]);
+
+        Grid->Cells[CellIndex].ColourIndex = Buffer[Cursor++];
+        Grid->Cells[CellIndex].Elevation = Buffer[Cursor++];
+        Grid->Cells[CellIndex].WaterLevel = Buffer[Cursor++];
+        Grid->Cells[CellIndex].FeatureDensity = Buffer[Cursor++];
+        Grid->Cells[CellIndex].FeatureType = Buffer[Cursor++];
+
+        hex_cell * Cell  = &Grid->Cells[CellIndex];
+
+
+
+        Cell->Position = v3((x + z * 0.5f - z/2) * HEX_INNER_DIAMETER, 0.f, z * HEX_OUTER_RADIUS * 1.5f);
+        Cell->Position.y = HEX_ELEVATION_STEP * Cell->Elevation;
+        v3 Sample = Noise3DSample(Cell->Position);
+        Cell->Position.y += Sample.y * HEX_ELEVATION_NUDGE_STRENGTH;
+
+
+        char Directions = Buffer[Cursor++];
+        AddFeaturesToCellMask(&Grid->FeatureSet, Cell, Cell->FeatureType, Directions);
+
+        AddNeighboursToCell(Grid, Cell, x, z);
+    }
+
+    free(Buffer);
+}

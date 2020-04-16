@@ -100,7 +100,7 @@ typedef struct hex_mesh hex_mesh;
 struct hex_mesh {
     u32 VAO, VBO;
     u32 VerticesCount;
-    //hex_mesh_vertex Vertices[MAX_HEX_VERTICES];
+    
 };
 
 

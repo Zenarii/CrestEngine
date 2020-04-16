@@ -88,6 +88,18 @@ NudgeFeature(v3 Position) {
     return Result;
 }
 
+internal matrix
+GetFeatureTransform(hex_cell * Cell, hex_direction Direction) {
+    v3 ModelPosition = CrestV3Add(Cell->Position, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR * 0.5f));
+    ModelPosition = NudgeFeature(ModelPosition);
+    r32 ModelRotation = PI + (Direction * PI/3.f);//(RandomNoise3D(ModelPosition) * 2 - 1) * PI;
+    r32 ModelScale = 0.9f + 0.2f * RandomNoise3D(CrestV3Scale(ModelPosition, 2.f * FEATURES_NOISE_SCALE));
+    matrix Model = CrestM4MultM4(CrestMatrixRotation(ModelRotation, CREST_AXIS_Y), CrestMatrixScale(ModelScale));
+    Model = CrestM4MultM4(CrestMatrixTranslation(ModelPosition), Model);
+    return CrestMatrixTranspose(Model);
+}
+
+
 //TODO Allow for directional features
 //to allow for decorations such as ports etc
 
@@ -100,14 +112,9 @@ AddFeaturesToCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type,
     //DirectionsList[0] = 0;
     for(i32 i = 0; i < Density; ++i) {
         hex_direction Direction = DirectionsList[i];
-        Cell->Features[Direction] = Type;
-        v3 ModelPosition = CrestV3Add(Cell->Position, CrestV3Scale(HexCorners[Direction], HEX_SOLID_FACTOR * 0.5f));
-        ModelPosition = NudgeFeature(ModelPosition);
-        r32 ModelRotation = PI + (Direction * PI/3.f);//(RandomNoise3D(ModelPosition) * 2 - 1) * PI;
-        r32 ModelScale = 0.9f + 0.2f * RandomNoise3D(CrestV3Scale(ModelPosition, 2.f * FEATURES_NOISE_SCALE));
-        matrix Model = CrestM4MultM4(CrestMatrixRotation(ModelRotation, CREST_AXIS_Y), CrestMatrixScale(ModelScale));
-        Model = CrestM4MultM4(CrestMatrixTranslation(ModelPosition), Model);
-        Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixTranspose(Model);
+        Cell->Features[Direction] = 1;
+
+        Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = GetFeatureTransform(Cell, Direction);
     }
 
     glBindVertexArray(Set->VAOs[Type]);
@@ -117,18 +124,36 @@ AddFeaturesToCell(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type,
 }
 
 internal void
+AddFeaturesToCellMask(hex_feature_set * Set, hex_cell * Cell, hex_feature_type Type, i32 Mask) {
+    i32 Density = 0;
+    Cell->FeatureType = Type;
+
+    for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
+        if(Mask & (1<<Direction)) {
+            Cell->Features[Direction] = 1;
+            Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = GetFeatureTransform(Cell, Direction);
+            Density += 1;
+        }
+    }
+    Cell->FeatureDensity = Density;
+    glBindVertexArray(Set->VAOs[Type]);
+    glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[Type]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Set->Features[Type].Model[0]);
+}
+
+internal void
 ClearFeaturesFromCell(hex_feature_set * Set, hex_cell * Cell) {
     for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
-        hex_feature_type Type = Cell->Features[Direction];
+        hex_feature_type Type = Cell->FeatureType;
         Set->Features[Type].Model[Cell->Index * HEX_DIRECTION_COUNT + Direction] = CrestMatrixZero();
         Cell->Features[Direction] = 0;
 
     }
-
-    glBindVertexArray(Set->VAOs[Cell->FeatureType]);
-    glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[Cell->FeatureType]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Set->Features[Cell->FeatureType].Model[0]);
-
+    for(hex_feature_type Type = 1; Type < HEX_FEATURE_COUNT; ++Type) {
+        glBindVertexArray(Set->VAOs[Type]);
+        glBindBuffer(GL_ARRAY_BUFFER, Set->InstancedVBOs[Type]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Set->Features[Type].Model[0]);
+    }
 
     Cell->FeatureDensity = 0;
     Cell->FeatureType = 0;

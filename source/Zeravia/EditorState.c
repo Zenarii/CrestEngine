@@ -25,8 +25,9 @@ EditorStateInit(app * App) {
     }
     Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
     Grid->Height = HEX_MAX_CHUNKS_HIGH * HEX_CHUNK_HEIGHT;
-    AddCellsToHexGrid(Grid);
+    //AddCellsToHexGrid(Grid);
     InitFeatureSet(&Grid->FeatureSet);
+    LoadGridFromMap(Grid);
     hex_cell * Cells = App->EditorState.HexGrid.Cells;
     for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
         for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
@@ -42,9 +43,8 @@ EditorStateInit(app * App) {
         }
     }
 
-    EditorStateDebug.ShowUI = 1;
 
-    //SaveGridAsMap(Grid);
+    EditorStateDebug.ShowUI = 1;
 }
 
 internal hex_edit_settings
@@ -89,10 +89,14 @@ doEditorUITerrainFeatures(CrestUI * ui, hex_edit_settings Settings) {
 internal hex_edit_settings
 doEditorUI(CrestUI * ui, hex_edit_settings Settings, r32 ScreenWidth) {
     CrestUIPushPanel(ui, v2(1.f, 1.f), -0.1f);
-    CrestUIPushRow(ui, v2(1.f, 1.f), v2(150, 32.f), EDIT_MODE_COUNT);
+    CrestUIPushRow(ui, v2(1.f, 1.f), v2(150, 32.f), EDIT_MODE_COUNT + 3);
     {
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Terrain") ? EDIT_MODE_TERRAIN : Settings.EditMode;
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Features") ? EDIT_MODE_TERRAIN_FEATURES : Settings.EditMode;
+
+        CrestUIButton(ui, GENERIC_ID(0), "Save Map");
+        CrestUIButton(ui, GENERIC_ID(0), "Load Map");
+        CrestUIButton(ui, GENERIC_ID(0), "New Map");
     }
     CrestUIPopRow(ui);
     CrestUIPopPanel(ui);
@@ -275,6 +279,7 @@ static void
 EditorStateUpdate(app * App) {
     camera * Camera = &App->EditorState.Camera;
     editor_state * EditorState = &App->EditorState;
+    if(AppKeyJustDown(KEY_P)) SaveGridAsMap(&EditorState->HexGrid);
 
     static r32 TotalTime = 0.f;
     TotalTime += App->Delta;
