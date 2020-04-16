@@ -44,6 +44,16 @@ CrestLoadFileAsString(const char* Path) {
     return Buffer;
 }
 
+internal void
+CrestWriteFile(const char * Path, const char * Data, i32 DataLength) {
+    HANDLE FileHandle = CreateFile(Path, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+
+    WriteFile(FileHandle, Data, DataLength, 0, 0);
+    CloseHandle(FileHandle);
+
+
+}
 
 
 LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -68,6 +78,7 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
 
         if(KeyCode == VK_ESCAPE) KeyIndex = KEY_ESC;
         if(KeyCode == VK_CONTROL) KeyIndex = KEY_CTRL;
+        if(KeyCode >= VK_F1 && KeyCode <= VK_F12) KeyIndex = KEY_F1 + (KeyCode - VK_F1);
 
         GlobalPlatform.KeyDown[KeyIndex] = IsDown;
     }

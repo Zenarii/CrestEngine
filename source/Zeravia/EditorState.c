@@ -42,24 +42,18 @@ EditorStateInit(app * App) {
         }
     }
 
-    //Set default editor settings
-    State->Settings.EditColour = 0;
-    State->Settings.Colour = EditorColourV[0];
-    State->Settings.EditElevation = 0;
-    State->Settings.Elevation = 0;
-    State->Settings.BrushSize = 0;
-    State->Settings.EditWater = 0;
-    State->Settings.WaterLevel = 0;
-    State->Settings.FeatureDensity = 0;
+    EditorStateDebug.ShowUI = 1;
+
+    //SaveGridAsMap(Grid);
 }
 
 internal hex_edit_settings
 doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
     Settings.EditColour = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditColour, "Colour:");
     if(Settings.EditColour) {
-        #define AddEditorColour(name, upper_name, r, g, b) Settings.Colour = CrestUIToggleButton(ui, GENERIC_ID(EDITOR_COLOUR_##upper_name), \
-                                CrestV3Equals(Settings.Colour, EditorColourV[EDITOR_COLOUR_##upper_name]), #name) ? EditorColourV[EDITOR_COLOUR_##upper_name] : Settings.Colour;
-        #include "EditorColours.inc"
+        #define HexColour(name, upper_name, r, g, b) Settings.ColourIndex = CrestUIToggleButton(ui, GENERIC_ID(EDITOR_COLOUR_##upper_name), \
+                                Settings.ColourIndex == EDITOR_COLOUR_##upper_name, #name) ? EDITOR_COLOUR_##upper_name : Settings.ColourIndex;
+        #include "HexColours.inc"
         CrestUITextLabel(ui, GENERIC_ID(0), "");
     }
     /*
@@ -120,8 +114,8 @@ doEditorUI(CrestUI * ui, hex_edit_settings Settings, r32 ScreenWidth) {
 internal b32
 EditCellTerrain(hex_cell * Cell, hex_edit_settings Settings) {
     b32 Result = 0;
-    if(Settings.EditColour && !CrestV3Equals(Cell->Colour, Settings.Colour)) {
-        Cell->Colour = Settings.Colour;
+    if(Settings.EditColour && Cell->ColourIndex != Settings.ColourIndex) {
+        Cell->ColourIndex = Settings.ColourIndex;
         Result |= EDITSTATE_EDITED_MESH;
     }
     if(Settings.EditElevation && (Cell->Elevation != Settings.Elevation)) {
@@ -304,9 +298,14 @@ EditorStateUpdate(app * App) {
     if(Camera->Rotation > PI * 0.5f) Camera->Rotation = PI * 0.5f;
     if(Camera->Rotation < PI * 0.1f) Camera->Rotation = PI * 0.1f;
 
+    //Edit Debug View
+    EditorStateDebug.ShowUI ^= AppKeyJustDown(KEY_F1);
+    EditorStateDebug.ShowLargeCollisions ^= AppKeyJustDown(KEY_F11);
+    EditorStateDebug.ShowCollisions ^= AppKeyJustDown(KEY_F12);
 
-    EditorState->Settings = doEditorUI(&App->UI, EditorState->Settings, App->ScreenWidth);
-
+    if(EditorStateDebug.ShowUI) {
+        EditorState->Settings = doEditorUI(&App->UI, EditorState->Settings, App->ScreenWidth);
+    }
     /*
         Set Uniforms
     */
@@ -393,8 +392,8 @@ EditorStateUpdate(app * App) {
     CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
 
     //Note(Zen): Draw the Collision Shapes
-    DebugCollisions ^= AppKeyJustDown(KEY_T);
-    if(DebugCollisions) {
+
+    if(EditorStateDebug.ShowCollisions) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
@@ -410,8 +409,7 @@ EditorStateUpdate(app * App) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    DebugLargeCollions ^= AppKeyJustDown(KEY_P);
-    if(DebugLargeCollions) {
+    if(EditorStateDebug.ShowLargeCollisions) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {

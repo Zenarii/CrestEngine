@@ -26,7 +26,7 @@ const global v3 HexCorners[] = {
 #define HEX_NOISE_SCALE 0.5f
 
 #define HEX_ELEVATION_STEP 0.3f
-#define HEX_MAX_ELEVATION 4
+#define HEX_MAX_ELEVATION 6
 #define HEX_TERRACES 2
 #define HEX_TERRACE_STEPS (HEX_TERRACES * 2 + 1)
 #define HEX_HORIZONTAL_TERRACE_SIZE (1.f/(r32)HEX_TERRACE_STEPS)
@@ -116,7 +116,7 @@ struct hex_cell {
     i32 Index; //Position in hex_grid's cell array
     i32 Elevation;
     i32 WaterLevel;
-    v3 Colour;
+    i32 ColourIndex;
     v3 Position;
 
     i32 FeatureDensity;
@@ -173,7 +173,7 @@ struct hex_grid_chunk {
 #define HEX_MAX_WIDTH_IN_CELLS (HEX_MAX_CHUNKS_WIDE * HEX_CHUNK_WIDTH)
 #define HEX_MAX_CHUNKS_HIGH 4
 #define HEX_MAX_CHUNKS (HEX_MAX_CHUNKS_WIDE * HEX_MAX_CHUNKS_HIGH)
-
+#define HEX_CELL_COUNT (HEX_MAX_CHUNKS * HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT)
 
 typedef struct temporary_hex_mesh {
     u32 VerticesCount;
@@ -190,4 +190,9 @@ struct hex_grid {
     hex_grid_chunk Chunks[HEX_MAX_CHUNKS];
 
     hex_feature_set FeatureSet;
+};
+
+global const v3 HexColours[] = {
+    #define HexColour(name, upper_name, r, g, b) {r, g, b},
+    #include "HexColours.inc"
 };

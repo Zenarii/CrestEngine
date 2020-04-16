@@ -4,21 +4,22 @@
 #define EDITSTATE_EDITED_FEATURES (1<<3)
 
 enum EditorColour {
-    #define AddEditorColour(name, upper_name, r, g, b) EDITOR_COLOUR_##upper_name,
-    #include "EditorColours.inc"
+    #define HexColour(name, upper_name, r, g, b) EDITOR_COLOUR_##upper_name,
+    #include "HexColours.inc"
 
     EDITOR_COLOUR_COUNT
 };
 
 global char * EditorColourString[] = {
-    #define AddEditorColour(name, upper_name, r, g, b) #name ,
-    #include "EditorColours.inc"
+    #define HexColour(name, upper_name, r, g, b) #name ,
+    #include "HexColours.inc"
 };
 
-global v3 EditorColourV[] = {
-    #define AddEditorColour(name, upper_name, r, g, b) {r, g, b},
-    #include "EditorColours.inc"
-};
+global struct {
+    b32 ShowCollisions;
+    b32 ShowLargeCollisions;
+    b32 ShowUI;
+} EditorStateDebug;
 
 enum {
     EDIT_MODE_TERRAIN,
@@ -33,7 +34,7 @@ struct hex_edit_settings {
     i32 EditMode;
     //EDIT_MODE_TERRAIN
     b32 EditColour;
-    v3 Colour;
+    i32 ColourIndex;
     b32 EditElevation;
     i32 Elevation;
 

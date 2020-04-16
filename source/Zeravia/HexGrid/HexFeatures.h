@@ -1,3 +1,4 @@
+//HARDCODE(Zen):
 //CHUNK_WIDTH * CHUNK_HEIGHT * MAX CHUNKS if you change this must
 #define MAX_FEATURE_SET_SIZE (35 * 16 * 6)
 #define FEATURES_NOISE_SCALE 8.f
