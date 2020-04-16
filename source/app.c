@@ -123,7 +123,7 @@ AppUpdate(Platform * platform) {
 
     C3DFlush(&App->Renderer);
 
-    //FPS
+    /*
     #define APP_FPS_PANEL_WIDTH 200
     CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 16.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
     {
@@ -136,7 +136,7 @@ AppUpdate(Platform * platform) {
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
     }
     CrestUIPopRow(&App->UI);
-
+    */
 
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
 

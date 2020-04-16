@@ -58,7 +58,8 @@ typedef enum CrestUIType {
     CREST_UI_SLIDER,
     CREST_UI_HEADER,
     CREST_UI_PANEL,
-    CREST_UI_TEXTLABEL
+    CREST_UI_TEXTLABEL,
+    CREST_UI_TEXT_EDIT
 } CrestUIType;
 
 typedef enum CrestUITextFloat {
@@ -79,12 +80,15 @@ typedef struct CrestUIWidget {
     char Text[32];
     CrestUITextFloat TextFloat;
 
-    //TEMP(ZEN): think of a better way to implement elements overlapping
     r32 Precedence;
 
     union {
         r32 Value; //slider
         b32 On; //ToggleButton
+        struct {
+            u8 Position;
+            char Buffer[32];
+        };
     };
 
 } CrestUIWidget;
@@ -134,4 +138,5 @@ typedef struct CrestUI {
 
     CrestUIID hot;
     CrestUIID active;
+    CrestUIID keyfocus;
 } CrestUI;

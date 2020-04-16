@@ -214,6 +214,14 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
             case CREST_UI_TEXTLABEL: {
                 CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
+
+            case CREST_UI_TEXT_EDIT: {
+                CrestPushFilledRectD(Renderer, DefaultStyle.ButtonColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushFilledRectD(Renderer, DefaultStyle.ButtonHotColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width * Widget->Value, Widget->rect.height));
+                CrestPushBorder(Renderer, DefaultStyle.ButtonBorderColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
+
+                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+            } break;
         }
     }
     CrestUIRender(Renderer);
@@ -526,4 +534,58 @@ internal void
 CrestUITextLabel(CrestUI * ui, CrestUIID ID, char * Text) {
     v4 rect = GetNextAutoLayoutPosition(ui);
     CrestUITextLabelP(ui, ID, rect, Text);
+}
+
+internal void
+CrestUITextEditP(CrestUI * ui, CrestUIID ID, v4 rect, char * Text) {
+    b32 Pressed = 0;
+
+    b32 MouseOver = (ui->MouseX >= rect.x &&
+                       ui->MouseY >= rect.y &&
+                       ui->MouseX <= rect.x + rect.width&&
+                       ui->MouseY <= rect.y + rect.height);
+    ui->IsMouseOver = MouseOver ? 1 : ui->IsMouseOver;
+
+    if(!CrestUIIDEquals(ui->hot, ID) && MouseOver && CrestUIIDEquals(CrestUIIDNull(), ui->hot)) {
+        ui->hot = ID;
+    }
+    else if(CrestUIIDEquals(ui->hot, ID) && !MouseOver) {
+        ui->hot = CrestUIIDNull();
+    }
+
+    if(CrestUIIDEquals(ui->active, ID)) {
+        if(!ui->LeftMouseDown) {
+            Pressed = CrestUIIDEquals(ui->hot, ID);
+            ui->active = CrestUIIDNull();
+            ui->keyfocus = ID;
+        }
+        if(!CrestUIIDEquals(ui->hot, ID)) {
+            ui->active = CrestUIIDNull();
+        }
+    }
+    else {
+        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown && CrestUIIDEquals(CrestUIIDNull(), ui->active)) {
+            ui->active = ID;
+        }
+    }
+
+    CrestUIWidget *Widget = ui->Widgets + ui->Count++;
+    Widget->id = ID;
+    Widget->Type = CREST_UI_TEXT_EDIT;
+    Widget->TextFloat = CREST_UI_LEFT;
+    Widget->rect = rect;
+    strcpy(Widget->Text, Text);
+
+    if(ui->PanelStackPosition) {
+        Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
+    }
+    else {
+        Widget->Precedence = 0.f;
+    }
+}
+
+internal void
+CrestUITextEdit(CrestUI * ui, CrestUIID ID, char * Text) {
+    v4 rect = GetNextAutoLayoutPosition(ui);
+    CrestUITextEditP(ui, ID, rect, Text);
 }

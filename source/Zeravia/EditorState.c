@@ -21,31 +21,17 @@ EditorStateInit(app * App) {
         Location = glGetUniformLocation(Grid->WaterShader, "Images");
         glUniform1iv(Location, 16, samplers);
         Grid->WaterTexture = CasLoadTexture("../assets/NoiseTexture.png", GL_LINEAR);
-
     }
     Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
-    Grid->Height = HEX_MAX_CHUNKS_HIGH * HEX_CHUNK_HEIGHT;
-    //AddCellsToHexGrid(Grid);
-    InitFeatureSet(&Grid->FeatureSet);
-    LoadGridFromMap(Grid);
-    hex_cell * Cells = App->EditorState.HexGrid.Cells;
-    for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
-        for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
-            hex_grid_chunk * Chunk = &App->EditorState.HexGrid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x];
-            Chunk->X = x;
-            Chunk->Z = z;
-            InitHexMesh(&Chunk->HexMesh);
-            TriangulateMesh(Grid, Chunk);
-            InitHexMesh(&Chunk->WaterMesh);
-            TriangulateWaterMesh(Grid, Chunk);
-            CollisionMeshFromChunk(Grid, z * HEX_MAX_CHUNKS_WIDE + x);
-            AddLargeCollisionMeshToChunk(Chunk);
-        }
-    }
+    Grid->Height = HEX_CHUNK_HEIGHT * HEX_MAX_CHUNKS_HIGH;
 
+    InitFeatureSet(&State->HexGrid.FeatureSet);
+    ResetCellsOnHexGrid(&State->HexGrid);
+    ReloadGridVisuals(&State->HexGrid);
 
     EditorStateDebug.ShowUI = 1;
 }
+
 
 internal hex_edit_settings
 doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
@@ -89,29 +75,31 @@ doEditorUITerrainFeatures(CrestUI * ui, hex_edit_settings Settings) {
 internal hex_edit_settings
 doEditorUI(CrestUI * ui, hex_edit_settings Settings, r32 ScreenWidth) {
     CrestUIPushPanel(ui, v2(1.f, 1.f), -0.1f);
-    CrestUIPushRow(ui, v2(1.f, 1.f), v2(150, 32.f), EDIT_MODE_COUNT + 3);
+    CrestUIPushRow(ui, v2(1.f, 1.f), v2(150, 32.f), EDIT_MODE_COUNT);
     {
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Terrain") ? EDIT_MODE_TERRAIN : Settings.EditMode;
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Features") ? EDIT_MODE_TERRAIN_FEATURES : Settings.EditMode;
 
-        CrestUIButton(ui, GENERIC_ID(0), "Save Map");
-        CrestUIButton(ui, GENERIC_ID(0), "Load Map");
-        CrestUIButton(ui, GENERIC_ID(0), "New Map");
+
+        Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Save Map") ? EDIT_MODE_SAVING : Settings.EditMode;
+        Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Load Map") ? EDIT_MODE_LOADING : Settings.EditMode;
+        Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "New Map") ? EDIT_MODE_NEW_MAP : Settings.EditMode;
+
+
     }
     CrestUIPopRow(ui);
     CrestUIPopPanel(ui);
 
-    CrestUIPushPanel(ui, v2(10.f, 47.f), -0.1f);
-    CrestUIPushRow(ui, v2(10.f, 47.f), v2(150, 32), 1);
-    /*
-        Colours
-    */
-    if(Settings.EditMode == EDIT_MODE_TERRAIN) Settings = doEditorUITerrain(ui, Settings);
-    else if (Settings.EditMode == EDIT_MODE_TERRAIN_FEATURES) Settings = doEditorUITerrainFeatures(ui, Settings);
+    if(Settings.EditMode < EDIT_MODE_SAVING) {
+        CrestUIPushPanel(ui, v2(10.f, 47.f), -0.1f);
+        CrestUIPushRow(ui, v2(10.f, 47.f), v2(150, 32), 1);
 
-    CrestUIPopRow(ui);
-    CrestUIPopPanel(ui);
+        if(Settings.EditMode == EDIT_MODE_TERRAIN) Settings = doEditorUITerrain(ui, Settings);
+        else if (Settings.EditMode == EDIT_MODE_TERRAIN_FEATURES) Settings = doEditorUITerrainFeatures(ui, Settings);
 
+        CrestUIPopRow(ui);
+        CrestUIPopPanel(ui);
+    }
     return Settings;
 }
 
@@ -279,7 +267,7 @@ static void
 EditorStateUpdate(app * App) {
     camera * Camera = &App->EditorState.Camera;
     editor_state * EditorState = &App->EditorState;
-    if(AppKeyJustDown(KEY_P)) SaveGridAsMap(&EditorState->HexGrid);
+    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) SaveGridAsMap(&EditorState->HexGrid);
 
     static r32 TotalTime = 0.f;
     TotalTime += App->Delta;
@@ -291,22 +279,48 @@ EditorStateUpdate(app * App) {
         0.f, 0.f, 1.f, 0.f,
         0.f, 0.f, 0.f, 1.f
     };
+    if(EditorState->Settings.EditMode < EDIT_MODE_SAVING) {
+        //Note(Zen): Camera Controls
+        if(App->KeyDown[KEY_W]) Camera->Position.z -= CAMERA_SPEED * App->Delta;
+        if(App->KeyDown[KEY_S]) Camera->Position.z += CAMERA_SPEED * App->Delta;
+        if(App->KeyDown[KEY_A]) Camera->Position.x -= CAMERA_SPEED * App->Delta;
+        if(App->KeyDown[KEY_D]) Camera->Position.x += CAMERA_SPEED * App->Delta;
+        if(App->KeyDown[KEY_Q]) Camera->Rotation   += 3 * App->Delta;
+        if(App->KeyDown[KEY_E]) Camera->Rotation   -= 3 * App->Delta;
+        //Note(Zen): Clamp camera angle
+        if(Camera->Rotation > PI * 0.5f) Camera->Rotation = PI * 0.5f;
+        if(Camera->Rotation < PI * 0.1f) Camera->Rotation = PI * 0.1f;
 
-    //Note(Zen): Camera Controls
-    if(App->KeyDown[KEY_W]) Camera->Position.z -= CAMERA_SPEED * App->Delta;
-    if(App->KeyDown[KEY_S]) Camera->Position.z += CAMERA_SPEED * App->Delta;
-    if(App->KeyDown[KEY_A]) Camera->Position.x -= CAMERA_SPEED * App->Delta;
-    if(App->KeyDown[KEY_D]) Camera->Position.x += CAMERA_SPEED * App->Delta;
-    if(App->KeyDown[KEY_Q]) Camera->Rotation   += 3 * App->Delta;
-    if(App->KeyDown[KEY_E]) Camera->Rotation   -= 3 * App->Delta;
-    //Note(Zen): Clamp camera angle
-    if(Camera->Rotation > PI * 0.5f) Camera->Rotation = PI * 0.5f;
-    if(Camera->Rotation < PI * 0.1f) Camera->Rotation = PI * 0.1f;
+        //Edit Debug View
+        EditorStateDebug.ShowUI ^= AppKeyJustDown(KEY_F1);
+        EditorStateDebug.ShowCollisions ^= AppKeyJustDown(KEY_F11);
+        EditorStateDebug.ShowLargeCollisions ^= AppKeyJustDown(KEY_F12);
+    }
+    else if(EditorState->Settings.EditMode == EDIT_MODE_SAVING) {
+        if(AppKeyJustDown(KEY_ESC)) EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
 
-    //Edit Debug View
-    EditorStateDebug.ShowUI ^= AppKeyJustDown(KEY_F1);
-    EditorStateDebug.ShowLargeCollisions ^= AppKeyJustDown(KEY_F11);
-    EditorStateDebug.ShowCollisions ^= AppKeyJustDown(KEY_F12);
+        CrestUIPushPanel(&App->UI, v2(App->ScreenWidth * 0.5f - 104.f, 200.f), -0.1f);
+        CrestUIPushRow(&App->UI, v2(App->ScreenWidth * 0.5f - 108.f, 200.f), v2(100.f, 32.f), 2);
+
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), "Name:");
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), "Default");
+
+        CrestUIPopRow(&App->UI);
+        CrestUIPopPanel(&App->UI);
+
+        SaveGridAsMap(&EditorState->HexGrid);
+    }
+    else if(EditorState->Settings.EditMode == EDIT_MODE_LOADING) {
+        LoadGridFromMap(&EditorState->HexGrid);
+        ReloadGridVisuals(&EditorState->HexGrid);
+        EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
+    }
+    else if(EditorState->Settings.EditMode == EDIT_MODE_NEW_MAP) {
+        ResetCellsOnHexGrid(&EditorState->HexGrid);
+        ReloadGridVisuals(&EditorState->HexGrid);
+        EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
+    }
+
 
     if(EditorStateDebug.ShowUI) {
         EditorState->Settings = doEditorUI(&App->UI, EditorState->Settings, App->ScreenWidth);
@@ -430,5 +444,8 @@ EditorStateUpdate(app * App) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
+
+
+
 }
 #undef UI_ID_OFFSET

@@ -41,7 +41,7 @@ AddNeighboursToCell(hex_grid * Grid, hex_cell * Cell, i32 x, i32 z) {
 
 
 internal void
-AddCellsToHexGrid(hex_grid * Grid) {
+ResetCellsOnHexGrid(hex_grid * Grid) {
     for(i32 z = 0; z < Grid->Height; ++z) {
         for(i32 x = 0; x < Grid->Width; ++x) {
 
@@ -53,6 +53,9 @@ AddCellsToHexGrid(hex_grid * Grid) {
 
             AddNeighboursToCell(Grid, Cell, x, z);
         }
+    }
+    for(hex_feature_type Type = 1; Type < HEX_FEATURE_COUNT; ++Type) {
+        memset(Grid->FeatureSet.Features[Type].Model, 0, sizeof(Grid->FeatureSet.Features[Type].Model));
     }
 }
 
@@ -865,6 +868,7 @@ TriangulateWaterMesh(hex_grid * Grid, hex_grid_chunk * Chunk) {
 }
 
 
+
 /*
     Generating Collision Meshes
 */
@@ -993,6 +997,32 @@ AddLargeCollisionMeshToChunk(hex_grid_chunk * Chunk) {
         v3(MaxX, MaxY, MaxZ)
     );
 }
+
+
+internal void
+ReloadGridVisuals(hex_grid * Grid) {
+    //clear cells
+    for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
+        for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
+            hex_grid_chunk * Chunk = &Grid->Chunks[z * HEX_MAX_CHUNKS_WIDE + x];
+            Chunk->X = x;
+            Chunk->Z = z;
+            InitHexMesh(&Chunk->HexMesh);
+            TriangulateMesh(Grid, Chunk);
+            InitHexMesh(&Chunk->WaterMesh);
+            TriangulateWaterMesh(Grid, Chunk);
+            CollisionMeshFromChunk(Grid, z * HEX_MAX_CHUNKS_WIDE + x);
+            AddLargeCollisionMeshToChunk(Chunk);
+        }
+    }
+    //Clear mesh data for cells
+    for(hex_feature_type Type = 0; Type < HEX_FEATURE_COUNT; ++Type) {
+        glBindVertexArray(Grid->FeatureSet.VAOs[Type]);
+        glBindBuffer(GL_ARRAY_BUFFER, Grid->FeatureSet.InstancedVBOs[Type]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(matrix) * MAX_FEATURE_SET_SIZE, &Grid->FeatureSet.Features[Type].Model[0]);
+    }
+}
+
 
 
 /*
