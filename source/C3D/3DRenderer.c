@@ -128,3 +128,72 @@ C3DDrawTri(C3DRenderer * Renderer, v3 p0, v3 p1, v3 p2, v3 Colour) {
     Renderer->Indices[Renderer->IndicesIndex + 2] = Renderer->IndicesIndex + 2;
     Renderer->IndicesIndex += 3;
 }
+
+internal void
+C3DDrawCube(C3DRenderer * Renderer, v3 Center, v3 Colour, r32 Scale) {
+    if(Renderer->BufferIndex + 8 > C3D_MAX_VERTICES || Renderer->IndicesIndex + 36 > C3D_MAX_INDICIES) C3DFlush(Renderer);
+
+    Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3(-1, -1, -1), Scale)), Colour, v2(0.1, 0.1f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3( 1, -1, -1), Scale)), Colour, v2(0.1, 0.1f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3( 1,  1, -1), Scale)), Colour, v2(0.1, 0.1f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3(-1,  1, -1), Scale)), Colour, v2(0.1, 0.1f), 0);
+
+    Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3(-1, -1,  1), Scale)), Colour, v2(0.1, 0.1f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3( 1, -1,  1), Scale)), Colour, v2(0.1, 0.1f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3( 1,  1,  1), Scale)), Colour, v2(0.1, 0.1f), 0);
+    Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3(-1,  1,  1), Scale)), Colour, v2(0.1, 0.1f), 0);
+
+    u32 StartIndices = Renderer->IndicesIndex;
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 0;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 2;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 1;
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 0;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 3;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 2;
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 1;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 2;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 6;
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 6;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 5;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 1;
+
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 4;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 5;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 6;
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 6;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 7;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 4;
+
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 2;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 3;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 6;
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 6;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 3;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 7;
+
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 0;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 7;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 3;
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 0;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 4;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 7;
+
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 0;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 1;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 5;
+
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 0;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 5;
+    Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 4;
+}
