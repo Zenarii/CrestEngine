@@ -2,3 +2,4 @@
 #include "HexGrid/HexFeatures.c"
 #include "HexGrid/Hexes.c"
 #include "EditorState.c"
+#include "GameState.c"

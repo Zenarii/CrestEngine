@@ -36,6 +36,8 @@ typedef struct app {
     b32 RightMouseDown;
     b32 KeyDown[CREST_KEY_MAX];
     b32 KeyWasDown[CREST_KEY_MAX];
+    u32 Cursor;
+    char PutCharacters[16];
 
     CrestUI UI;
     ui_renderer UIRenderer;
@@ -43,6 +45,7 @@ typedef struct app {
     C3DRenderer Renderer;
 
     editor_state EditorState;
+    game_state GameState;
 } app;
 
 #include "Zeravia/Zeravia.c"
@@ -61,6 +64,32 @@ global app * App;
 internal b32
 AppKeyJustDown(i32 Key) {
     return (App->KeyDown[Key] && !App->KeyWasDown[Key]);
+}
+
+
+internal void
+AppClearChars() {
+    memset(App->PutCharacters, 0, sizeof(App->PutCharacters));
+    App->Cursor = 0;
+}
+
+
+internal void
+AppPutChar(char Char) {
+    if(App->Cursor < 15) {
+        App->PutCharacters[App->Cursor++] = Char;
+    }
+    else {
+        AppClearChars();
+    }
+}
+
+
+internal void
+AppDeletePrevChar() {
+    if(App->Cursor > 0) {
+        App->PutCharacters[--App->Cursor] = 0;
+    }
 }
 
 internal b32
@@ -86,6 +115,7 @@ AppUpdate(Platform * platform) {
         platform->TargetFPS = 60.0f;
 
         EditorStateInit(App);
+        GameStateInit(App);
     }
 
     //Note(Zen): Per-Frame initialisation
@@ -101,6 +131,7 @@ AppUpdate(Platform * platform) {
         memcpy(App->KeyWasDown, App->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         App->MousePosition = v2(platform->MouseEndX, platform->MouseEndY);
+
 
         App->LeftMouseDown = platform->LeftMouseDown;
         App->RightMouseDown = platform->RightMouseDown;
@@ -119,8 +150,8 @@ AppUpdate(Platform * platform) {
 
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
 
-    EditorStateUpdate(App);
-
+    //EditorStateUpdate(App);
+    GameStateUpdate(App);
     C3DFlush(&App->Renderer);
 
     /*
@@ -141,7 +172,7 @@ AppUpdate(Platform * platform) {
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
 
 
-
+    AppClearChars();
 
     return AppShouldQuit;
 }

@@ -5,6 +5,7 @@
 #include <malloc.h>
 #include <windows.h>
 #include <timeapi.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,7 +20,9 @@
 global Platform GlobalPlatform;
 global b32 OpenGLHasLoaded;
 
-
+/*
+    File IO
+*/
 
 internal char *
 CrestLoadFileAsString(const char* Path) {
@@ -39,23 +42,45 @@ CrestLoadFileAsString(const char* Path) {
         DWORD error = GetLastError();
         //TODO(Zen): Read file and log issue
         OutputDebugStringA("Failed To load file");
+        return 0;
     }
     CloseHandle(FileHandle);
     return Buffer;
 }
-
+//Note(Zen): Directory writing to must exist.
+//TODO(ZEN): Either Create missing directories or fail
 internal void
 CrestWriteFile(const char * Path, const char * Data, i32 DataLength) {
     HANDLE FileHandle = CreateFile(Path, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
 
-    WriteFile(FileHandle, Data, DataLength, 0, 0);
+    i32 Success = WriteFile(FileHandle, Data, DataLength, 0, 0);
     CloseHandle(FileHandle);
-
+    if(!Success) {
+        i32 Error = GetLastError();
+    }
 
 }
 
+internal b32
+CrestDoesFileExist(const char * Path) {
+    WIN32_FIND_DATA FindFileData;
+    HANDLE handle = FindFirstFile(Path, &FindFileData) ;
+    b32 found = handle != INVALID_HANDLE_VALUE;
+    if(found) {
+        FindClose(handle);
+    }
+    return found;
+}
 
+internal void
+CrestMakeDirectory(const char * Path) {
+    CreateDirectoryA(Path, 0);
+}
+
+/*
+    Win32 Code
+*/
 LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     LRESULT result = 0;
     if (message == WM_DESTROY) {
@@ -81,6 +106,9 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         if(KeyCode >= VK_F1 && KeyCode <= VK_F12) KeyIndex = KEY_F1 + (KeyCode - VK_F1);
 
         GlobalPlatform.KeyDown[KeyIndex] = IsDown;
+    }
+    else if(message == WM_CHAR) {
+        AppPutChar(wParam);
     }
     else if (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {
         b32 IsDown = (message == WM_LBUTTONDOWN);

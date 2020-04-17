@@ -1031,7 +1031,8 @@ ReloadGridVisuals(hex_grid * Grid) {
 #define BYTES_PER_CELL 6
 
 internal void
-SaveGridAsMap(hex_grid * Grid) {
+SaveGridAsMap(hex_grid * Grid, char * MapName, i32 MapNameLength) {
+
     //Note(Zen): first 4 bytes are version number
 
     //Note(Zen): next byte is width then height
@@ -1073,14 +1074,26 @@ SaveGridAsMap(hex_grid * Grid) {
         Buffer[Cursor++] = Directions;
     }
 
-    CrestWriteFile("Default.map", Buffer, Cursor);
+    //file path is Maps/<Name>.map
+    //since name can be 32 characters long
+    char FilePath[5 + 32 + 5] = "Maps/";
+    strncat(FilePath, MapName, MapNameLength);
+    strncat(FilePath, ".map", 4);
+    CrestWriteFile(FilePath, Buffer, Cursor);
 }
 
 
 internal void
-LoadGridFromMap(hex_grid * Grid) {
-    char * Buffer = CrestLoadFileAsString("Default.map");
+LoadGridFromMap(hex_grid * Grid, char * MapName, i32 MapNameLength) {
+    char FilePath[5 + 32 + 5] = "Maps/";
+    strncat(FilePath, MapName, MapNameLength);
+    strncat(FilePath, ".map", 4);
+    char * Buffer = CrestLoadFileAsString(FilePath);
 
+    //TODO(Zen): Log failure
+    if(!Buffer) {
+        return;
+    }
     //skip version num
     Grid->Width = Buffer[4];
     Grid->Height = Buffer[5];

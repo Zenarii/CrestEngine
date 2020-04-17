@@ -26,7 +26,12 @@ EditorStateInit(app * App) {
     Grid->Height = HEX_CHUNK_HEIGHT * HEX_MAX_CHUNKS_HIGH;
 
     InitFeatureSet(&State->HexGrid.FeatureSet);
-    ResetCellsOnHexGrid(&State->HexGrid);
+
+    if(!CrestDoesFileExist("Maps")) {
+        CrestMakeDirectory("Maps");
+    }
+
+    ResetCellsOnHexGrid(Grid);
     ReloadGridVisuals(&State->HexGrid);
 
     EditorStateDebug.ShowUI = 1;
@@ -260,14 +265,16 @@ CheckRayThroughChunk(hex_grid_chunk * Chunk, ray_cast RayCast) {
     return 0;
 }
 
-global b32 DebugCollisions = 0;
-global b32 DebugLargeCollions = 0;
 
 static void
 EditorStateUpdate(app * App) {
     camera * Camera = &App->EditorState.Camera;
     editor_state * EditorState = &App->EditorState;
-    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) SaveGridAsMap(&EditorState->HexGrid);
+    //TODO make this work if already have a file name
+    //if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) SaveGridAsMap(&EditorState->HexGrid);
+    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) EditorState->Settings.EditMode = EDIT_MODE_SAVING;
+    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_O)) EditorState->Settings.EditMode = EDIT_MODE_LOADING;
+
 
     static r32 TotalTime = 0.f;
     TotalTime += App->Delta;
@@ -297,30 +304,96 @@ EditorStateUpdate(app * App) {
         EditorStateDebug.ShowLargeCollisions ^= AppKeyJustDown(KEY_F12);
     }
     else if(EditorState->Settings.EditMode == EDIT_MODE_SAVING) {
-        if(AppKeyJustDown(KEY_ESC)) EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
-
         CrestUIPushPanel(&App->UI, v2(App->ScreenWidth * 0.5f - 104.f, 200.f), -0.1f);
         CrestUIPushRow(&App->UI, v2(App->ScreenWidth * 0.5f - 108.f, 200.f), v2(100.f, 32.f), 2);
 
+        static i32 FileNameCursor = 0;
+        static char FileNameBuffer[32];
+
+        i32 PutCharactersCursor = 0;
+        while(App->PutCharacters[PutCharactersCursor] != 0) {
+            if(FileNameCursor < 32) {
+                FileNameBuffer[FileNameCursor++] = App->PutCharacters[PutCharactersCursor++];
+            }
+        }
+        if(FileNameCursor == 31) {
+            memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
+            FileNameCursor = 0;
+        }
+
+
         CrestUITextLabel(&App->UI, GENERIC_ID(0), "Name:");
-        CrestUITextLabel(&App->UI, GENERIC_ID(0), "Default");
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), FileNameBuffer);
+
+
+        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Save")) {
+            SaveGridAsMap(&EditorState->HexGrid, FileNameBuffer, FileNameCursor);
+
+            memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
+            FileNameCursor = 0;
+            EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
+            App->UI.active = CrestUIIDNull();
+            App->UI.hot = CrestUIIDNull();
+        }
+        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Cancel") || App->KeyDown[KEY_ESC]) {
+            memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
+            FileNameCursor = 0;
+            EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
+            App->UI.active = CrestUIIDNull();
+            App->UI.hot = CrestUIIDNull();
+        }
 
         CrestUIPopRow(&App->UI);
         CrestUIPopPanel(&App->UI);
-
-        SaveGridAsMap(&EditorState->HexGrid);
     }
     else if(EditorState->Settings.EditMode == EDIT_MODE_LOADING) {
-        LoadGridFromMap(&EditorState->HexGrid);
-        ReloadGridVisuals(&EditorState->HexGrid);
-        EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
+        CrestUIPushPanel(&App->UI, v2(App->ScreenWidth * 0.5f - 104.f, 200.f), -0.1f);
+        CrestUIPushRow(&App->UI, v2(App->ScreenWidth * 0.5f - 108.f, 200.f), v2(100.f, 32.f), 2);
+
+        static i32 FileNameCursor = 0;
+        static char FileNameBuffer[32];
+
+        i32 PutCharactersCursor = 0;
+        while(App->PutCharacters[PutCharactersCursor] != 0) {
+            if(FileNameCursor < 32) {
+                FileNameBuffer[FileNameCursor++] = App->PutCharacters[PutCharactersCursor++];
+            }
+        }
+        if(FileNameCursor == 31) {
+            memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
+            FileNameCursor = 0;
+        }
+
+
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), "Name:");
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), FileNameBuffer);
+
+
+        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Load")) {
+            LoadGridFromMap(&EditorState->HexGrid, FileNameBuffer, FileNameCursor);
+            ReloadGridVisuals(&EditorState->HexGrid);
+            memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
+            FileNameCursor = 0;
+            EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
+            App->UI.active = CrestUIIDNull();
+            App->UI.hot = CrestUIIDNull();
+        }
+        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Cancel") || App->KeyDown[KEY_ESC]) {
+            memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
+            FileNameCursor = 0;
+            EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
+            App->UI.active = CrestUIIDNull();
+            App->UI.hot = CrestUIIDNull();
+        }
+
+        CrestUIPopRow(&App->UI);
+        CrestUIPopPanel(&App->UI);
     }
     else if(EditorState->Settings.EditMode == EDIT_MODE_NEW_MAP) {
         ResetCellsOnHexGrid(&EditorState->HexGrid);
         ReloadGridVisuals(&EditorState->HexGrid);
         EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
     }
-
 
     if(EditorStateDebug.ShowUI) {
         EditorState->Settings = doEditorUI(&App->UI, EditorState->Settings, App->ScreenWidth);
