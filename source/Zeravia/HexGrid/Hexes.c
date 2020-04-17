@@ -872,6 +872,9 @@ TriangulateWaterMesh(hex_grid * Grid, hex_grid_chunk * Chunk) {
 /*
     Generating Collision Meshes
 */
+//TODO(Zen):
+internal void
+TriangulateCollisionCorner();
 
 internal void
 TriangulateCollisionConnection(collision_mesh * CollisionMesh, v3 p0, v3 p1, hex_cell Cell, i32 Direction) {

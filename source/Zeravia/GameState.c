@@ -27,7 +27,9 @@ GameStateInit(app * App) {
     InitFeatureSet(&State->Grid.FeatureSet);
 
     LoadGridFromMap(Grid, "gamestatetest", strlen("gamestatetest"));
+
     ReloadGridVisuals(Grid);
+
 }
 
 internal void
@@ -112,19 +114,43 @@ GameStateUpdate(app * App) {
     ray_cast RayCast = {RayOrigin, RayDirection};
 
 
+    for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
+        for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
+            i32 Index = z * HEX_MAX_CHUNKS_WIDE + x;
+            hex_grid_chunk * Chunk = &GameState->Grid.Chunks[Index];
+
+            b32 HitChunk = CheckRayThroughChunk(Chunk, RayCast);
+            if(HitChunk) {
+                for(i32 TriIndex = 0; TriIndex < Chunk->CollisionMesh.TriangleCount; ++TriIndex) {
+                    collision_triangle Triangle = Chunk->CollisionMesh.Triangles[TriIndex];
+                    collision_result Hit = RayTriangleIntersect(RayCast.Origin, RayCast.Direction, &Triangle);
+
+                    if(Hit.DidIntersect) {
+                        hex_coordinates SelectedHex = CartesianToHexCoords(Hit.IntersectionPoint.x, Hit.IntersectionPoint.z);
+                        i32 CellIndex = GetCellIndex(SelectedHex);
+                        i32 ColourIndex = GameState->Grid.Cells[CellIndex].ColourIndex;
+                        CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(16, 16, 128, 32), EditorColourString[ColourIndex]);
+                        C3DDrawCube(&App->Renderer, Hit.IntersectionPoint, v3(1.f, 1.f, 1.f), 0.1f);
+                        goto EditStateEndOfCollisions;
+
+                    }
+                }
+            }
+        }
+    }
+    EditStateEndOfCollisions:;
 
     CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
     CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
     CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
 
-#if 0
     //Note(Zen): Draw the Collision Shapes
-    if(EditorStateDebug.ShowCollisions) {
+    if(App->KeyDown[KEY_P]) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
             for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
-                collision_mesh * CollisionMesh = &App->EditorState.HexGrid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x].CollisionMesh;
+                collision_mesh * CollisionMesh = &GameState->Grid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x].CollisionMesh;
                 for(i32 TriIndex = 0; TriIndex < CollisionMesh->TriangleCount; ++TriIndex) {
                     collision_triangle Triangle = CollisionMesh->Triangles[TriIndex];
                     C3DDrawTri(&App->Renderer, Triangle.Vertex0, Triangle.Vertex1, Triangle.Vertex2, v3(1.f, 0.f, 0.f));
@@ -135,6 +161,7 @@ GameStateUpdate(app * App) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
+#if 0
     if(EditorStateDebug.ShowLargeCollisions) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -152,7 +179,5 @@ GameStateUpdate(app * App) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 #endif
-
-
 }
 #undef UI_ID_OFFSET

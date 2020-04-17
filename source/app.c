@@ -104,7 +104,7 @@ AppUpdate(Platform * platform) {
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
         C3DInit(&App->Renderer);
         App->Renderer.Textures[0] = CasLoadTexture("../assets/White.png", GL_LINEAR);
-
+        App->Renderer.Textures[1] =
 
         App->Renderer.ActiveTextures = TEXTURE_COUNT;
         glEnable (GL_BLEND);
@@ -154,14 +154,14 @@ AppUpdate(Platform * platform) {
     GameStateUpdate(App);
     C3DFlush(&App->Renderer);
 
-    /*
+    /* FIX TIMING CODE
     #define APP_FPS_PANEL_WIDTH 200
     CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 16.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
     {
         char Buffer[32];
         sprintf(Buffer, "Time for frame:%2.fms", platform->TimeTakenForFrame * 1000.f);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
-        sprintf(Buffer, "Time passed: %2.fms", App->Delta * 1000.f);
+        sprintf(Buffer, "Time passed: %2.fms", platform->TimeTaken * 1000.f);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
         sprintf(Buffer, "FPS: %3.f/s", 1.f/App->Delta);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);

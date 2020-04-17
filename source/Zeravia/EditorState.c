@@ -184,7 +184,7 @@ EditCells(hex_grid * Grid, i32 StartCellIndex, hex_edit_settings Settings) {
 }
 */
 internal b32
-CheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settings, ray_cast RayCast) {
+EditorCheckCollisionsOnChunk(i32 ChunkIndex, hex_grid * Grid, hex_edit_settings Settings, ray_cast RayCast) {
     b32 CollidedWithThisChunk = 0;
     hex_grid_chunk * Chunk = &Grid->Chunks[ChunkIndex];
 
@@ -468,8 +468,9 @@ EditorStateUpdate(app * App) {
 
                 b32 HitChunk = CheckRayThroughChunk(Chunk, RayCast);
                 if(HitChunk) {
+
                     //CheckCollisionsOnChunk will also edit the cell atm
-                    b32 HitCell = CheckCollisionsOnChunk(Index, &App->EditorState.HexGrid, EditorState->Settings, RayCast);
+                    b32 HitCell = EditorCheckCollisionsOnChunk(Index, &App->EditorState.HexGrid, EditorState->Settings, RayCast);
                     if(HitCell) goto EditStateEndOfCollisions;
                 }
 
