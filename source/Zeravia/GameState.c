@@ -114,18 +114,15 @@ GameStateUpdate(app * App) {
     ray_cast RayCast = {RayOrigin, RayDirection};
 
     static hex_cell StartCell;
-    static hex_cell EndCell;
 
-
-    C3DDrawCube(&App->Renderer, EndCell.Position, v3(0.f, 0.7f, 0.9f), 0.1f);
     C3DDrawCube(&App->Renderer, StartCell.Position, v3(0.9f, 0.f, 0.2f), 0.1f);
 
-    bfs_path Info = HexPathingBFS(&GameState->Grid, StartCell, EndCell);
-    for(i32 i = 0; i < Info.Count; ++i) {
-        C3DDrawCube(&App->Renderer, GameState->Grid.Cells[Info.Indices[i]].Position, v3(0.6f, 0.7f, 0.2f), 0.1f);
+    hex_reachable_cells Reachable = HexGetReachableCells(&GameState->Grid, StartCell, 8);
+    for(i32 i = 0; i < Reachable.Count; ++i) {
+        C3DDrawCube(&App->Renderer,
+                    GameState->Grid.Cells[Reachable.Indices[i]].Position,
+                    CrestV3Sub(v3(1.f, 1.f, 1.f), HexColours[GameState->Grid.Cells[Reachable.Indices[i]].ColourIndex]), 0.1f);
     }
-
-
 
     for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
@@ -147,9 +144,6 @@ GameStateUpdate(app * App) {
 
                         if(App->LeftMouseDown) {
                             StartCell = GameState->Grid.Cells[CellIndex];
-                        }
-                        if(App->RightMouseDown) {
-                            EndCell = GameState->Grid.Cells[CellIndex];
                         }
 
                         goto EditStateEndOfCollisions;
