@@ -101,17 +101,19 @@ internal void
 C3DDrawQuad(C3DRenderer * Renderer, v3 p0, v3 p1, v3 p2, v3 p3, v3 Colour) {
     if(Renderer->BufferIndex + 4 > C3D_MAX_VERTICES || Renderer->IndicesIndex + 6 > C3D_MAX_INDICIES) C3DFlush(Renderer);
 
+    i32 StartIndex = Renderer->BufferIndex;
+
     Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(p0, Colour, v2(0.1f, 0.1f), 0);
     Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(p1, Colour, v2(0.1f, 0.1f), 0);
     Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(p2, Colour, v2(0.1f, 0.1f), 0);
     Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(p3, Colour, v2(0.1f, 0.1f), 0);
 
-    Renderer->Indices[Renderer->IndicesIndex] = Renderer->IndicesIndex;
-    Renderer->Indices[Renderer->IndicesIndex + 1] = Renderer->IndicesIndex + 1;
-    Renderer->Indices[Renderer->IndicesIndex + 2] = Renderer->IndicesIndex + 2;
-    Renderer->Indices[Renderer->IndicesIndex + 3] = Renderer->IndicesIndex + 1;
-    Renderer->Indices[Renderer->IndicesIndex + 4] = Renderer->IndicesIndex + 2;
-    Renderer->Indices[Renderer->IndicesIndex + 5] = Renderer->IndicesIndex + 3;
+    Renderer->Indices[Renderer->IndicesIndex] = StartIndex;
+    Renderer->Indices[Renderer->IndicesIndex + 1] = StartIndex + 1;
+    Renderer->Indices[Renderer->IndicesIndex + 2] = StartIndex + 2;
+    Renderer->Indices[Renderer->IndicesIndex + 3] = StartIndex + 1;
+    Renderer->Indices[Renderer->IndicesIndex + 4] = StartIndex + 2;
+    Renderer->Indices[Renderer->IndicesIndex + 5] = StartIndex + 3;
     Renderer->IndicesIndex += 6;
 }
 
@@ -119,13 +121,15 @@ internal void
 C3DDrawTri(C3DRenderer * Renderer, v3 p0, v3 p1, v3 p2, v3 Colour) {
     if(Renderer->BufferIndex + 3 > C3D_MAX_VERTICES || Renderer->IndicesIndex + 3 > C3D_MAX_INDICIES) C3DFlush(Renderer);
 
+    i32 StartIndex = Renderer->BufferIndex;
+
     Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(p0, Colour, v2(0.1f, 0.1f), 0);
     Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(p1, Colour, v2(0.1f, 0.1f), 0);
     Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(p2, Colour, v2(0.1f, 0.1f), 0);
 
-    Renderer->Indices[Renderer->IndicesIndex] = Renderer->IndicesIndex;
-    Renderer->Indices[Renderer->IndicesIndex + 1] = Renderer->IndicesIndex + 1;
-    Renderer->Indices[Renderer->IndicesIndex + 2] = Renderer->IndicesIndex + 2;
+    Renderer->Indices[Renderer->IndicesIndex] = StartIndex;
+    Renderer->Indices[Renderer->IndicesIndex + 1] = StartIndex + 1;
+    Renderer->Indices[Renderer->IndicesIndex + 2] = StartIndex + 2;
     Renderer->IndicesIndex += 3;
 }
 
@@ -143,7 +147,7 @@ C3DDrawCube(C3DRenderer * Renderer, v3 Center, v3 Colour, r32 Scale) {
     Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3( 1,  1,  1), Scale)), Colour, v2(0.1, 0.1f), 0);
     Renderer->Vertices[Renderer->BufferIndex++] = C3DVertex(CrestV3Add(Center, CrestV3Scale(v3(-1,  1,  1), Scale)), Colour, v2(0.1, 0.1f), 0);
 
-    u32 StartIndices = Renderer->IndicesIndex;
+    u32 StartIndices = Renderer->BufferIndex - 8;
 
     Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 0;
     Renderer->Indices[Renderer->IndicesIndex++] = StartIndices + 2;
