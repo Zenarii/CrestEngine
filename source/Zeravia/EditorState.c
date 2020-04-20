@@ -6,33 +6,14 @@ EditorStateInit(app * App) {
     State->Camera = CameraInit();
 
 
-    hex_grid * Grid = &App->EditorState.HexGrid;
-    {
-        Grid->MeshShader = CrestShaderInit("../assets/hex_shader.vs", "../assets/hex_shader.fs");
-        glUseProgram(Grid->MeshShader);
-        i32 Location = glGetUniformLocation(Grid->MeshShader, "Images");
-        int samplers[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-        glUniform1iv(Location, 16, samplers);
-
-        Grid->MeshTexture = CasLoadTexture("../assets/White.png", GL_LINEAR);
-
-        Grid->WaterShader = CrestShaderInit("../assets/hex_water_shader.vs", "../assets/hex_water_shader.fs");
-        glUseProgram(Grid->WaterShader);
-        Location = glGetUniformLocation(Grid->WaterShader, "Images");
-        glUniform1iv(Location, 16, samplers);
-        Grid->WaterTexture = CasLoadTexture("../assets/NoiseTexture.png", GL_LINEAR);
-    }
-    Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
-    Grid->Height = HEX_CHUNK_HEIGHT * HEX_MAX_CHUNKS_HIGH;
-
-    InitFeatureSet(&State->HexGrid.FeatureSet);
+    hex_grid * Grid = &App->Grid;
 
     if(!CrestDoesFileExist("Maps")) {
         CrestMakeDirectory("Maps");
     }
 
     ResetCellsOnHexGrid(Grid);
-    ReloadGridVisuals(&State->HexGrid);
+    ReloadGridVisuals(Grid);
 
     EditorStateDebug.ShowUI = 1;
 }
@@ -270,8 +251,9 @@ static void
 EditorStateUpdate(app * App) {
     camera * Camera = &App->EditorState.Camera;
     editor_state * EditorState = &App->EditorState;
+    hex_grid * Grid = &App->Grid;
     //TODO make this work if already have a file name
-    //if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) SaveGridAsMap(&EditorState->HexGrid);
+    //if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) SaveGridAsMap(&Grid);
     if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) EditorState->Settings.EditMode = EDIT_MODE_SAVING;
     if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_O)) EditorState->Settings.EditMode = EDIT_MODE_LOADING;
 
@@ -287,16 +269,7 @@ EditorStateUpdate(app * App) {
         0.f, 0.f, 0.f, 1.f
     };
     if(EditorState->Settings.EditMode < EDIT_MODE_SAVING) {
-        //Note(Zen): Camera Controls
-        if(App->KeyDown[KEY_W]) Camera->Position.z -= CAMERA_SPEED * App->Delta;
-        if(App->KeyDown[KEY_S]) Camera->Position.z += CAMERA_SPEED * App->Delta;
-        if(App->KeyDown[KEY_A]) Camera->Position.x -= CAMERA_SPEED * App->Delta;
-        if(App->KeyDown[KEY_D]) Camera->Position.x += CAMERA_SPEED * App->Delta;
-        if(App->KeyDown[KEY_Q]) Camera->Rotation   += 3 * App->Delta;
-        if(App->KeyDown[KEY_E]) Camera->Rotation   -= 3 * App->Delta;
-        //Note(Zen): Clamp camera angle
-        if(Camera->Rotation > PI * 0.5f) Camera->Rotation = PI * 0.5f;
-        if(Camera->Rotation < PI * 0.1f) Camera->Rotation = PI * 0.1f;
+        doCamera(Camera, App);
 
         //Edit Debug View
         EditorStateDebug.ShowUI ^= AppKeyJustDown(KEY_F1);
@@ -327,7 +300,7 @@ EditorStateUpdate(app * App) {
 
 
         if(CrestUIButton(&App->UI, GENERIC_ID(0), "Save")) {
-            SaveGridAsMap(&EditorState->HexGrid, FileNameBuffer, FileNameCursor);
+            SaveGridAsMap(Grid, FileNameBuffer, FileNameCursor);
 
             memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
             FileNameCursor = 0;
@@ -370,8 +343,8 @@ EditorStateUpdate(app * App) {
 
 
         if(CrestUIButton(&App->UI, GENERIC_ID(0), "Load")) {
-            LoadGridFromMap(&EditorState->HexGrid, FileNameBuffer, FileNameCursor);
-            ReloadGridVisuals(&EditorState->HexGrid);
+            LoadGridFromMap(Grid, FileNameBuffer, FileNameCursor);
+            ReloadGridVisuals(Grid);
             memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
             FileNameCursor = 0;
             EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
@@ -390,8 +363,8 @@ EditorStateUpdate(app * App) {
         CrestUIPopPanel(&App->UI);
     }
     else if(EditorState->Settings.EditMode == EDIT_MODE_NEW_MAP) {
-        ResetCellsOnHexGrid(&EditorState->HexGrid);
-        ReloadGridVisuals(&EditorState->HexGrid);
+        ResetCellsOnHexGrid(Grid);
+        ReloadGridVisuals(Grid);
         EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
     }
 
@@ -406,41 +379,41 @@ EditorStateUpdate(app * App) {
     matrix View = ViewMatrixFromCamera(Camera);
     matrix Model = IdentityMatrix;
 
-    CrestShaderSetMatrix(EditorState->HexGrid.MeshShader, "View", &View);
-    CrestShaderSetMatrix(EditorState->HexGrid.MeshShader, "Model", &Model);
-    CrestShaderSetMatrix(EditorState->HexGrid.MeshShader, "Projection", &Projection);
+    CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
+    CrestShaderSetMatrix(Grid->MeshShader, "Model", &Model);
+    CrestShaderSetMatrix(Grid->MeshShader, "Projection", &Projection);
 
-    CrestShaderSetV3(EditorState->HexGrid.MeshShader, "ViewPosition", Camera->Position);
-    CrestShaderSetV3(EditorState->HexGrid.MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(EditorState->HexGrid.MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
+    CrestShaderSetV3(Grid->MeshShader, "ViewPosition", Camera->Position);
+    CrestShaderSetV3(Grid->MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(Grid->MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
 
-    CrestShaderSetMatrix(EditorState->HexGrid.WaterShader, "View", &View);
-    CrestShaderSetMatrix(EditorState->HexGrid.WaterShader, "Model", &Model);
-    CrestShaderSetMatrix(EditorState->HexGrid.WaterShader, "Projection", &Projection);
+    CrestShaderSetMatrix(Grid->WaterShader, "View", &View);
+    CrestShaderSetMatrix(Grid->WaterShader, "Model", &Model);
+    CrestShaderSetMatrix(Grid->WaterShader, "Projection", &Projection);
 
-    CrestShaderSetV3(EditorState->HexGrid.WaterShader, "ViewPosition", Camera->Position);
-    CrestShaderSetV3(EditorState->HexGrid.WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(EditorState->HexGrid.WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
-    CrestShaderSetFloat(EditorState->HexGrid.WaterShader, "Time", App->TotalTime);
+    CrestShaderSetV3(Grid->WaterShader, "ViewPosition", Camera->Position);
+    CrestShaderSetV3(Grid->WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(Grid->WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
+    CrestShaderSetFloat(Grid->WaterShader, "Time", App->TotalTime);
 
 
-    CrestShaderSetMatrix(EditorState->HexGrid.FeatureSet.Shader, "View", &View);
-    CrestShaderSetMatrix(EditorState->HexGrid.FeatureSet.Shader, "Projection", &Projection);
-    CrestShaderSetV3(EditorState->HexGrid.FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(EditorState->HexGrid.FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
-    CrestShaderSetV3(EditorState->HexGrid.FeatureSet.Shader, "ViewPosition", Camera->Position);
+    CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &View);
+    CrestShaderSetMatrix(Grid->FeatureSet.Shader, "Projection", &Projection);
+    CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
+    CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", Camera->Position);
     /*
         Draw Meshes
     */
 
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * HexMesh = &EditorState->HexGrid.Chunks[i].HexMesh;
-        DrawHexMesh(&EditorState->HexGrid, HexMesh);
+        hex_mesh * HexMesh = &Grid->Chunks[i].HexMesh;
+        DrawHexMesh(Grid, HexMesh);
     }
-    DrawFeatureSet(&EditorState->HexGrid.FeatureSet);
+    DrawFeatureSet(&Grid->FeatureSet);
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * WaterMesh = &App->EditorState.HexGrid.Chunks[i].WaterMesh;
-        DrawWaterMesh(&App->EditorState.HexGrid, WaterMesh);
+        hex_mesh * WaterMesh = &Grid->Chunks[i].WaterMesh;
+        DrawWaterMesh(Grid, WaterMesh);
     }
 
     //Note(Zen): Get RayCast
@@ -464,13 +437,13 @@ EditorStateUpdate(app * App) {
         for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
             for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
                 i32 Index = z * HEX_MAX_CHUNKS_WIDE + x;
-                hex_grid_chunk * Chunk = &App->EditorState.HexGrid.Chunks[Index];
+                hex_grid_chunk * Chunk = &Grid->Chunks[Index];
 
                 b32 HitChunk = CheckRayThroughChunk(Chunk, RayCast);
                 if(HitChunk) {
 
                     //CheckCollisionsOnChunk will also edit the cell atm
-                    b32 HitCell = EditorCheckCollisionsOnChunk(Index, &App->EditorState.HexGrid, EditorState->Settings, RayCast);
+                    b32 HitCell = EditorCheckCollisionsOnChunk(Index, Grid, EditorState->Settings, RayCast);
                     if(HitCell) goto EditStateEndOfCollisions;
                 }
 
@@ -491,7 +464,7 @@ EditorStateUpdate(app * App) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
             for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
-                collision_mesh * CollisionMesh = &App->EditorState.HexGrid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x].CollisionMesh;
+                collision_mesh * CollisionMesh = &Grid->Chunks[z * HEX_MAX_CHUNKS_WIDE + x].CollisionMesh;
                 for(i32 TriIndex = 0; TriIndex < CollisionMesh->TriangleCount; ++TriIndex) {
                     collision_triangle Triangle = CollisionMesh->Triangles[TriIndex];
                     C3DDrawTri(&App->Renderer, Triangle.Vertex0, Triangle.Vertex1, Triangle.Vertex2, v3(1.f, 0.f, 0.f));
@@ -508,7 +481,7 @@ EditorStateUpdate(app * App) {
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
             for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
                 for(i32 i = 0; i < 10; ++i) {
-                    large_collision_mesh * LargeCollisionMesh = &App->EditorState.HexGrid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x].LargeCollisionMesh;
+                    large_collision_mesh * LargeCollisionMesh = &Grid->Chunks[z * HEX_MAX_CHUNKS_WIDE + x].LargeCollisionMesh;
 
                     collision_triangle Triangle = LargeCollisionMesh->Triangles[i];
                     C3DDrawTri(&App->Renderer, Triangle.Vertex0, Triangle.Vertex1, Triangle.Vertex2, v3(0.f, 0.9f, 1.f));
@@ -522,4 +495,11 @@ EditorStateUpdate(app * App) {
 
 
 }
+
+internal void
+EditorStateFromGameState(editor_state * EditorState, game_state * GameState) {
+    EditorState->Camera = GameState->Camera;
+}
+
+
 #undef UI_ID_OFFSET

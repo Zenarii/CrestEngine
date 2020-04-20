@@ -3,28 +3,8 @@
 internal void
 GameStateInit(app * App) {
     game_state * State = &App->GameState;
+    hex_grid * Grid = &App->Grid;
     State->Camera = CameraInit();
-
-    hex_grid * Grid = &App->GameState.Grid;
-    {
-        Grid->MeshShader = CrestShaderInit("../assets/hex_shader.vs", "../assets/hex_shader.fs");
-        glUseProgram(Grid->MeshShader);
-        i32 Location = glGetUniformLocation(Grid->MeshShader, "Images");
-        int samplers[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-        glUniform1iv(Location, 16, samplers);
-
-        Grid->MeshTexture = CasLoadTexture("../assets/White.png", GL_LINEAR);
-
-        Grid->WaterShader = CrestShaderInit("../assets/hex_water_shader.vs", "../assets/hex_water_shader.fs");
-        glUseProgram(Grid->WaterShader);
-        Location = glGetUniformLocation(Grid->WaterShader, "Images");
-        glUniform1iv(Location, 16, samplers);
-        Grid->WaterTexture = CasLoadTexture("../assets/NoiseTexture.png", GL_LINEAR);
-    }
-    Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
-    Grid->Height = HEX_CHUNK_HEIGHT * HEX_MAX_CHUNKS_HIGH;
-
-    InitFeatureSet(&State->Grid.FeatureSet);
 
     LoadGridFromMap(Grid, "gamestatetest", strlen("gamestatetest"));
 
@@ -36,6 +16,7 @@ internal void
 GameStateUpdate(app * App) {
     camera * Camera = &App->GameState.Camera;
     game_state * GameState = &App->GameState;
+    hex_grid * Grid = &App->Grid;
 
     matrix IdentityMatrix = {
         1.f, 0.f, 0.f, 0.f,
@@ -43,15 +24,7 @@ GameStateUpdate(app * App) {
         0.f, 0.f, 1.f, 0.f,
         0.f, 0.f, 0.f, 1.f
     };
-    if(App->KeyDown[KEY_W]) Camera->Position.z -= CAMERA_SPEED * App->Delta;
-    if(App->KeyDown[KEY_S]) Camera->Position.z += CAMERA_SPEED * App->Delta;
-    if(App->KeyDown[KEY_A]) Camera->Position.x -= CAMERA_SPEED * App->Delta;
-    if(App->KeyDown[KEY_D]) Camera->Position.x += CAMERA_SPEED * App->Delta;
-    if(App->KeyDown[KEY_Q]) Camera->Rotation   += 3 * App->Delta;
-    if(App->KeyDown[KEY_E]) Camera->Rotation   -= 3 * App->Delta;
-
-    if(Camera->Rotation > PI * 0.5f) Camera->Rotation = PI * 0.5f;
-    if(Camera->Rotation < PI * 0.1f) Camera->Rotation = PI * 0.1f;
+    doCamera(Camera, App);
 
     /*
         Set Uniforms
@@ -61,41 +34,41 @@ GameStateUpdate(app * App) {
     matrix View = ViewMatrixFromCamera(Camera);
     matrix Model = IdentityMatrix;
 
-    CrestShaderSetMatrix(GameState->Grid.MeshShader, "View", &View);
-    CrestShaderSetMatrix(GameState->Grid.MeshShader, "Model", &Model);
-    CrestShaderSetMatrix(GameState->Grid.MeshShader, "Projection", &Projection);
+    CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
+    CrestShaderSetMatrix(Grid->MeshShader, "Model", &Model);
+    CrestShaderSetMatrix(Grid->MeshShader, "Projection", &Projection);
 
-    CrestShaderSetV3(GameState->Grid.MeshShader, "ViewPosition", Camera->Position);
-    CrestShaderSetV3(GameState->Grid.MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(GameState->Grid.MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
+    CrestShaderSetV3(Grid->MeshShader, "ViewPosition", Camera->Position);
+    CrestShaderSetV3(Grid->MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(Grid->MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
 
-    CrestShaderSetMatrix(GameState->Grid.WaterShader, "View", &View);
-    CrestShaderSetMatrix(GameState->Grid.WaterShader, "Model", &Model);
-    CrestShaderSetMatrix(GameState->Grid.WaterShader, "Projection", &Projection);
+    CrestShaderSetMatrix(Grid->WaterShader, "View", &View);
+    CrestShaderSetMatrix(Grid->WaterShader, "Model", &Model);
+    CrestShaderSetMatrix(Grid->WaterShader, "Projection", &Projection);
 
-    CrestShaderSetV3(GameState->Grid.WaterShader, "ViewPosition", Camera->Position);
-    CrestShaderSetV3(GameState->Grid.WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(GameState->Grid.WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
-    CrestShaderSetFloat(GameState->Grid.WaterShader, "Time", App->TotalTime);
+    CrestShaderSetV3(Grid->WaterShader, "ViewPosition", Camera->Position);
+    CrestShaderSetV3(Grid->WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(Grid->WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
+    CrestShaderSetFloat(Grid->WaterShader, "Time", App->TotalTime);
 
 
-    CrestShaderSetMatrix(GameState->Grid.FeatureSet.Shader, "View", &View);
-    CrestShaderSetMatrix(GameState->Grid.FeatureSet.Shader, "Projection", &Projection);
-    CrestShaderSetV3(GameState->Grid.FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(GameState->Grid.FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
-    CrestShaderSetV3(GameState->Grid.FeatureSet.Shader, "ViewPosition", Camera->Position);
+    CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &View);
+    CrestShaderSetMatrix(Grid->FeatureSet.Shader, "Projection", &Projection);
+    CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
+    CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
+    CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", Camera->Position);
     /*
         Draw Meshes
     */
 
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * HexMesh = &GameState->Grid.Chunks[i].HexMesh;
-        DrawHexMesh(&GameState->Grid, HexMesh);
+        hex_mesh * HexMesh = &Grid->Chunks[i].HexMesh;
+        DrawHexMesh(Grid, HexMesh);
     }
-    DrawFeatureSet(&GameState->Grid.FeatureSet);
+    DrawFeatureSet(&Grid->FeatureSet);
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * WaterMesh = &GameState->Grid.Chunks[i].WaterMesh;
-        DrawWaterMesh(&GameState->Grid, WaterMesh);
+        hex_mesh * WaterMesh = &Grid->Chunks[i].WaterMesh;
+        DrawWaterMesh(Grid, WaterMesh);
     }
 
     //Note(Zen): Get RayCast
@@ -117,17 +90,17 @@ GameStateUpdate(app * App) {
 
     C3DDrawCube(&App->Renderer, StartCell.Position, v3(0.9f, 0.f, 0.2f), 0.1f);
 
-    hex_reachable_cells Reachable = HexGetReachableCells(&GameState->Grid, StartCell, 8);
+    hex_reachable_cells Reachable = HexGetReachableCells(Grid, StartCell, 5);
     for(i32 i = 0; i < Reachable.Count; ++i) {
         C3DDrawCube(&App->Renderer,
-                    GameState->Grid.Cells[Reachable.Indices[i]].Position,
-                    CrestV3Sub(v3(1.f, 1.f, 1.f), HexColours[GameState->Grid.Cells[Reachable.Indices[i]].ColourIndex]), 0.1f);
+                    Grid->Cells[Reachable.Indices[i]].Position,
+                    CrestV3Sub(v3(1.f, 1.f, 1.f), HexColours[Grid->Cells[Reachable.Indices[i]].ColourIndex]), 0.1f);
     }
 
     for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
             i32 Index = z * HEX_MAX_CHUNKS_WIDE + x;
-            hex_grid_chunk * Chunk = &GameState->Grid.Chunks[Index];
+            hex_grid_chunk * Chunk = &Grid->Chunks[Index];
 
             b32 HitChunk = CheckRayThroughChunk(Chunk, RayCast);
             if(HitChunk) {
@@ -138,12 +111,12 @@ GameStateUpdate(app * App) {
                     if(Hit.DidIntersect) {
                         hex_coordinates SelectedHex = CartesianToHexCoords(Hit.IntersectionPoint.x, Hit.IntersectionPoint.z);
                         i32 CellIndex = GetCellIndex(SelectedHex);
-                        i32 ColourIndex = GameState->Grid.Cells[CellIndex].ColourIndex;
+                        i32 ColourIndex = Grid->Cells[CellIndex].ColourIndex;
                         CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(16, 16, 128, 32), EditorColourString[ColourIndex]);
                         C3DDrawCube(&App->Renderer, Hit.IntersectionPoint, v3(1.f, 1.f, 1.f), 0.1f);
 
                         if(App->LeftMouseDown) {
-                            StartCell = GameState->Grid.Cells[CellIndex];
+                            StartCell = Grid->Cells[CellIndex];
                         }
 
                         goto EditStateEndOfCollisions;
@@ -169,7 +142,7 @@ GameStateUpdate(app * App) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
             for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
-                collision_mesh * CollisionMesh = &GameState->Grid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x].CollisionMesh;
+                collision_mesh * CollisionMesh = &Grid->Chunks[z * HEX_MAX_CHUNKS_WIDE + x].CollisionMesh;
                 for(i32 TriIndex = 0; TriIndex < CollisionMesh->TriangleCount; ++TriIndex) {
                     collision_triangle Triangle = CollisionMesh->Triangles[TriIndex];
                     C3DDrawTri(&App->Renderer, Triangle.Vertex0, Triangle.Vertex1, Triangle.Vertex2, v3(1.f, 0.f, 0.f));
@@ -179,24 +152,12 @@ GameStateUpdate(app * App) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-
-#if 0
-    if(EditorStateDebug.ShowLargeCollisions) {
-        C3DFlush(&App->Renderer);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
-            for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
-                for(i32 i = 0; i < 10; ++i) {
-                    large_collision_mesh * LargeCollisionMesh = &App->EditorState.HexGrid.Chunks[z * HEX_MAX_CHUNKS_WIDE + x].LargeCollisionMesh;
-
-                    collision_triangle Triangle = LargeCollisionMesh->Triangles[i];
-                    C3DDrawTri(&App->Renderer, Triangle.Vertex0, Triangle.Vertex1, Triangle.Vertex2, v3(0.f, 0.9f, 1.f));
-                }
-            }
-        }
-        C3DFlush(&App->Renderer);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-#endif
 }
+
+internal void
+GameStateFromEditorState(game_state * GameState, editor_state * EditorState) {
+    GameState->Camera = EditorState->Camera;
+}
+
+
 #undef UI_ID_OFFSET

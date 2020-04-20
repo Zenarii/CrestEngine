@@ -1,3 +1,35 @@
+internal void
+HexGridInit(hex_grid * Grid) {
+    {
+        Grid->MeshShader = CrestShaderInit("../assets/hex_shader.vs", "../assets/hex_shader.fs");
+        glUseProgram(Grid->MeshShader);
+        i32 Location = glGetUniformLocation(Grid->MeshShader, "Images");
+        int samplers[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+        glUniform1iv(Location, 16, samplers);
+
+        Grid->MeshTexture = CasLoadTexture("../assets/White.png", GL_LINEAR);
+
+        Grid->WaterShader = CrestShaderInit("../assets/hex_water_shader.vs", "../assets/hex_water_shader.fs");
+        glUseProgram(Grid->WaterShader);
+        Location = glGetUniformLocation(Grid->WaterShader, "Images");
+        glUniform1iv(Location, 16, samplers);
+        Grid->WaterTexture = CasLoadTexture("../assets/NoiseTexture.png", GL_LINEAR);
+
+        Grid->Initialised = 1;
+    }
+
+    Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
+    Grid->Height = HEX_CHUNK_HEIGHT * HEX_MAX_CHUNKS_HIGH;
+
+    InitFeatureSet(&Grid->FeatureSet);
+}
+
+
+
+
+
+
+
 
 internal hex_cell
 CreateCell(int x, int z) {

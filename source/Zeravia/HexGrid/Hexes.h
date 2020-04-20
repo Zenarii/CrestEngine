@@ -100,7 +100,7 @@ typedef struct hex_mesh hex_mesh;
 struct hex_mesh {
     u32 VAO, VBO;
     u32 VerticesCount;
-    
+
 };
 
 
@@ -182,6 +182,8 @@ typedef struct temporary_hex_mesh {
 
 typedef struct hex_grid hex_grid;
 struct hex_grid {
+    b32 Initialised;
+
     u32 MeshShader, MeshTexture;
     u32 WaterShader, WaterTexture;
 

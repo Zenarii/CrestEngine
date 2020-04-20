@@ -44,6 +44,7 @@ typedef struct app {
 
     C3DRenderer Renderer;
 
+    hex_grid Grid;
     editor_state EditorState;
     game_state GameState;
 } app;
@@ -104,7 +105,7 @@ AppUpdate(Platform * platform) {
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
         C3DInit(&App->Renderer);
         App->Renderer.Textures[0] = CasLoadTexture("../assets/White.png", GL_LINEAR);
-        App->Renderer.Textures[1] =
+
 
         App->Renderer.ActiveTextures = TEXTURE_COUNT;
         glEnable (GL_BLEND);
@@ -114,6 +115,7 @@ AppUpdate(Platform * platform) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         platform->TargetFPS = 60.0f;
 
+        HexGridInit(&App->Grid);
         EditorStateInit(App);
         GameStateInit(App);
     }
@@ -150,8 +152,24 @@ AppUpdate(Platform * platform) {
 
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
 
-    //EditorStateUpdate(App);
-    GameStateUpdate(App);
+    static b32 InEditor = 1;
+
+    if(InEditor && AppKeyJustDown(KEY_F3)) {
+        InEditor = 0;
+        GameStateFromEditorState(&App->GameState, &App->EditorState);
+    }
+    else if(!InEditor && AppKeyJustDown(KEY_F3)) {
+        InEditor = 1;
+        EditorStateFromGameState(&App->EditorState, &App->GameState);
+    }
+
+    if(InEditor) {
+        EditorStateUpdate(App);
+    }
+    else {
+        GameStateUpdate(App);
+    }
+
     C3DFlush(&App->Renderer);
 
     /* FIX TIMING CODE

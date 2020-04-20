@@ -55,6 +55,5 @@ struct hex_edit_settings {
 typedef struct editor_state editor_state;
 struct editor_state {
     camera Camera;
-    hex_grid HexGrid;
     hex_edit_settings Settings;
 };
