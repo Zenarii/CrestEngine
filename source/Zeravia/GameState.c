@@ -38,7 +38,7 @@ GameStateUpdate(app * App) {
     CrestShaderSetMatrix(Grid->MeshShader, "Model", &Model);
     CrestShaderSetMatrix(Grid->MeshShader, "Projection", &Projection);
 
-    CrestShaderSetV3(Grid->MeshShader, "ViewPosition", Camera->Position);
+    CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
     CrestShaderSetV3(Grid->MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
     CrestShaderSetV3(Grid->MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
 
@@ -46,7 +46,7 @@ GameStateUpdate(app * App) {
     CrestShaderSetMatrix(Grid->WaterShader, "Model", &Model);
     CrestShaderSetMatrix(Grid->WaterShader, "Projection", &Projection);
 
-    CrestShaderSetV3(Grid->WaterShader, "ViewPosition", Camera->Position);
+    CrestShaderSetV3(Grid->WaterShader, "ViewPosition", GetCameraLocation(Camera));
     CrestShaderSetV3(Grid->WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
     CrestShaderSetV3(Grid->WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
     CrestShaderSetFloat(Grid->WaterShader, "Time", App->TotalTime);
@@ -56,7 +56,7 @@ GameStateUpdate(app * App) {
     CrestShaderSetMatrix(Grid->FeatureSet.Shader, "Projection", &Projection);
     CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
     CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
-    CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", Camera->Position);
+    CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", GetCameraLocation(Camera));
     /*
         Draw Meshes
     */
@@ -82,7 +82,7 @@ GameStateUpdate(app * App) {
     v4 RayWorld = CrestMatrixMultipyV4(CrestMatrixInverse(View), RayEye);
     v3 RayDirection = CrestV3Normalise(v3(RayWorld.x, RayWorld.y, RayWorld.z));
 
-    v3 RayOrigin = Camera->Position;
+    v3 RayOrigin = GetCameraLocation(Camera);
 
     ray_cast RayCast = {RayOrigin, RayDirection};
 
