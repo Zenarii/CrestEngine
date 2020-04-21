@@ -119,9 +119,9 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         GlobalPlatform.RightMouseDown = IsDown;
     }
     else if(message == WM_MOUSEWHEEL) {
-        u32 MouseDelta = wParam;
+        i32 MouseDelta = GET_WHEEL_DELTA_WPARAM(wParam);
         //Note(Zen): Get Mouse Scroll between 0 and 1
-        GlobalPlatform.MouseScroll = MouseDelta / 120.f;
+        GlobalPlatform.MouseScroll = MouseDelta /120.f;
     }
     else if (message == WM_SIZE) {
         RECT ClientRect = {0};
@@ -220,6 +220,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
             GlobalPlatform.MouseStartY = GlobalPlatform.MouseEndY;
             GlobalPlatform.MouseEndX = MousePosition.x;
             GlobalPlatform.MouseEndY = MousePosition.y;
+
         }
 
         if(AppUpdate(&GlobalPlatform)) {
@@ -247,6 +248,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
         GlobalPlatform.TimeTaken = TimeTaken;
         StartTime = EndTime;
 
+
+        //Clear MouseScroll
+        GlobalPlatform.MouseScroll = 0;
     }
 
     quit:;
