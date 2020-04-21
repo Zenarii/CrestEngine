@@ -31,9 +31,12 @@ typedef struct app {
     r32 TotalTime;
     r32 ScreenWidth;
     r32 ScreenHeight;
-    v2 MousePosition;
-    b32 LeftMouseDown;
-    b32 RightMouseDown;
+    struct {
+        v2 Position;
+        b32 LeftDown;
+        b32 RightDown;
+        r32 Scroll;
+    } Mouse;
     b32 KeyDown[CREST_KEY_MAX];
     b32 KeyWasDown[CREST_KEY_MAX];
     u32 Cursor;
@@ -132,11 +135,12 @@ AppUpdate(Platform * platform) {
         App->TotalTime += App->Delta;
         memcpy(App->KeyWasDown, App->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
-        App->MousePosition = v2(platform->MouseEndX, platform->MouseEndY);
 
 
-        App->LeftMouseDown = platform->LeftMouseDown;
-        App->RightMouseDown = platform->RightMouseDown;
+        App->Mouse.Position = v2(platform->MouseEndX, platform->MouseEndY);
+        App->Mouse.LeftDown = platform->LeftMouseDown;
+        App->Mouse.RightDown = platform->RightMouseDown;
+        App->Mouse.Scroll = platform->MouseScroll;
     }
 
     //Note(Zen): Copy across UI Input

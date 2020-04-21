@@ -118,6 +118,11 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         b32 IsDown = (message == WM_RBUTTONDOWN);
         GlobalPlatform.RightMouseDown = IsDown;
     }
+    else if(message == WM_MOUSEWHEEL) {
+        u32 MouseDelta = wParam;
+        //Note(Zen): Get Mouse Scroll between 0 and 1
+        GlobalPlatform.MouseScroll = MouseDelta / 120.f;
+    }
     else if (message == WM_SIZE) {
         RECT ClientRect = {0};
         GetClientRect(window, &ClientRect);

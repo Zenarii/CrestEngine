@@ -20,6 +20,7 @@ typedef struct Platform {
     r32 MouseEndX;
     r32 MouseStartY;
     r32 MouseEndY;
+    r32 MouseScroll;
 
     r32 TargetFPS;
     r64 TimeTakenForFrame; // time to do everything app needs
