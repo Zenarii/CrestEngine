@@ -16,39 +16,55 @@ ViewMatrixFromCamera(camera * Camera) {
     matrix PositionMatrix = CrestMatrixTranslation(v3(-Camera->Position.x,
                                                       -Camera->Position.y,
                                                       -Camera->Position.z));
-    matrix CameraSpace = CrestM4MultM4(RotationMatrix, TranslationMatrix);
+    matrix CameraSpace = CrestM4MultM4(TranslationMatrix, RotationMatrix);
     matrix WorldSpace = CrestM4MultM4(SwivelMatrix, PositionMatrix);
     return CrestM4MultM4(CameraSpace, WorldSpace);
 }
 
 internal void
 doCamera(camera * Camera, app * App) {
-    if(App->KeyDown[KEY_W]) {
-        Camera->Position.z -= cosf(Camera->Swivel) * CAMERA_SPEED * App->Delta;
-        Camera->Position.x += sinf(Camera->Swivel) * CAMERA_SPEED * App->Delta;
-    }
-    if(App->KeyDown[KEY_S]) {
-        Camera->Position.z += cosf(Camera->Swivel) * CAMERA_SPEED * App->Delta;
-        Camera->Position.x -= sinf(Camera->Swivel) * CAMERA_SPEED * App->Delta;
-    }
-    if(App->KeyDown[KEY_A]) {
-        Camera->Position.z -= sinf(Camera->Swivel) * CAMERA_SPEED * App->Delta;
-        Camera->Position.x -= cosf(Camera->Swivel) * CAMERA_SPEED * App->Delta;
-    }
-    if(App->KeyDown[KEY_D]) {
-        Camera->Position.z += sinf(Camera->Swivel) * CAMERA_SPEED * App->Delta;
-        Camera->Position.x += cosf(Camera->Swivel) * CAMERA_SPEED * App->Delta;
+    //Note(Zen): Zoom
+    {
+        Camera->Zoom -= App->Mouse.Scroll * CAMERA_ZOOM_SPEED * App->Delta;
+        if(Camera->Zoom > 1.f) Camera->Zoom = 1.f;
+        if(Camera->Zoom < 0.f) Camera->Zoom = 0.f;
+        Camera->Translation = CrestV3Lerp(v3(0.f, 0.f, CAMERA_MIN_DISTANCE), v3(0.f, 0.f, CAMERA_MAX_DISTANCE), Camera->Zoom);
+        Camera->Rotation = CrestLerp(CAMERA_MIN_ANGLE, CAMERA_MAX_ANGLE, Camera->Zoom);
+        Camera->Speed = CrestLerp(CAMERA_IN_SPEED, CAMERA_OUT_SPEED, Camera->Zoom);
     }
 
+    //Note(Zen): Movement Controls
+    {
+        if(App->KeyDown[KEY_W]) {
+            Camera->Position.z -= cosf(Camera->Swivel) * Camera->Speed * App->Delta;
+            Camera->Position.x += sinf(Camera->Swivel) * Camera->Speed * App->Delta;
+        }
+        if(App->KeyDown[KEY_S]) {
+            Camera->Position.z += cosf(Camera->Swivel) * Camera->Speed * App->Delta;
+            Camera->Position.x -= sinf(Camera->Swivel) * Camera->Speed * App->Delta;
+        }
+        if(App->KeyDown[KEY_A]) {
+            Camera->Position.z -= sinf(Camera->Swivel) * Camera->Speed * App->Delta;
+            Camera->Position.x -= cosf(Camera->Swivel) * Camera->Speed * App->Delta;
+        }
+        if(App->KeyDown[KEY_D]) {
+            Camera->Position.z += sinf(Camera->Swivel) * Camera->Speed * App->Delta;
+            Camera->Position.x += cosf(Camera->Swivel) * Camera->Speed * App->Delta;
+        }
 
-    if(App->KeyDown[KEY_Q]) Camera->Swivel += App->Delta *  0.5f * PI;
-    if(App->KeyDown[KEY_E]) Camera->Swivel -= App->Delta *  0.5f *PI;
 
-    if(Camera->Rotation > 0.45f * PI) Camera->Rotation = 0.45f * PI;
-    if(Camera->Rotation <= 0.2f * PI) Camera->Rotation = 0.2f * PI;
+        if(App->KeyDown[KEY_Q]) Camera->Swivel -= App->Delta * 0.25f * PI;
+        if(App->KeyDown[KEY_E]) Camera->Swivel += App->Delta * 0.25f * PI;
+    }
 }
 
 internal v3
 GetCameraLocation(camera * Camera) {
-    return CrestV3Add(Camera->Position, Camera->Translation);
+    v3 Base = Camera->Position;
+    r32 Height = sin(Camera->Rotation) * Camera->Translation.z;
+    r32 FromBase = cos(Camera->Rotation) * Camera->Translation.z;
+
+    v3 Offset = v3(-sin(Camera->Swivel) * FromBase, Height, cos(Camera->Swivel) * FromBase);
+
+    return CrestV3Add(Base, Offset);
 }

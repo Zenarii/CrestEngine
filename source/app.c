@@ -6,6 +6,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#include "CMaths/Reals.c"
 #include "CMaths/Vectors.c"
 #include "CMaths/Matrices.c"
 #include "CMaths/ProjectionMatrices.c"

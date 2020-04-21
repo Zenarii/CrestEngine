@@ -73,8 +73,8 @@ GameStateUpdate(app * App) {
 
     //Note(Zen): Get RayCast
     v4 RayClip = v4(0, 0, -1.f, 1.f);
-    RayClip.x = (2.f * App->MousePosition.x) / App->ScreenWidth - 1.f;
-    RayClip.y = 1.f - (2.f * App->MousePosition.y) / App->ScreenHeight;
+    RayClip.x = (2.f * App->Mouse.Position.x) / App->ScreenWidth - 1.f;
+    RayClip.y = 1.f - (2.f * App->Mouse.Position.y) / App->ScreenHeight;
 
     v4 RayEye = CrestMatrixMultipyV4(CrestMatrixInverse(Projection), RayClip);
     RayEye.z = -1.f;
@@ -97,6 +97,10 @@ GameStateUpdate(app * App) {
                     CrestV3Sub(v3(1.f, 1.f, 1.f), HexColours[Grid->Cells[Reachable.Indices[i]].ColourIndex]), 0.1f);
     }
 
+    b32 HasCollided = 0;
+    r32 OldDistance = 0;
+    v3 CollisionPoint = {0};
+    hex_coordinates SelectedHex = {0};
     for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
             i32 Index = z * HEX_MAX_CHUNKS_WIDE + x;
@@ -109,27 +113,39 @@ GameStateUpdate(app * App) {
                     collision_result Hit = RayTriangleIntersect(RayCast.Origin, RayCast.Direction, &Triangle);
 
                     if(Hit.DidIntersect) {
-                        hex_coordinates SelectedHex = CartesianToHexCoords(Hit.IntersectionPoint.x, Hit.IntersectionPoint.z);
-                        i32 CellIndex = GetCellIndex(SelectedHex);
-                        i32 ColourIndex = Grid->Cells[CellIndex].ColourIndex;
-                        CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(16, 16, 128, 32), EditorColourString[ColourIndex]);
-                        C3DDrawCube(&App->Renderer, Hit.IntersectionPoint, v3(1.f, 1.f, 1.f), 0.1f);
+                        hex_coordinates CollidedHex = CartesianToHexCoords(Hit.IntersectionPoint.x, Hit.IntersectionPoint.z);
+                        if(HasCollided) {
+                            v3 VectorTo = CrestV3Sub(RayCast.Origin, Hit.IntersectionPoint);
+                            r32 NewDistance = CrestV3Dot(VectorTo, VectorTo);
 
-                        if(App->LeftMouseDown) {
-                            StartCell = Grid->Cells[CellIndex];
+                            if(NewDistance < OldDistance) {
+                                NewDistance = OldDistance;
+                                SelectedHex = CollidedHex;
+                                CollisionPoint = Hit.IntersectionPoint;
+                            }
                         }
-
-                        goto EditStateEndOfCollisions;
-
+                        else {
+                            HasCollided = 1;
+                            SelectedHex = CollidedHex;
+                            v3 VectorTo = CrestV3Sub(RayCast.Origin, Hit.IntersectionPoint);
+                            OldDistance = CrestV3Dot(VectorTo, VectorTo);
+                            CollisionPoint = Hit.IntersectionPoint;
+                        }
                     }
                 }
             }
         }
     }
-    EditStateEndOfCollisions:;
+    if(HasCollided) {
+        i32 CellIndex = GetCellIndex(SelectedHex);
+        i32 ColourIndex = Grid->Cells[CellIndex].ColourIndex;
+        CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(16, 16, 128, 32), EditorColourString[ColourIndex]);
+        C3DDrawCube(&App->Renderer, CollisionPoint, v3(1.f, 1.f, 1.f), 0.1f);
 
-
-
+        if(App->Mouse.LeftDown) {
+            StartCell = Grid->Cells[CellIndex];
+        }
+    }
 
 
     CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
@@ -152,6 +168,10 @@ GameStateUpdate(app * App) {
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
+
+    char Buffer[64];
+    sprintf(Buffer, "%.6f", App->Mouse.Scroll);
+    CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(100, 100, 128, 32), Buffer);
 }
 
 internal void

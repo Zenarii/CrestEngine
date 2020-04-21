@@ -418,8 +418,8 @@ EditorStateUpdate(app * App) {
 
     //Note(Zen): Get RayCast
     v4 RayClip = v4(0, 0, -1.f, 1.f);
-    RayClip.x = (2.f * App->MousePosition.x) / App->ScreenWidth - 1.f;
-    RayClip.y = 1.f - (2.f * App->MousePosition.y) / App->ScreenHeight;
+    RayClip.x = (2.f * App->Mouse.Position.x) / App->ScreenWidth - 1.f;
+    RayClip.y = 1.f - (2.f * App->Mouse.Position.y) / App->ScreenHeight;
 
     v4 RayEye = CrestMatrixMultipyV4(CrestMatrixInverse(Projection), RayClip);
     RayEye.z = -1.f;
@@ -433,7 +433,7 @@ EditorStateUpdate(app * App) {
 
     //Note(Zen): Check for collisions
     char Buffer[32];
-    if(App->LeftMouseDown && !App->UI.IsMouseOver) {
+    if(App->Mouse.LeftDown && !App->UI.IsMouseOver) {
         for(i32 z = 0; z < HEX_MAX_CHUNKS_HIGH; ++z) {
             for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
                 i32 Index = z * HEX_MAX_CHUNKS_WIDE + x;
