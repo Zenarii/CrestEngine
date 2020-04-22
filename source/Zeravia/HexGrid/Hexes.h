@@ -130,12 +130,6 @@ struct hex_cell {
 //Collisions
 #define MAX_COLLISION_TRIANGLES 4096
 
-typedef struct ray_cast ray_cast;
-struct ray_cast {
-    v3 Origin;
-    v3 Direction;
-};
-
 typedef struct collision_triangle collision_triangle;
 struct collision_triangle {
     v3 Vertex0;
