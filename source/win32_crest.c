@@ -194,7 +194,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
     UINT DesiredSleepGranularity = 1;
     BOOL SetSleepGranular = (timeBeginPeriod(DesiredSleepGranularity) == TIMERR_NOERROR);
     LARGE_INTEGER ClockFrequency;
-    QueryPerformanceCounter(&ClockFrequency);
+    QueryPerformanceFrequency(&ClockFrequency);
 
     LARGE_INTEGER StartTime = {0};
     QueryPerformanceCounter(&StartTime);
@@ -236,7 +236,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
         GlobalPlatform.TimeTakenForFrame = TimeTaken;
         while (TimeTaken < 1.f/GlobalPlatform.TargetFPS) {
             if(SetSleepGranular) {
-                DWORD TimeToWait = ((DWORD) ((1.f/GlobalPlatform.TargetFPS)-TimeTaken)) * 1000;
+                DWORD TimeToWait = (DWORD) (((1.f/GlobalPlatform.TargetFPS)-TimeTaken) * 1000);
                 if(TimeToWait > 0) {
                     Sleep(TimeToWait);
                 }

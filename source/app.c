@@ -28,7 +28,7 @@
 
 typedef struct app {
     b32 Initialised;
-    r32 Delta;
+    r64 Delta;
     r32 TotalTime;
     r32 ScreenWidth;
     r32 ScreenHeight;
@@ -117,7 +117,7 @@ AppUpdate(Platform * platform) {
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        platform->TargetFPS = 60.0f;
+        platform->TargetFPS = 120.0f;
 
         HexGridInit(&App->Grid);
         EditorStateInit(App);
@@ -132,7 +132,7 @@ AppUpdate(Platform * platform) {
         App->UIRenderer.Height = platform->ScreenHeight;
         App->ScreenWidth = platform->ScreenWidth;
         App->ScreenHeight = platform->ScreenHeight;
-        App->Delta = platform->TimeTaken;//1.f / platform->TargetFPS;//
+        App->Delta = platform->TimeTaken;//1.f / platform->TargetFPS;
         App->TotalTime += App->Delta;
         memcpy(App->KeyWasDown, App->KeyDown, sizeof(b32) * CREST_KEY_MAX);
         memcpy(App->KeyDown, platform->KeyDown, sizeof(b32) * CREST_KEY_MAX);
@@ -177,7 +177,7 @@ AppUpdate(Platform * platform) {
 
     C3DFlush(&App->Renderer);
 
-    /* FIX TIMING CODE
+
     #define APP_FPS_PANEL_WIDTH 200
     CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 16.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
     {
@@ -190,7 +190,7 @@ AppUpdate(Platform * platform) {
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
     }
     CrestUIPopRow(&App->UI);
-    */
+
 
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
 
