@@ -9,7 +9,6 @@ GameStateInit(app * App) {
     LoadGridFromMap(Grid, "gamestatetest", strlen("gamestatetest"));
 
     ReloadGridVisuals(Grid);
-
 }
 
 internal void
@@ -71,7 +70,6 @@ GameStateUpdate(app * App) {
         DrawWaterMesh(Grid, WaterMesh);
     }
 
-    //Note(Zen): Get RayCast
     v4 RayClip = v4(0, 0, -1.f, 1.f);
     RayClip.x = (2.f * App->Mouse.Position.x) / App->ScreenWidth - 1.f;
     RayClip.y = 1.f - (2.f * App->Mouse.Position.y) / App->ScreenHeight;

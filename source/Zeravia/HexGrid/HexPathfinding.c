@@ -111,9 +111,12 @@ HexPathingDjikstra(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
 
         for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
             if(!CurrentCell->Neighbours[Direction]) continue;
-
-
             i32 NeighbourIndex = CurrentCell->Neighbours[Direction]->Index;
+            hex_cell * NeighbourCell = &Grid->Cells[NeighbourIndex];
+
+            //Note(Zen): Can't go up cliffs
+            if(GetHexEdgeType(CurrentCell->Elevation, NeighbourCell->Elevation) == HEX_EDGE_CLIFF) continue;
+
             i32 Cost = Grid->Cells[NeighbourIndex].ColourIndex + 1;
             if(!Visited[NeighbourIndex].Visited || (Visited[NeighbourIndex].Distance > Visited[CurrentIndex].Distance + Cost)) {
                 Frontier[BackCursor++] = NeighbourIndex;
@@ -164,6 +167,11 @@ HexGetReachableCells(hex_grid * Grid, hex_cell StartCell, i32 Distance) {
             if(!CurrentCell->Neighbours[Direction]) continue;
 
             i32 NeighbourIndex = CurrentCell->Neighbours[Direction]->Index;
+            hex_cell * NeighbourCell = &Grid->Cells[NeighbourIndex];
+
+            //Note(Zen): Can't go up cliffs
+            if(GetHexEdgeType(CurrentCell->Elevation, NeighbourCell->Elevation) == HEX_EDGE_CLIFF) continue;
+
             i32 Cost = Grid->Cells[NeighbourIndex].ColourIndex + 1;
             if(!Visited[NeighbourIndex].Visited || (Visited[NeighbourIndex].Distance > Visited[CurrentIndex].Distance + Cost)) {
                 if(Visited[CurrentIndex].Distance + Cost <= Distance) {
