@@ -3,6 +3,7 @@ CameraInit() {
     camera Result = {0};
     Result.Rotation = PI * 0.45f;
     Result.Translation = v3(0.f, 16.f, 0.f);
+    Result.Zoom = 1.f;
     return Result;
 }
 

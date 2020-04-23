@@ -1,6 +1,23 @@
 //POLISH(Zen): This can be reduced when the max movement speed has been decided
 #define MAX_REACHABLE_CELLS HEX_CELL_COUNT
 
+internal i32
+GetCostToCell(hex_cell * Cell) {
+    return 1;
+}
+
+internal b32
+IsCellAccessible(hex_cell * From, hex_cell * To) {
+    b32 Accessible = 1;
+    if(GetHexEdgeType(From->Elevation, To->Elevation) == HEX_EDGE_CLIFF) Accessible = 0;
+    if(To->WaterLevel > To->Elevation) Accessible = 0;
+    return Accessible;
+}
+
+
+
+
+
 typedef struct hex_bfs_info hex_bfs_info;
 struct hex_bfs_info {
     b32 Visited;
@@ -93,6 +110,7 @@ HexDjikstraInfo(b32 Visited, i32 CameFrom, i32 Distance) {
     return Result;
 }
 
+
 internal hex_path
 HexPathingDjikstra(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
     i32 Frontier[MAX_REACHABLE_CELLS] = {0};
@@ -114,10 +132,9 @@ HexPathingDjikstra(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
             i32 NeighbourIndex = CurrentCell->Neighbours[Direction]->Index;
             hex_cell * NeighbourCell = &Grid->Cells[NeighbourIndex];
 
-            //Note(Zen): Can't go up cliffs
-            if(GetHexEdgeType(CurrentCell->Elevation, NeighbourCell->Elevation) == HEX_EDGE_CLIFF) continue;
+            if(!IsCellAccessible(CurrentCell, NeighbourCell)) continue;
 
-            i32 Cost = Grid->Cells[NeighbourIndex].ColourIndex + 1;
+            i32 Cost = GetCostToCell(NeighbourCell);
             if(!Visited[NeighbourIndex].Visited || (Visited[NeighbourIndex].Distance > Visited[CurrentIndex].Distance + Cost)) {
                 Frontier[BackCursor++] = NeighbourIndex;
                 Visited[NeighbourIndex] = HexDjikstraInfo(1, CurrentIndex, Visited[CurrentIndex].Distance + Cost);
@@ -143,7 +160,7 @@ HexPathingDjikstra(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
 typedef struct hex_reachable_cells hex_reachable_cells;
 struct hex_reachable_cells {
     u32 Count;
-    i32 Indices[64*4]; //HARDCODE(Zen): Max move of 8 squared
+    i32 Indices[64*4]; //HARDCODE(Zen): Max move of 8 in each direction
 };
 
 
@@ -170,9 +187,9 @@ HexGetReachableCells(hex_grid * Grid, hex_cell StartCell, i32 Distance) {
             hex_cell * NeighbourCell = &Grid->Cells[NeighbourIndex];
 
             //Note(Zen): Can't go up cliffs
-            if(GetHexEdgeType(CurrentCell->Elevation, NeighbourCell->Elevation) == HEX_EDGE_CLIFF) continue;
+            if(!IsCellAccessible(CurrentCell, NeighbourCell)) continue;
 
-            i32 Cost = Grid->Cells[NeighbourIndex].ColourIndex + 1;
+            i32 Cost = GetCostToCell(NeighbourCell);
             if(!Visited[NeighbourIndex].Visited || (Visited[NeighbourIndex].Distance > Visited[CurrentIndex].Distance + Cost)) {
                 if(Visited[CurrentIndex].Distance + Cost <= Distance) {
                     Frontier[BackCursor++] = NeighbourIndex;

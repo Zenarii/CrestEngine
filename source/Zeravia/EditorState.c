@@ -499,6 +499,7 @@ EditorStateUpdate(app * App) {
 internal void
 EditorStateFromGameState(editor_state * EditorState, game_state * GameState) {
     EditorState->Camera = GameState->Camera;
+    EditorStateDebug.ShowCollisions = GameStateDebug.ShowCollisions;
 }
 
 

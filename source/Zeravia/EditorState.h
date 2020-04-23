@@ -28,6 +28,7 @@ enum {
     EDIT_MODE_SAVING,
     EDIT_MODE_LOADING,
     EDIT_MODE_NEW_MAP,
+    
     EDIT_MODE_COUNT
 };
 
