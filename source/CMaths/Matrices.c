@@ -213,3 +213,19 @@ CrestMatrixInverse(matrix m) {
 
     return Inverse;
 }
+
+
+internal v2
+CrestProjectPoint(v3 Point, matrix View, matrix Projection, r32 ScreenWidth, r32 ScreenHeight) {
+    v4 Homogenous = CrestMatrixMultipyV4(
+        CrestM4MultM4(Projection, View),
+        v4(Point.x, Point.y, Point.z, 1.0)
+    );
+
+    v2 Screen = v2(
+        (Homogenous.x / Homogenous.z + 1.f) * 0.5f * ScreenWidth,
+        (1.f - Homogenous.y / Homogenous.z) * 0.5f * ScreenHeight
+    );
+
+    return Screen;
+}

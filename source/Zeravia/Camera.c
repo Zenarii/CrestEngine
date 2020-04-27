@@ -59,6 +59,10 @@ doCamera(camera * Camera, app * App) {
         if(App->KeyDown[KEY_Q]) Camera->Swivel -= App->Delta * 0.25f * PI;
         if(App->KeyDown[KEY_E]) Camera->Swivel += App->Delta * 0.25f * PI;
     }
+
+    {
+        Camera->TargetPosition.y = Camera->Position.y = 0.f;
+    }
 }
 
 internal v3

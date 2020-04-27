@@ -25,19 +25,22 @@
 #include "Zeravia/Zeravia.h"
 
 
-
 typedef struct app {
     b32 Initialised;
     r64 Delta;
     r32 TotalTime;
     r32 ScreenWidth;
     r32 ScreenHeight;
+
     struct {
         v2 Position;
         b32 LeftDown;
         b32 RightDown;
+        b32 LeftWasDown;
+        b32 RightWasDown;
         r32 Scroll;
     } Mouse;
+
     b32 KeyDown[CREST_KEY_MAX];
     b32 KeyWasDown[CREST_KEY_MAX];
     u32 Cursor;
@@ -71,6 +74,16 @@ AppKeyJustDown(i32 Key) {
     return (App->KeyDown[Key] && !App->KeyWasDown[Key]);
 }
 
+
+
+internal b32
+AppMouseJustDown(i32 Button) {
+    if(Button == 0) return App->Mouse.LeftDown && !App->Mouse.LeftWasDown;
+    else if(Button == 1) return App->Mouse.RightDown && !App->Mouse.RightWasDown;
+
+    Assert(Button == 1 && Button == 0);
+    return 0;
+}
 
 internal void
 AppClearChars() {
@@ -139,7 +152,9 @@ AppUpdate(Platform * platform) {
 
 
         App->Mouse.Position = v2(platform->MouseEndX, platform->MouseEndY);
+        App->Mouse.LeftWasDown = App->Mouse.LeftDown;
         App->Mouse.LeftDown = platform->LeftMouseDown;
+        App->Mouse.RightWasDown = App->Mouse.RightDown;
         App->Mouse.RightDown = platform->RightMouseDown;
         App->Mouse.Scroll = platform->MouseScroll;
     }
@@ -157,7 +172,7 @@ AppUpdate(Platform * platform) {
 
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);
 
-    static b32 InEditor = 1;
+    static b32 InEditor = 0;
 
     if(InEditor && AppKeyJustDown(KEY_F3)) {
         InEditor = 0;

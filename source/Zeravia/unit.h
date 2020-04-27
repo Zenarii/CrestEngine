@@ -1,14 +1,12 @@
 #define MAX_PLAYER_UNITS 16
 #define MAX_UNIT_MOVE 8
+#define UNIT_SPEED 5.f
 
 typedef struct unit unit;
 struct unit {
-    //Used by game state
     u32 CellIndex;
+    b32 HasMoved;
+    b32 Exhausted;
 
-    //Important for animations
-    i32 AnimPosition;
-    //Pathing
-    u32 PathCount;
-    u32 CellsInPath[MAX_UNIT_MOVE];
+    v3 Position;
 };

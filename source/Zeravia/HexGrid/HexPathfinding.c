@@ -1,5 +1,5 @@
 //POLISH(Zen): This can be reduced when the max movement speed has been decided
-#define MAX_REACHABLE_CELLS HEX_CELL_COUNT
+
 
 internal i32
 GetCostToCell(hex_cell * Cell) {
@@ -13,29 +13,6 @@ IsCellAccessible(hex_cell * From, hex_cell * To) {
     if(To->WaterLevel > To->Elevation) Accessible = 0;
     return Accessible;
 }
-
-
-
-
-
-typedef struct hex_bfs_info hex_bfs_info;
-struct hex_bfs_info {
-    b32 Visited;
-    i32 CameFrom;
-};
-
-internal hex_bfs_info
-HexBFSInfo(b32 Visited, i32 CameFrom) {
-    hex_bfs_info Result = {Visited, CameFrom};
-    return Result;
-}
-
-typedef struct hex_path hex_path;
-struct hex_path {
-    u32 Count;
-    i32 Indices[64];
-};
-
 
 internal hex_path
 HexPathingBFS(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
@@ -94,15 +71,10 @@ HexPathingBFS(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
         Result.Indices[Result.Count++] = PathIndex;
         PathIndex = Visited[PathIndex].CameFrom;
     }
+    Result.Indices[Result.Count++] = StartCell.Index;
     return Result;
 }
 
-typedef struct hex_djikstra_info hex_djikstra_info;
-struct hex_djikstra_info {
-    b32 Visited;
-    i32 CameFrom;
-    i32 Distance;
-};
 
 internal hex_djikstra_info
 HexDjikstraInfo(b32 Visited, i32 CameFrom, i32 Distance) {
@@ -153,6 +125,7 @@ HexPathingDjikstra(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
         Result.Indices[Result.Count++] = PathIndex;
         PathIndex = Visited[PathIndex].CameFrom;
     }
+    Result.Indices[Result.Count++] = StartCell.Index;
     return Result;
 }
 
@@ -160,7 +133,7 @@ HexPathingDjikstra(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
 typedef struct hex_reachable_cells hex_reachable_cells;
 struct hex_reachable_cells {
     u32 Count;
-    i32 Indices[64*4]; //HARDCODE(Zen): Max move of 8 in each direction
+    i32 Indices[64*4]; //HARDCODE(Zen): Max move in each direction
 };
 
 

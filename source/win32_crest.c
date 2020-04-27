@@ -103,6 +103,9 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
 
         if(KeyCode == VK_ESCAPE) KeyIndex = KEY_ESC;
         if(KeyCode == VK_CONTROL) KeyIndex = KEY_CTRL;
+        if(KeyCode == VK_TAB) KeyIndex = KEY_TAB;
+        if(KeyCode == VK_RETURN) KeyIndex = KEY_RETURN;
+
         if(KeyCode >= VK_F1 && KeyCode <= VK_F12) KeyIndex = KEY_F1 + (KeyCode - VK_F1);
 
         GlobalPlatform.KeyDown[KeyIndex] = IsDown;
@@ -243,7 +246,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
             }
 
             QueryPerformanceCounter(&EndTime);
-            TimeTaken += ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)ClockFrequency.QuadPart);
+            TimeTaken = ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)ClockFrequency.QuadPart);
         }
         GlobalPlatform.TimeTaken = TimeTaken;
         StartTime = EndTime;
