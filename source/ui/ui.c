@@ -248,6 +248,7 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
         if(!ui->LeftMouseDown) {
             Pressed = CrestUIIDEquals(ui->hot, ID);
             ui->active = CrestUIIDNull();
+            ui->hot = CrestUIIDNull();
         }
         if(!CrestUIIDEquals(ui->hot, ID)) {
             ui->active = CrestUIIDNull();

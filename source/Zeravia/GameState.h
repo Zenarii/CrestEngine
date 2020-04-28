@@ -14,12 +14,15 @@ enum game_states {
 typedef struct game_state game_state;
 struct game_state {
     enum game_states CurrentState;
-    union {
-        struct {
-            i32 Current;
-            hex_path Path;
-        } WatchMove;
-    }; //State Specific Info
+    //Note(Zen): state specific info
+    struct {
+        i32 Current;
+        hex_path Path;
+    } WatchMove;
+    struct {
+        b32 HideUI; //for when moving
+    } UnitSelected;
+
     camera Camera;
     //Units
     //TODO(Zen): Consider this as a struct?

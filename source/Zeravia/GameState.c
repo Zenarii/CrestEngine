@@ -102,7 +102,7 @@ GameStateUpdate(app * App) {
                 CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Overview");
                 if(AppMouseJustDown(0)) {
                     for(i32 i = 0; i < GameState->PlayerUnitsCount; ++i) {
-                        if(HasCollided && (SelectedHexIndex == GameState->PlayerUnits[i].CellIndex) && !GameState->PlayerUnits[i].Exhausted) {
+                        if(HasCollided && (SelectedHexIndex == GameState->PlayerUnits[i].CellIndex)) {
                             GameState->SelectedUnit = i;
                             NextState = GAME_STATE_UNIT_SELECTED;
                             Camera->TargetPosition = GetUnitPosition(Grid, GameState->PlayerUnits[GameState->SelectedUnit]);
@@ -119,25 +119,39 @@ GameStateUpdate(app * App) {
             } break;
 
             case GAME_STATE_UNIT_SELECTED: {
-                CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "UnitSelected");
+                CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Unit Selected");
 
                 {
                     unit Unit = GameState->PlayerUnits[GameState->SelectedUnit];
+                    if(Unit.Exhausted) {
+                        NextState = GAME_STATE_OVERVIEW;
+                        break;
+                    }
+
                     v2 UIPosition = CrestProjectPoint(Unit.Position, View, Projection,
                                                       App->ScreenWidth, App->ScreenHeight);
 
-                    CrestUIPushPanel(&App->UI, UIPosition, -0.1f);
-                    CrestUIPushRow(&App->UI, UIPosition, v2(64, 32), 1);
-                    {
-                        CrestUIButton(&App->UI, GENERIC_ID(0), "Move");
-                        if(CrestUIButton(&App->UI, GENERIC_ID(0), "Wait")) {
-                            GameState->PlayerUnits[GameState->SelectedUnit].Exhausted = 1;
-                            NextState = GAME_STATE_OVERVIEW;
-                        };
-                    }
-                    CrestUIPopRow(&App->UI);
-                    CrestUIPopPanel(&App->UI);
+                    //TODO(Zen): Figure out a better way to do these actions
+                    //so that they aren't as hardcoded(?), as it's going to be a pain
+                    //to add more stuff
+                    if(!GameState->UnitSelected.HideUI) {
+                        CrestUIPushPanel(&App->UI, UIPosition, -0.1f);
+                        CrestUIPushRow(&App->UI, UIPosition, v2(64, 32), 1);
+                        {
+                            if(!Unit.HasMoved) {
+                                if(CrestUIButton(&App->UI, GENERIC_ID(0), "Move")) {
+                                    GameState->UnitSelected.HideUI = 1;
+                                };
+                            }
 
+                            if(CrestUIButton(&App->UI, GENERIC_ID(0), "Wait")) {
+                                GameState->PlayerUnits[GameState->SelectedUnit].Exhausted = 1;
+                                NextState = GAME_STATE_OVERVIEW;
+                            };
+                        }
+                        CrestUIPopRow(&App->UI);
+                        CrestUIPopPanel(&App->UI);
+                    }
 
                 }
                 //Note(Zen): See if a different unit chosen
@@ -174,6 +188,11 @@ GameStateUpdate(app * App) {
                 }
 
                 if(AppKeyJustDown(KEY_ESC)) NextState = GAME_STATE_OVERVIEW;
+
+                //Note(Zen): Clear info if necessary
+                if(NextState != GAME_STATE_UNIT_SELECTED) {
+                    GameState->UnitSelected.HideUI = 0;
+                }
             } break;
 
             case GAME_STATE_WATCH_MOVE: {
