@@ -4,17 +4,23 @@ internal void
 GameStateInit(app * App) {
     game_state * State = &App->GameState;
     hex_grid * Grid = &App->Grid;
+    struct player_info * Player = &State->Player;
+    struct enemy_info * Enemy = &State->Enemy;
     State->Camera = CameraInit();
 
 
     //TEMP(Zen): Temporary Setup stuff, will eventually be moved to load from
     //scenarios for gameplay (4/20)
     LoadGridFromMap(Grid, "gamestatetest", strlen("gamestatetest"));
-    State->PlayerUnitsCount = State->ActiveUnits = 2;
-    State->PlayerUnits[0].CellIndex = 28 * 4 + 5;
-    State->PlayerUnits[0].Position = Grid->Cells[State->PlayerUnits[0].CellIndex].Position;
-    State->PlayerUnits[1].CellIndex = 34;
-    State->PlayerUnits[1].Position = Grid->Cells[State->PlayerUnits[1].CellIndex].Position;
+    Player->UnitCount = Player->ActiveUnits = 2;
+    Player->Units[0].CellIndex = 28 * 4 + 5;
+    Player->Units[0].Position = Grid->Cells[Player->Units[0].CellIndex].Position;
+    Player->Units[1].CellIndex = 34;
+    Player->Units[1].Position = Grid->Cells[Player->Units[1].CellIndex].Position;
+
+    Enemy->Unit.CellIndex = 32;
+    Enemy->Unit.Position = Grid->Cells[Enemy->Unit.CellIndex].Position;
+
     ReloadGridVisuals(Grid);
 }
 
@@ -23,6 +29,8 @@ GameStateUpdate(app * App) {
     camera * Camera = &App->GameState.Camera;
     game_state * GameState = &App->GameState;
     hex_grid * Grid = &App->Grid;
+    struct player_info * Player = &GameState->Player;
+    struct enemy_info * Enemy = &GameState->Enemy;
 
     if(AppKeyJustDown(KEY_F11)) GameStateDebug.ShowCollisions = !GameStateDebug.ShowCollisions;
 
@@ -101,20 +109,20 @@ GameStateUpdate(app * App) {
             case GAME_STATE_OVERVIEW: {
                 CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Overview");
                 if(AppMouseJustDown(0)) {
-                    for(i32 i = 0; i < GameState->PlayerUnitsCount; ++i) {
-                        if(HasCollided && (SelectedHexIndex == GameState->PlayerUnits[i].CellIndex)) {
-                            GameState->SelectedUnit = i;
+                    for(i32 i = 0; i < Player->UnitCount; ++i) {
+                        if(HasCollided && (SelectedHexIndex == Player->Units[i].CellIndex)) {
+                            Player->SelectedUnit = i;
                             NextState = GAME_STATE_UNIT_SELECTED;
-                            Camera->TargetPosition = GetUnitPosition(Grid, GameState->PlayerUnits[GameState->SelectedUnit]);
+                            Camera->TargetPosition = GetUnitPosition(Grid, Player->Units[Player->SelectedUnit]);
                         }
                     }
                 }
 
                 if(AppKeyJustDown(KEY_TAB)) {
                     //TODO(Zen): Skip over exhausted units
-                    GameState->SelectedUnit += 1;
-                    GameState->SelectedUnit %= GameState->PlayerUnitsCount;
-                    Camera->TargetPosition = GetUnitPosition(Grid, GameState->PlayerUnits[GameState->SelectedUnit]);
+                    Player->SelectedUnit += 1;
+                    Player->SelectedUnit %= Player->UnitCount;
+                    Camera->TargetPosition = GetUnitPosition(Grid, Player->Units[Player->SelectedUnit]);
                 }
             } break;
 
@@ -122,7 +130,7 @@ GameStateUpdate(app * App) {
                 CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Unit Selected");
 
                 {
-                    unit Unit = GameState->PlayerUnits[GameState->SelectedUnit];
+                    unit Unit = Player->Units[Player->SelectedUnit];
                     if(Unit.Exhausted) {
                         NextState = GAME_STATE_OVERVIEW;
                         break;
@@ -145,7 +153,7 @@ GameStateUpdate(app * App) {
                             }
 
                             if(CrestUIButton(&App->UI, GENERIC_ID(0), "Wait")) {
-                                GameState->PlayerUnits[GameState->SelectedUnit].Exhausted = 1;
+                                Player->Units[Player->SelectedUnit].Exhausted = 1;
                                 NextState = GAME_STATE_OVERVIEW;
                             };
                         }
@@ -156,33 +164,35 @@ GameStateUpdate(app * App) {
                 }
                 //Note(Zen): See if a different unit chosen
                 if(AppMouseJustDown(0) && !App->UI.IsMouseOver) {
-                    for(i32 i = 0; i < GameState->PlayerUnitsCount; ++i) {
-                        if(HasCollided && (SelectedHexIndex == GameState->PlayerUnits[i].CellIndex)) {
-                            GameState->SelectedUnit = i;
+                    for(i32 i = 0; i < Player->UnitCount; ++i) {
+                        if(HasCollided && (SelectedHexIndex == Player->Units[i].CellIndex)) {
+                            Player->SelectedUnit = i;
                             NextState = GAME_STATE_UNIT_SELECTED;
-                            Camera->TargetPosition = GetUnitPosition(Grid, GameState->PlayerUnits[GameState->SelectedUnit]);
+                            Camera->TargetPosition = GetUnitPosition(Grid, Player->Units[Player->SelectedUnit]);
                         }
                     }
                 }
 
                 //Note(Zen): Show which hexes the selected unit can move to
-                if(!GameState->PlayerUnits[GameState->SelectedUnit].HasMoved) {
-                    i32 CellIndex = GameState->PlayerUnits[GameState->SelectedUnit].CellIndex;
-                    hex_reachable_cells Accessible = HexGetReachableCells(Grid, Grid->Cells[CellIndex], 5); //HARDCODE(Zen): The move distance should be given by the unit
+                if(!Player->Units[Player->SelectedUnit].HasMoved) {
+                    i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
+                    hex_reachable_cells Accessible = HexGetReachableCells(GameState, Grid, Grid->Cells[CellIndex], 5); //HARDCODE(Zen): The move distance should be given by the unit
 
                     for(i32 i = 0; i < Accessible.Count; ++i) {
-                        C3DDrawCube(&App->Renderer, Grid->Cells[Accessible.Indices[i]].Position,
-                                    v3(1.f, 1.f, 0.f), 0.1f);
-                        if(!App->UI.IsMouseOver && AppMouseJustDown(0) && (Accessible.Indices[i] == SelectedHexIndex)) {
-                            NextState = GAME_STATE_WATCH_MOVE;
-                            i32 StartIndex = GameState->PlayerUnits[GameState->SelectedUnit].CellIndex;
+                        if(Accessible.Empty[i]) {
+                            C3DDrawCube(&App->Renderer, Grid->Cells[Accessible.Indices[i]].Position,
+                                        v3(1.f, 1.f, 0.f), 0.1f);
+                            if(!App->UI.IsMouseOver && AppMouseJustDown(0) && (Accessible.Indices[i] == SelectedHexIndex)) {
+                                NextState = GAME_STATE_WATCH_MOVE;
+                                i32 StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
 
 
-                            GameState->WatchMove.Path = HexPathingDjikstra(Grid, Grid->Cells[StartIndex], Grid->Cells[SelectedHexIndex]);
-                            GameState->WatchMove.Current = GameState->WatchMove.Path.Count - 1;
+                                GameState->WatchMove.Path = HexPathingDjikstra(Grid, Grid->Cells[StartIndex], Grid->Cells[SelectedHexIndex]);
+                                GameState->WatchMove.Current = GameState->WatchMove.Path.Count - 1;
 
-                            GameState->PlayerUnits[GameState->SelectedUnit].HasMoved = 1;
-                            GameState->PlayerUnits[GameState->SelectedUnit].CellIndex = Accessible.Indices[i];
+                                Player->Units[Player->SelectedUnit].HasMoved = 1;
+                                Player->Units[Player->SelectedUnit].CellIndex = Accessible.Indices[i];
+                            }
                         }
                     }
                 }
@@ -213,7 +223,7 @@ GameStateUpdate(app * App) {
                 hex_cell CellA = Grid->Cells[Path.Indices[GameState->WatchMove.Current]];
                 hex_cell CellB = Grid->Cells[Path.Indices[GameState->WatchMove.Current - 1]];
 
-                GameState->PlayerUnits[GameState->SelectedUnit].Position = CrestV3Lerp(CellA.Position, CellB.Position, Time * UNIT_SPEED);
+                Player->Units[Player->SelectedUnit].Position = CrestV3Lerp(CellA.Position, CellB.Position, Time * UNIT_SPEED);
 
                 if(Time * UNIT_SPEED > 1.0f) {
                     Time -= 1.f / UNIT_SPEED;
@@ -223,7 +233,7 @@ GameStateUpdate(app * App) {
                     NextState = GAME_STATE_UNIT_SELECTED;
                 }
 
-                Camera->TargetPosition = GameState->PlayerUnits[GameState->SelectedUnit].Position;
+                Camera->TargetPosition = Player->Units[Player->SelectedUnit].Position;
                 if(AppKeyJustDown(KEY_ESC)) NextState = GAME_STATE_OVERVIEW;
             } break;
 
@@ -279,10 +289,11 @@ GameStateUpdate(app * App) {
         hex_mesh * WaterMesh = &Grid->Chunks[i].WaterMesh;
         DrawWaterMesh(Grid, WaterMesh);
     }
-    for(i32 i = 0; i < GameState->PlayerUnitsCount; ++i) {
-        v3 Colour = GameState->PlayerUnits[i].Exhausted ? v3(0.f, 0.f, 0.f) : v3(0.3, 0.3, 0.7);
-        C3DDrawCube(&App->Renderer, GameState->PlayerUnits[i].Position, Colour, 0.2f);
+    for(i32 i = 0; i < Player->UnitCount; ++i) {
+        v3 Colour = Player->Units[i].Exhausted ? v3(0.f, 0.f, 0.f) : v3(0.3, 0.3, 0.7);
+        C3DDrawCube(&App->Renderer, Player->Units[i].Position, Colour, 0.2f);
     }
+    C3DDrawCube(&App->Renderer, Enemy->Unit.Position, v3(1.f, 0.2f, 0.2f), 0.2f);
 
 
 

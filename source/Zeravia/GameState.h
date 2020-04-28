@@ -1,4 +1,4 @@
-enum game_states {
+enum {
     GAME_STATE_OVERVIEW,
     GAME_STATE_UNIT_SELECTED,
 
@@ -13,7 +13,8 @@ enum game_states {
 
 typedef struct game_state game_state;
 struct game_state {
-    enum game_states CurrentState;
+    camera Camera;
+    i32 CurrentState;
     //Note(Zen): state specific info
     struct {
         i32 Current;
@@ -23,14 +24,16 @@ struct game_state {
         b32 HideUI; //for when moving
     } UnitSelected;
 
-    camera Camera;
-    //Units
-    //TODO(Zen): Consider this as a struct?
-    //would mean less typing using player_info * ...
-    u32 PlayerUnitsCount;
-    u32 ActiveUnits;
-    u32 SelectedUnit;
-    unit PlayerUnits[MAX_PLAYER_UNITS];
+    struct player_info {
+        u32 ActiveUnits;
+        u32 SelectedUnit;
+        u32 UnitCount;
+        unit Units[MAX_PLAYER_UNITS];
+    } Player;
+
+    struct enemy_info {
+        unit Unit;
+    } Enemy;
 };
 
 global struct {

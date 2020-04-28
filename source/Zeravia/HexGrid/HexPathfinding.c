@@ -14,6 +14,23 @@ IsCellAccessible(hex_cell * From, hex_cell * To) {
     return Accessible;
 }
 
+internal b32
+IsCellEmpty(game_state * GameState, hex_cell * Cell) {
+    b32 Result = 1;
+    //Note(Zen): Loop through player units
+    for(i32 i = 0; i < GameState->Player.UnitCount; ++i) {
+        Result = (GameState->Player.Units[i].CellIndex == Cell->Index) ? 0 : Result;
+    }
+    //Note(Zen): Loop through enemy units
+
+    // for(i32 i = 0; i < GameState->Player.UnitCount; ++i) {
+        Result = (GameState->Enemy.Unit.CellIndex == Cell->Index) ? 0 : Result;
+    // }
+
+    return Result;
+}
+
+
 internal hex_path
 HexPathingBFS(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
     i32 Frontier[MAX_REACHABLE_CELLS] = {0};
@@ -133,12 +150,13 @@ HexPathingDjikstra(hex_grid * Grid, hex_cell StartCell, hex_cell EndCell) {
 typedef struct hex_reachable_cells hex_reachable_cells;
 struct hex_reachable_cells {
     u32 Count;
-    i32 Indices[64*4]; //HARDCODE(Zen): Max move in each direction
+    b32 Empty[64 * 4];
+    i32 Indices[64 * 4]; //HARDCODE(Zen): Max move in each direction
 };
 
 
 internal hex_reachable_cells
-HexGetReachableCells(hex_grid * Grid, hex_cell StartCell, i32 Distance) {
+HexGetReachableCells(game_state * GameState, hex_grid * Grid, hex_cell StartCell, i32 Distance) {
     i32 Frontier[MAX_REACHABLE_CELLS] = {0};
     i32 NextCursor = 0;
     i32 BackCursor = 0;
@@ -152,6 +170,7 @@ HexGetReachableCells(hex_grid * Grid, hex_cell StartCell, i32 Distance) {
         i32 CurrentIndex = Frontier[NextCursor++];
 
         hex_cell * CurrentCell = &Grid->Cells[CurrentIndex];
+        IsCellEmpty(GameState, CurrentCell);
 
         for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
             if(!CurrentCell->Neighbours[Direction]) continue;
@@ -159,15 +178,18 @@ HexGetReachableCells(hex_grid * Grid, hex_cell StartCell, i32 Distance) {
             i32 NeighbourIndex = CurrentCell->Neighbours[Direction]->Index;
             hex_cell * NeighbourCell = &Grid->Cells[NeighbourIndex];
 
-            //Note(Zen): Can't go up cliffs
             if(!IsCellAccessible(CurrentCell, NeighbourCell)) continue;
+
+
 
             i32 Cost = GetCostToCell(NeighbourCell);
             if(!Visited[NeighbourIndex].Visited || (Visited[NeighbourIndex].Distance > Visited[CurrentIndex].Distance + Cost)) {
                 if(Visited[CurrentIndex].Distance + Cost <= Distance) {
                     Frontier[BackCursor++] = NeighbourIndex;
                     Visited[NeighbourIndex] = HexDjikstraInfo(1, CurrentIndex, Visited[CurrentIndex].Distance + Cost);
-                    Result.Indices[Result.Count++] = NeighbourIndex;
+                    Result.Indices[Result.Count] = NeighbourIndex;
+                    Result.Empty[Result.Count] = IsCellEmpty(GameState, NeighbourCell);
+                    Result.Count++;
                 }
 
                 if(BackCursor >= MAX_REACHABLE_CELLS) BackCursor -= MAX_REACHABLE_CELLS;
