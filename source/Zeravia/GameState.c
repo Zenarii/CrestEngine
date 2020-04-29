@@ -18,9 +18,14 @@ GameStateInit(app * App) {
     Player->Units[1].CellIndex = 34;
     Player->Units[1].Position = Grid->Cells[Player->Units[1].CellIndex].Position;
 
-    Enemy->Unit.CellIndex = 32;
-    Enemy->Unit.Position = Grid->Cells[Enemy->Unit.CellIndex].Position;
+    Enemy->UnitCount = 1;
+    Enemy->Units[0].CellIndex = 32;
+    Enemy->Units[0].Position = Grid->Cells[Enemy->Units[0].CellIndex].Position;
 
+    State->IsPlayerTurn = 1;
+
+    //State->CurrentState = GAME_STATE_PRE_BATTLE (?)
+    State->CurrentState = GAME_STATE_NEW_TURN;
     ReloadGridVisuals(Grid);
 }
 
@@ -102,10 +107,27 @@ GameStateUpdate(app * App) {
     }
 
     //Note(Zen): Game Logic
-    {
+    if(GameState->IsPlayerTurn) {
         enum game_states NextState = GameState->CurrentState;
+        static i32 TurnCount = 0;
+        char Buffer[32];
+        sprintf(Buffer, "Turn: %d", TurnCount);
+        CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 42, 128, 32), Buffer);
 
         switch(GameState->CurrentState) {
+            case GAME_STATE_NEW_TURN: {
+                CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Player Turn");
+                sprintf(Buffer, "Turn: %.2f", GameState->NewTurn.Time);
+                CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 42 + 32, 128, 32), Buffer);
+
+                GameState->NewTurn.Time += App->Delta;
+
+                if(GameState->NewTurn.Time > NEW_TURN_TIME) {
+                    NextState = GAME_STATE_OVERVIEW;
+                    GameState->NewTurn.Time = 0.f;
+                }
+            } break;
+
             case GAME_STATE_OVERVIEW: {
                 CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Overview");
                 if(AppMouseJustDown(0)) {
@@ -114,6 +136,7 @@ GameStateUpdate(app * App) {
                             Player->SelectedUnit = i;
                             NextState = GAME_STATE_UNIT_SELECTED;
                             Camera->TargetPosition = GetUnitPosition(Grid, Player->Units[Player->SelectedUnit]);
+                            GameState->UnitSelected.StartIndex = SelectedHexIndex;
                         }
                     }
                 }
@@ -128,7 +151,8 @@ GameStateUpdate(app * App) {
 
             case GAME_STATE_UNIT_SELECTED: {
                 CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Unit Selected");
-
+                //Note(Zen): In case selected a different unit while in the state.
+                b32 ClearState = 0;
                 {
                     unit Unit = Player->Units[Player->SelectedUnit];
                     if(Unit.Exhausted) {
@@ -168,6 +192,7 @@ GameStateUpdate(app * App) {
                         if(HasCollided && (SelectedHexIndex == Player->Units[i].CellIndex)) {
                             Player->SelectedUnit = i;
                             NextState = GAME_STATE_UNIT_SELECTED;
+                            ClearState = 1;
                             Camera->TargetPosition = GetUnitPosition(Grid, Player->Units[Player->SelectedUnit]);
                         }
                     }
@@ -187,7 +212,7 @@ GameStateUpdate(app * App) {
                                 i32 StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
 
 
-                                GameState->WatchMove.Path = HexPathingDjikstra(Grid, Grid->Cells[StartIndex], Grid->Cells[SelectedHexIndex]);
+                                GameState->WatchMove.Path = HexPathingDjikstra(GameState, Grid, Grid->Cells[StartIndex], Grid->Cells[SelectedHexIndex]);
                                 GameState->WatchMove.Current = GameState->WatchMove.Path.Count - 1;
 
                                 Player->Units[Player->SelectedUnit].HasMoved = 1;
@@ -196,11 +221,15 @@ GameStateUpdate(app * App) {
                         }
                     }
                 }
-
-                if(AppKeyJustDown(KEY_ESC)) NextState = GAME_STATE_OVERVIEW;
+                //TODO(Zen): Check that this doesn't let the player exploit multiple moves etc.
+                if(AppKeyJustDown(KEY_ESC)) {
+                    NextState = GAME_STATE_OVERVIEW;
+                    Player->Units[Player->SelectedUnit].CellIndex = GameState->UnitSelected.StartIndex;
+                    Player->Units[Player->SelectedUnit].Position = Grid->Cells[Player->Units[Player->SelectedUnit].CellIndex].Position;
+                }
 
                 //Note(Zen): Clear info if necessary
-                if(NextState != GAME_STATE_UNIT_SELECTED) {
+                if(NextState != GAME_STATE_UNIT_SELECTED || ClearState) {
                     GameState->UnitSelected.HideUI = 0;
                 }
             } break;
@@ -211,22 +240,17 @@ GameStateUpdate(app * App) {
                 // - Rotate To Face Direction
                 // - Follow Slopes etc.
                 CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Watch Move");
+                GameState->WatchMove.Time += App->Delta;
 
                 hex_path Path = GameState->WatchMove.Path;
-
-                static r32 Time = 0;
-                Time += App->Delta;
-                char Buffer [32] = {0};
-                sprintf(Buffer, "%.2f", Time * UNIT_SPEED);
-                CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 42, 128, 32), Buffer);
 
                 hex_cell CellA = Grid->Cells[Path.Indices[GameState->WatchMove.Current]];
                 hex_cell CellB = Grid->Cells[Path.Indices[GameState->WatchMove.Current - 1]];
 
-                Player->Units[Player->SelectedUnit].Position = CrestV3Lerp(CellA.Position, CellB.Position, Time * UNIT_SPEED);
+                Player->Units[Player->SelectedUnit].Position = CrestV3Lerp(CellA.Position, CellB.Position, GameState->WatchMove.Time * UNIT_SPEED);
 
-                if(Time * UNIT_SPEED > 1.0f) {
-                    Time -= 1.f / UNIT_SPEED;
+                if(GameState->WatchMove.Time * UNIT_SPEED > 1.0f) {
+                    GameState->WatchMove.Time -= 1.f / UNIT_SPEED;
                     GameState->WatchMove.Current--;
                 }
                 if(GameState->WatchMove.Current == 0) {
@@ -235,6 +259,10 @@ GameStateUpdate(app * App) {
 
                 Camera->TargetPosition = Player->Units[Player->SelectedUnit].Position;
                 if(AppKeyJustDown(KEY_ESC)) NextState = GAME_STATE_OVERVIEW;
+                //Note(Zen): Clear State Specific Info
+                if(NextState != GAME_STATE_WATCH_MOVE) {
+                    GameState->WatchMove.Time = 0;
+                }
             } break;
 
             default: {
@@ -243,8 +271,27 @@ GameStateUpdate(app * App) {
             } break;
         }
         GameState->CurrentState = NextState;
-    }
 
+        //See if need to move to the next turn
+        b32 NextTurn = 1;
+        for(i32 i = 0; i < Player->UnitCount; ++i) {
+            if(!Player->Units[i].Exhausted) NextTurn = 0;
+        }
+        if(NextTurn) {
+            GameState->IsPlayerTurn = 0;
+            TurnCount++;
+
+            for(i32 i = 0; i < Player->UnitCount; ++i) {
+                Player->Units[i].HasMoved = 0;
+                Player->Units[i].Exhausted = 0;
+            }
+        }
+    }
+    //Note(Zen): Run the enemy turn
+    else {
+        GameState->IsPlayerTurn = 1;
+        GameState->CurrentState = GAME_STATE_NEW_TURN;
+    }
 
     /*
         Set Uniforms
@@ -280,6 +327,8 @@ GameStateUpdate(app * App) {
         Draw Everything
     */
 
+    //Terrain
+    //TODO(Zen): Frustrum culling.
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         hex_mesh * HexMesh = &Grid->Chunks[i].HexMesh;
         DrawHexMesh(Grid, HexMesh);
@@ -289,12 +338,15 @@ GameStateUpdate(app * App) {
         hex_mesh * WaterMesh = &Grid->Chunks[i].WaterMesh;
         DrawWaterMesh(Grid, WaterMesh);
     }
+    //Units
     for(i32 i = 0; i < Player->UnitCount; ++i) {
         v3 Colour = Player->Units[i].Exhausted ? v3(0.f, 0.f, 0.f) : v3(0.3, 0.3, 0.7);
         C3DDrawCube(&App->Renderer, Player->Units[i].Position, Colour, 0.2f);
     }
-    C3DDrawCube(&App->Renderer, Enemy->Unit.Position, v3(1.f, 0.2f, 0.2f), 0.2f);
-
+    for(i32 i = 0; i < Enemy->UnitCount; ++i) {
+        v3 Colour = Enemy->Units[i].Exhausted ? v3(0.f, 0.f, 0.f) : v3(1, 0.3, 0.4);
+        C3DDrawCube(&App->Renderer, Enemy->Units[i].Position, Colour, 0.2f);
+    }
 
 
     CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);

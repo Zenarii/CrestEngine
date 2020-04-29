@@ -1,5 +1,3 @@
-//TODO(Zen): Maybe add asymptotic movement/zooming to add smoothness
-
 #define CAMERA_OUT_SPEED 25.f
 #define CAMERA_IN_SPEED 8.f
 #define CAMERA_MAX_DISTANCE 22.f
