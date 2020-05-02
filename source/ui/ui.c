@@ -77,7 +77,7 @@ GetNextAutoLayoutPosition(CrestUI * ui) {
             ui->AutoLayoutStack[index].ProgressX += rect.width + DefaultStyle.Padding.x;
         }
         else {
-            
+
         }
 
         if(ui->AutoLayoutStack[index].ElementsInRow == 0 && ui->PanelStackPosition) {
@@ -135,6 +135,12 @@ CrestUIPopPanel(CrestUI * UI) {
     Widget->Type = CREST_UI_PANEL;
     Widget->Precedence = UI->PanelStack[index].Precedence;
     Widget->rect = v4(Position.x, Position.y, Size.x, Size.y);
+
+    b32 MouseOver = (UI->MouseX >= Widget->rect.x &&
+                       UI->MouseY >= Widget->rect.y &&
+                       UI->MouseX <= Widget->rect.x + Widget->rect.width &&
+                       UI->MouseY <= Widget->rect.y + Widget->rect.height);
+    if(MouseOver) UI->IsMouseOver = 1;
 }
 
 
@@ -233,7 +239,7 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
 
     b32 MouseOver = (ui->MouseX >= rect.x &&
                        ui->MouseY >= rect.y &&
-                       ui->MouseX <= rect.x + rect.width&&
+                       ui->MouseX <= rect.x + rect.width &&
                        ui->MouseY <= rect.y + rect.height);
     ui->IsMouseOver = MouseOver ? 1 : ui->IsMouseOver;
 
