@@ -203,3 +203,83 @@ HexGetReachableCells(game_state * GameState, hex_grid * Grid, hex_cell StartCell
 
     return Result;
 }
+
+typedef struct hex_attackable_cells hex_attackable_cells;
+struct hex_attackable_cells {
+    u32 Count;
+    i32 Indices[64 * 4]; //HARDCODE(Zen): Max move in each direction
+};
+
+//TODO(Zen): Rework when dealing with ranged weapons
+internal b32
+CanAttackCell(hex_grid * Grid, hex_cell Start, hex_cell Target) {
+    b32 Attackable = 1;
+    if(GetHexEdgeType(Target.Elevation, Start.Elevation) == HEX_EDGE_CLIFF) Attackable = 0;
+
+    return Attackable;
+}
+
+//TODO(Zen): Maybe get the djikstra info from GetReachableCells so can make sure not marking
+//movement cells as attackable (5/20)
+//TODO(Zen): Act upon terrain such as cliffs preventing attacks, melee/ranged/magic etc. (5/20)
+internal hex_attackable_cells
+HexGetAttackableCells(hex_grid * Grid, hex_reachable_cells * Reachable) {
+    hex_attackable_cells Result = {0};
+    b32 Visited[HEX_CELL_COUNT] = {0};
+    //HARDCODE(Zen) assumes range 1.
+    for(i32 i = 0; i < Reachable->Count; ++i) {
+        for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
+            hex_cell Cell = Grid->Cells[Reachable->Indices[i]];
+            if(Cell.Neighbours[Direction]) {
+                hex_cell Neighbour = *Cell.Neighbours[Direction];
+                b32 VisitedCell = Visited[Cell.Neighbours[Direction]->Index];
+                b32 MayAttackCell = CanAttackCell(Grid, Cell, Neighbour);
+                if(!VisitedCell && MayAttackCell) {
+                    Result.Indices[Result.Count++] = Cell.Neighbours[Direction]->Index;
+                    Visited[Cell.Neighbours[Direction]->Index] = 1;
+                }
+            }
+        }
+    }
+    Assert(Result.Count < 64 * 4);
+    return Result;
+}
+
+internal hex_attackable_cells
+HexGetAttackableFromCell(hex_grid * Grid, hex_cell Cell) {
+    hex_attackable_cells Result = {0};
+
+    for(hex_direction Direction = 0; Direction < HEX_DIRECTION_COUNT; ++Direction) {
+        if(Cell.Neighbours[Direction]) {
+            hex_cell Neighbour = *Cell.Neighbours[Direction];
+            if(CanAttackCell(Grid, Cell, Neighbour)) {
+                Result.Indices[Result.Count++] = Cell.Neighbours[Direction]->Index;
+            }
+        }
+    }
+
+    return Result;
+}
+
+typedef struct hex_attackable_units hex_attackable_units;
+struct hex_attackable_units {
+    i32 Count;
+    i32 Indexes[MAX_ENEMY_UNITS];
+};
+
+//TODO(Zen): make it so it works with either enemies or players
+internal hex_attackable_units
+HexGetAttackableUnits(game_state * GameState, hex_grid * Grid, hex_cell Cell) {
+    hex_attackable_units Result = {0};
+    hex_attackable_cells AttackableCells = HexGetAttackableFromCell(Grid, Cell);
+
+    for(i32 i = 0; i < AttackableCells.Count; ++i) {
+        for(i32 j = 0; j < GameState->Enemy.UnitCount; ++j) {
+            if(GameState->Enemy.Units[j].CellIndex == AttackableCells.Indices[i]) {
+                Result.Indexes[Result.Count++] = AttackableCells.Indices[i];
+            }
+        }
+    }
+
+    return Result;
+}

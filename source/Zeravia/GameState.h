@@ -1,4 +1,5 @@
-#define NEW_TURN_TIME 1.f
+//TODO(Zen): Increase this when an actual animation is present
+#define NEW_TURN_TIME 0.1f
 
 enum {
     GAME_STATE_NEW_TURN,

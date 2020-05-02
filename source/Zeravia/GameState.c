@@ -153,13 +153,16 @@ GameStateUpdate(app * App) {
                 CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Unit Selected");
                 //Note(Zen): In case selected a different unit while in the state.
                 b32 ClearState = 0;
+                unit Unit = Player->Units[Player->SelectedUnit];
                 {
-                    unit Unit = Player->Units[Player->SelectedUnit];
                     if(Unit.Exhausted) {
                         NextState = GAME_STATE_OVERVIEW;
                         break;
                     }
+                }
 
+                //Note(Zen): Generate the UI
+                {
                     v2 UIPosition = CrestProjectPoint(Unit.Position, View, Projection,
                                                       App->ScreenWidth, App->ScreenHeight);
 
@@ -170,6 +173,12 @@ GameStateUpdate(app * App) {
                         CrestUIPushPanel(&App->UI, UIPosition, -0.1f);
                         CrestUIPushRow(&App->UI, UIPosition, v2(64, 32), 1);
                         {
+                            i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
+                            hex_attackable_units Attackable = HexGetAttackableUnits(GameState, Grid, Grid->Cells[CellIndex]);
+                            if(Attackable.Count) {
+                                CrestUIButton(&App->UI, GENERIC_ID(0), "Attack");
+                            }
+
                             if(!Unit.HasMoved) {
                                 if(CrestUIButton(&App->UI, GENERIC_ID(0), "Move")) {
                                     GameState->UnitSelected.HideUI = 1;
@@ -198,15 +207,16 @@ GameStateUpdate(app * App) {
                     }
                 }
 
-                //Note(Zen): Show which hexes the selected unit can move to
+                //Note(Zen): Show which hexes the selected unit can move to and attack
                 if(!Player->Units[Player->SelectedUnit].HasMoved) {
                     i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
                     hex_reachable_cells Accessible = HexGetReachableCells(GameState, Grid, Grid->Cells[CellIndex], 5); //HARDCODE(Zen): The move distance should be given by the unit
+                    hex_attackable_cells Attackable = HexGetAttackableCells(Grid, &Accessible);
 
                     for(i32 i = 0; i < Accessible.Count; ++i) {
                         if(Accessible.Empty[i]) {
                             C3DDrawCube(&App->Renderer, Grid->Cells[Accessible.Indices[i]].Position,
-                                        v3(1.f, 1.f, 0.f), 0.1f);
+                                        v3(1.f, 1.f, 0.f), 0.15f);
                             if(!App->UI.IsMouseOver && AppMouseJustDown(0) && (Accessible.Indices[i] == SelectedHexIndex)) {
                                 NextState = GAME_STATE_WATCH_MOVE;
                                 i32 StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
@@ -220,12 +230,30 @@ GameStateUpdate(app * App) {
                             }
                         }
                     }
+
+                    for(i32 i = 0; i < Attackable.Count; ++i) {
+                        C3DDrawCube(&App->Renderer, Grid->Cells[Attackable.Indices[i]].Position,
+                                    v3(1.f, 0.f, 0.f), 0.1f);
+                        //TODO(Zen): If clicked an attackable tile that an enemy unit is on, move the unit
+                        //and open the attack menu
+                    }
                 }
-                //TODO(Zen): Check that this doesn't let the player exploit multiple moves etc.
-                if(AppKeyJustDown(KEY_ESC)) {
+                else {
+                    i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
+                    hex_attackable_cells Attackable = HexGetAttackableFromCell(Grid, Grid->Cells[CellIndex]);
+
+                    for(i32 i = 0; i < Attackable.Count; ++i) {
+                        C3DDrawCube(&App->Renderer, Grid->Cells[Attackable.Indices[i]].Position,
+                                    v3(1.f, 0.f, 0.f), 0.1f);
+                    }
+                }
+
+                if((AppKeyJustDown(KEY_ESC) || App->Mouse.RightDown) && !Player->Units[Player->SelectedUnit].Exhausted) {
                     NextState = GAME_STATE_OVERVIEW;
                     Player->Units[Player->SelectedUnit].CellIndex = GameState->UnitSelected.StartIndex;
                     Player->Units[Player->SelectedUnit].Position = Grid->Cells[Player->Units[Player->SelectedUnit].CellIndex].Position;
+
+                    Player->Units[Player->SelectedUnit].HasMoved = 0;
                 }
 
                 //Note(Zen): Clear info if necessary
@@ -298,11 +326,12 @@ GameStateUpdate(app * App) {
     */
 
     {
+        v3 CameraLocation = GetCameraLocation(Camera);
         CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
         CrestShaderSetMatrix(Grid->MeshShader, "Model", &Model);
         CrestShaderSetMatrix(Grid->MeshShader, "Projection", &Projection);
 
-        CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
+        CrestShaderSetV3(Grid->MeshShader, "ViewPosition", CameraLocation);
         CrestShaderSetV3(Grid->MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
         CrestShaderSetV3(Grid->MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
 
@@ -310,17 +339,16 @@ GameStateUpdate(app * App) {
         CrestShaderSetMatrix(Grid->WaterShader, "Model", &Model);
         CrestShaderSetMatrix(Grid->WaterShader, "Projection", &Projection);
 
-        CrestShaderSetV3(Grid->WaterShader, "ViewPosition", GetCameraLocation(Camera));
+        CrestShaderSetV3(Grid->WaterShader, "ViewPosition", CameraLocation);
         CrestShaderSetV3(Grid->WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
         CrestShaderSetV3(Grid->WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
         CrestShaderSetFloat(Grid->WaterShader, "Time", App->TotalTime);
-
 
         CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &View);
         CrestShaderSetMatrix(Grid->FeatureSet.Shader, "Projection", &Projection);
         CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
         CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
-        CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", GetCameraLocation(Camera));
+        CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", CameraLocation);
     }
 
     /*
