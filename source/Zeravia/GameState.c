@@ -308,11 +308,11 @@ GameStateUpdate(app * App) {
                                         i32 StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
 
 
-                                        GameState->WatchMove.Path = HexPathingDjikstra(GameState, Grid, Grid->Cells[StartIndex], Grid->Cells[SelectedHexIndex]);
+                                        GameState->WatchMove.Path = HexPathingDjikstra(GameState, Grid, Grid->Cells[StartIndex], Grid->Cells[Attackable.From[i]]);
                                         GameState->WatchMove.Current = GameState->WatchMove.Path.Count - 1;
 
                                         Player->Units[Player->SelectedUnit].HasMoved = 1;
-                                        Player->Units[Player->SelectedUnit].CellIndex = Accessible.Indices[i];
+                                        Player->Units[Player->SelectedUnit].CellIndex = Attackable.From[i];
 
                                         //TODO(Zen): Maybe choose target unit then watch unit move to attack.
                                         GameState->WatchMove.StateAfter = GAME_STATE_UNIT_SELECTED;
