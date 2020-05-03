@@ -1,4 +1,6 @@
-#define MAX_REACHABLE_CELLS HEX_CELL_COUNT
+//Note(Zen): twice the max move in each direction
+// I believe that this is an overestimate(?)
+#define MAX_REACHABLE_CELLS (MAX_UNIT_MOVE * MAX_UNIT_MOVE * 4)
 
 typedef struct hex_path hex_path;
 struct hex_path {

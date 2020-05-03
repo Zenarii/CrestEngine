@@ -18,9 +18,11 @@ GameStateInit(app * App) {
     Player->Units[1].CellIndex = 34;
     Player->Units[1].Position = Grid->Cells[Player->Units[1].CellIndex].Position;
 
-    Enemy->UnitCount = 1;
+    Enemy->UnitCount = 2;
     Enemy->Units[0].CellIndex = 32;
     Enemy->Units[0].Position = Grid->Cells[Enemy->Units[0].CellIndex].Position;
+    Enemy->Units[1].CellIndex = 33;
+    Enemy->Units[1].Position = Grid->Cells[Enemy->Units[1].CellIndex].Position;
 
     State->IsPlayerTurn = 1;
 
@@ -162,50 +164,108 @@ GameStateUpdate(app * App) {
                 }
 
                 //Note(Zen): Generate the UI
+                i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
+                hex_attackable_units Attackable = HexGetAttackableUnits(GameState, Grid, Grid->Cells[CellIndex]);
                 {
                     v2 UIPosition = CrestProjectPoint(Unit.Position, View, Projection,
                                                       App->ScreenWidth, App->ScreenHeight);
 
-                    //TODO(Zen): Figure out a better way to do these actions
-                    //so that they aren't as hardcoded(?), as it's going to be a pain
-                    //to add more stuff
                     if(!GameState->UnitSelected.HideUI) {
                         CrestUIPushPanel(&App->UI, UIPosition, -0.1f);
                         CrestUIPushRow(&App->UI, UIPosition, v2(64, 32), 1);
-                        {
-                            i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
-                            hex_attackable_units Attackable = HexGetAttackableUnits(GameState, Grid, Grid->Cells[CellIndex]);
-                            if(Attackable.Count) {
-                                CrestUIButton(&App->UI, GENERIC_ID(0), "Attack");
-                            }
 
-                            if(!Unit.HasMoved) {
-                                if(CrestUIButton(&App->UI, GENERIC_ID(0), "Move")) {
-                                    GameState->UnitSelected.HideUI = 1;
-                                };
-                            }
+                        switch(GameState->UnitSelected.UIState) {
+                            case GAME_UI_START: {
+                                if(Attackable.Count) {
+                                    if(CrestUIButton(&App->UI, GENERIC_ID(0), "Attack")) {
+                                        GameState->UnitSelected.UIState = GAME_UI_CHOOSE_TARGET;
+                                    };
+                                }
 
-                            if(CrestUIButton(&App->UI, GENERIC_ID(0), "Wait")) {
-                                Player->Units[Player->SelectedUnit].Exhausted = 1;
-                                NextState = GAME_STATE_OVERVIEW;
-                            };
+                                if(!Unit.HasMoved) {
+                                    if(CrestUIButton(&App->UI, GENERIC_ID(0), "Move")) {
+                                        GameState->UnitSelected.HideUI = 1;
+                                    }
+                                }
+
+                                if(CrestUIButton(&App->UI, GENERIC_ID(0), "Wait")) {
+                                    Player->Units[Player->SelectedUnit].Exhausted = 1;
+                                    NextState = GAME_STATE_OVERVIEW;
+                                }
+                            } break;
+
+                            case GAME_UI_CHOOSE_TARGET: {
+                                char Buffer[32] = {0};
+                                sprintf(Buffer, "%d/%d", GameState->UnitSelected.CurrentTarget+1, Attackable.Count);
+                                CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
+                            } break;
+
                         }
+
+
                         CrestUIPopRow(&App->UI);
                         CrestUIPopPanel(&App->UI);
                     }
-
                 }
-                //Note(Zen): See if a different unit chosen
-                if(AppMouseJustDown(0) && !App->UI.IsMouseOver) {
-                    for(i32 i = 0; i < Player->UnitCount; ++i) {
-                        if(HasCollided && (SelectedHexIndex == Player->Units[i].CellIndex)) {
-                            Player->SelectedUnit = i;
-                            NextState = GAME_STATE_UNIT_SELECTED;
-                            ClearState = 1;
-                            Camera->TargetPosition = GetUnitPosition(Grid, Player->Units[Player->SelectedUnit]);
+
+
+                //Note(Zen): See if a different player unit chosen
+                if(GameState->UnitSelected.UIState == GAME_UI_START) {
+                    b32 ChangedTarget = 0;
+                    if(AppMouseJustDown(0) && !App->UI.IsMouseOver) {
+                        for(i32 i = 0; i < Player->UnitCount; ++i) {
+                            if(HasCollided && (SelectedHexIndex == Player->Units[i].CellIndex)) {
+                                Player->SelectedUnit = i;
+                                NextState = GAME_STATE_UNIT_SELECTED;
+                                ClearState = 1;
+                                Camera->TargetPosition = GetUnitPosition(Grid, Player->Units[Player->SelectedUnit]);
+                                ChangedTarget = 1;
+                            }
                         }
                     }
+                    if(!ChangedTarget && AppKeyJustDown(KEY_TAB)) {
+                        if(!Player->Units[Player->SelectedUnit].Exhausted && Player->Units[Player->SelectedUnit].HasMoved) {
+                            Player->Units[Player->SelectedUnit].HasMoved = 0;
+                            Player->Units[Player->SelectedUnit].CellIndex = GameState->UnitSelected.StartIndex;
+                            Player->Units[Player->SelectedUnit].Position = GetUnitPosition(Grid, Player->Units[Player->SelectedUnit]);
+                        }
+
+                        Player->SelectedUnit += 1;
+                        Player->SelectedUnit %= Player->UnitCount;
+
+                        Camera->TargetPosition = Player->Units[Player->SelectedUnit].Position;
+                        ChangedTarget = 1;
+                    }
+
+
+                    if(ChangedTarget)
+                        GameState->UnitSelected.StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
+
                 }
+
+                //Note(Zen): See if different enemy unit chosen
+                else if(GameState->UnitSelected.UIState == GAME_UI_CHOOSE_TARGET) {
+                    b32 ChangedTarget = 0;
+                    if(AppMouseJustDown(0) && !App->UI.IsMouseOver) {
+                        for(i32 i = 0; i < Attackable.Count; ++i) {
+                            if(HasCollided && (SelectedHexIndex == Attackable.Indexes[i])) {
+                                for (i32 j = 0; j < Enemy->UnitCount; ++j) {
+                                    if(SelectedHexIndex == Enemy->Units[j].CellIndex) {
+                                        GameState->UnitSelected.CurrentTarget = i;
+                                        Camera->TargetPosition = GetUnitPosition(Grid, Player->Units[Player->SelectedUnit]);
+                                        ChangedTarget = 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if(!ChangedTarget && AppKeyJustDown(KEY_TAB)) {
+                        GameState->UnitSelected.CurrentTarget += 1;
+                        GameState->UnitSelected.CurrentTarget %= Attackable.Count;
+                    }
+                }
+
+
 
                 //Note(Zen): Show which hexes the selected unit can move to and attack
                 if(!Player->Units[Player->SelectedUnit].HasMoved) {
@@ -221,12 +281,15 @@ GameStateUpdate(app * App) {
                                 NextState = GAME_STATE_WATCH_MOVE;
                                 i32 StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
 
-
                                 GameState->WatchMove.Path = HexPathingDjikstra(GameState, Grid, Grid->Cells[StartIndex], Grid->Cells[SelectedHexIndex]);
                                 GameState->WatchMove.Current = GameState->WatchMove.Path.Count - 1;
 
                                 Player->Units[Player->SelectedUnit].HasMoved = 1;
                                 Player->Units[Player->SelectedUnit].CellIndex = Accessible.Indices[i];
+
+                                GameState->WatchMove.StateAfter = GAME_STATE_UNIT_SELECTED;
+                                GameState->WatchMove.SubStateAfter = GAME_UI_START;
+
                             }
                         }
                     }
@@ -234,17 +297,48 @@ GameStateUpdate(app * App) {
                     for(i32 i = 0; i < Attackable.Count; ++i) {
                         C3DDrawCube(&App->Renderer, Grid->Cells[Attackable.Indices[i]].Position,
                                     v3(1.f, 0.f, 0.f), 0.1f);
-                        //TODO(Zen): If clicked an attackable tile that an enemy unit is on, move the unit
-                        //and open the attack menu
+
+                    }
+                    if(!App->UI.IsMouseOver && AppMouseJustDown(0)) {
+                        for(i32 i = 0; i < Attackable.Count; ++i) {
+                            if(SelectedHexIndex == Attackable.Indices[i]) {
+                                for(i32 j = 0; j < Enemy->UnitCount; ++j) {
+                                    if(SelectedHexIndex == Enemy->Units[j].CellIndex) {
+                                        NextState = GAME_STATE_WATCH_MOVE;
+                                        i32 StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
+
+
+                                        GameState->WatchMove.Path = HexPathingDjikstra(GameState, Grid, Grid->Cells[StartIndex], Grid->Cells[SelectedHexIndex]);
+                                        GameState->WatchMove.Current = GameState->WatchMove.Path.Count - 1;
+
+                                        Player->Units[Player->SelectedUnit].HasMoved = 1;
+                                        Player->Units[Player->SelectedUnit].CellIndex = Accessible.Indices[i];
+
+                                        //TODO(Zen): Maybe choose target unit then watch unit move to attack.
+                                        GameState->WatchMove.StateAfter = GAME_STATE_UNIT_SELECTED;
+                                        GameState->WatchMove.SubStateAfter = GAME_UI_CHOOSE_TARGET;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 else {
                     i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
-                    hex_attackable_cells Attackable = HexGetAttackableFromCell(Grid, Grid->Cells[CellIndex]);
+                    hex_attackable_cells AttackableCells = HexGetAttackableFromCell(Grid, Grid->Cells[CellIndex]);
+                    hex_attackable_units AttackableUnits = HexGetAttackableUnits(GameState, Grid, Grid->Cells[CellIndex]);
 
-                    for(i32 i = 0; i < Attackable.Count; ++i) {
-                        C3DDrawCube(&App->Renderer, Grid->Cells[Attackable.Indices[i]].Position,
+                    for(i32 i = 0; i < AttackableCells.Count; ++i) {
+                        C3DDrawCube(&App->Renderer, Grid->Cells[AttackableCells.Indices[i]].Position,
                                     v3(1.f, 0.f, 0.f), 0.1f);
+                    }
+                    if(!App->UI.IsMouseOver && AppMouseJustDown(0)) {
+                        for(i32 i = 0; i < AttackableUnits.Count; ++i) {
+                            if(SelectedHexIndex == AttackableUnits.Indexes[i]) {
+                                GameState->UnitSelected.CurrentTarget = i;
+                                GameState->UnitSelected.UIState = GAME_UI_CHOOSE_TARGET;
+                            }
+                        }
                     }
                 }
 
@@ -259,6 +353,8 @@ GameStateUpdate(app * App) {
                 //Note(Zen): Clear info if necessary
                 if(NextState != GAME_STATE_UNIT_SELECTED || ClearState) {
                     GameState->UnitSelected.HideUI = 0;
+                    GameState->UnitSelected.UIState = GAME_UI_START;
+                    GameState->UnitSelected.CurrentTarget = 0;
                 }
             } break;
 
@@ -267,6 +363,7 @@ GameStateUpdate(app * App) {
                 // - Path Smoothing
                 // - Rotate To Face Direction
                 // - Follow Slopes etc.
+
                 CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(10, 10, 128, 32), "Watch Move");
                 GameState->WatchMove.Time += App->Delta;
 
@@ -282,11 +379,17 @@ GameStateUpdate(app * App) {
                     GameState->WatchMove.Current--;
                 }
                 if(GameState->WatchMove.Current == 0) {
-                    NextState = GAME_STATE_UNIT_SELECTED;
+                    NextState = GameState->WatchMove.StateAfter;
                 }
 
                 Camera->TargetPosition = Player->Units[Player->SelectedUnit].Position;
                 if(AppKeyJustDown(KEY_ESC)) NextState = GAME_STATE_OVERVIEW;
+
+                if(NextState == GAME_STATE_UNIT_SELECTED) {
+                    GameState->UnitSelected.UIState = GameState->WatchMove.SubStateAfter;
+                }
+
+
                 //Note(Zen): Clear State Specific Info
                 if(NextState != GAME_STATE_WATCH_MOVE) {
                     GameState->WatchMove.Time = 0;

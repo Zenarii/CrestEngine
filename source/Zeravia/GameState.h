@@ -16,6 +16,11 @@ enum {
     GAME_STATE_COUNT
 };
 
+enum {
+    GAME_UI_START,
+    GAME_UI_CHOOSE_TARGET,
+};
+
 typedef struct game_state game_state;
 struct game_state {
     i32 CurrentState;
@@ -28,11 +33,15 @@ struct game_state {
     struct {
         r32 Time;
         i32 Current;
+        i32 StateAfter;
+        i32 SubStateAfter;
         hex_path Path;
     } WatchMove;
     struct {
         i32 StartIndex;
+        i32 UIState;
         b32 HideUI; //for when moving
+        i32 CurrentTarget;
     } UnitSelected;
 
     //Teams
