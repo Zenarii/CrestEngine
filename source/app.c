@@ -167,7 +167,9 @@ AppUpdate(Platform * platform) {
         UIIn.MouseStartX = platform->MouseStartX;
         UIIn.MouseStartY = platform->MouseStartY;
         UIIn.LeftMouseDown = platform->LeftMouseDown;
+        UIIn.LeftMouseWasDown = App->Mouse.LeftWasDown;
         UIIn.RightMouseDown = platform->RightMouseDown;
+        UIIn.RightMouseWasDown = App->Mouse.RightWasDown;
     }
 
     CrestUIBeginFrame(&App->UI, &UIIn, &App->UIRenderer);

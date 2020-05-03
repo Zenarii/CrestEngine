@@ -155,7 +155,9 @@ CrestUIBeginFrame(CrestUI * ui, CrestUIInput * input, ui_renderer * UIRenderer) 
     ui->MouseStartX = input->MouseStartX;
     ui->MouseStartY = input->MouseStartY;
     ui->LeftMouseDown = input->LeftMouseDown;
+    ui->LeftMouseWasDown = input->LeftMouseWasDown;
     ui->RightMouseDown = input->RightMouseDown;
+    ui->RightMouseWasDown = input->RightMouseWasDown;
     ui->IsMouseOver = 0;
 
     CrestUIRendererStartFrame(UIRenderer);
@@ -261,7 +263,7 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
         }
     }
     else {
-        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown && CrestUIIDEquals(CrestUIIDNull(), ui->active)) {
+        if(CrestUIIDEquals(ui->hot, ID) && ui->LeftMouseDown && !ui->LeftMouseWasDown && CrestUIIDEquals(CrestUIIDNull(), ui->active)) {
             ui->active = ID;
         }
     }

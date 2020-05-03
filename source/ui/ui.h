@@ -99,7 +99,9 @@ typedef struct CrestUIInput {
     r32 MouseStartX;
     r32 MouseStartY;
     b32 LeftMouseDown;
+    b32 LeftMouseWasDown;
     b32 RightMouseDown;
+    b32 RightMouseWasDown;
 } CrestUIInput;
 
 typedef struct CrestUI {
@@ -108,8 +110,9 @@ typedef struct CrestUI {
     r32 MouseStartX;
     r32 MouseStartY;
     b32 LeftMouseDown;
+    b32 LeftMouseWasDown;
     b32 RightMouseDown;
-
+    b32 RightMouseWasDown;
     b32 IsMouseOver;
 
     u32 Count;
