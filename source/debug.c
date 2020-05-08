@@ -21,3 +21,10 @@ InvalidCode(const int Line, const char * File, const char * Error, b32 result, b
         *((int *)0) = 0;
     }
 }
+
+#ifdef _WIN32
+internal void
+CrestDebugLog(const char *Out) {
+
+}
+#endif

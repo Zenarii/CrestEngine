@@ -904,9 +904,20 @@ TriangulateWaterMesh(hex_grid * Grid, hex_grid_chunk * Chunk) {
 /*
     Generating Collision Meshes
 */
-//TODO(Zen):
+//TODO(Zen): Nudging vertices means y value is different, probably doesn't matter too much
 internal void
-TriangulateCollisionCorner();
+TriangulateCollisionCorner(collision_mesh * CollisionMesh, v3 p0, v3 p1, hex_cell Cell, hex_direction NextDirection) {
+    if(Cell.Neighbours[NextDirection]) {
+        hex_cell NextNeighbour = *Cell.Neighbours[NextDirection];
+        v3 Bridge = GetBridgeLocation(NextDirection);
+        Bridge.y = NextNeighbour.Position.y - Cell.Position.y;
+        v3 p2 = CrestV3Add(p0, Bridge);
+
+        CollisionMesh->Triangles[CollisionMesh->TriangleCount++] = CreateTriangle(
+            NudgeVertex(p0), NudgeVertex(p1), NudgeVertex(p2)
+        );
+    }
+}
 
 internal void
 TriangulateCollisionConnection(collision_mesh * CollisionMesh, v3 p0, v3 p1, hex_cell Cell, i32 Direction) {
@@ -926,6 +937,10 @@ TriangulateCollisionConnection(collision_mesh * CollisionMesh, v3 p0, v3 p1, hex
             CollisionMesh->Triangles[CollisionMesh->TriangleCount++] = CreateTriangle(
                 NudgeVertex(p2), NudgeVertex(p3), NudgeVertex(p0)
             );
+
+            if(Direction < HEX_DIRECTION_NE) {
+                TriangulateCollisionCorner(CollisionMesh, p1, p2, Cell, NextDirection);
+            }
         }
     }
 }

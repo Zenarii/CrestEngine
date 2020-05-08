@@ -231,6 +231,7 @@ CanAttackCell(hex_grid * Grid, hex_cell Start, hex_cell Target) {
 //TODO(Zen): Maybe get the djikstra info from GetReachableCells so can make sure not marking
 //movement cells as attackable (5/20)
 //TODO(Zen): melee/ranged/magic etc. (5/20)
+//TODO(Zen): if adjacent to tile when directly attacking enemy unit, player unit shouldn't move (5/20)
 internal hex_attackable_cells
 HexGetAttackableCells(hex_grid * Grid, hex_reachable_cells * Reachable) {
     hex_attackable_cells Result = {0};
