@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -19,8 +20,11 @@ typedef int64_t b64;
 typedef float r32;
 typedef double r64;
 
+typedef uintptr_t pointer;
+
 #define KiloBytes(x) x * 1024
 #define MegaBytes(x) x * 1024 * 1024
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #define internal static
 #define global static
@@ -82,3 +86,8 @@ V3Init(r32 x, r32 y, r32 z) {
 }
 
 #define v3(x, y, z) V3Init(x, y, z)
+
+internal b32
+IsPowerOfTwo(i32 x) {
+    return (x & (x-1)) == 0;
+}

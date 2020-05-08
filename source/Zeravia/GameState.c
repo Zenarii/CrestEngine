@@ -61,7 +61,7 @@ GameStateUpdate(app * App) {
     hex_coordinates SelectedHex = {0};
     i32 SelectedHexIndex = 0;
     {
-        ray_cast RayCast = MakeRaycast(Camera, App, View, Projection);//{RayOrigin, RayDirection};
+        ray_cast RayCast = MakeRaycastFromMouse(Camera, App, View, Projection);
 
         r32 OldDistance = 0;
         v3 CollisionPoint = {0};
@@ -457,18 +457,25 @@ GameStateUpdate(app * App) {
     /*
         Draw Everything
     */
+    char Buffer[256];
 
     //Terrain
-    //TODO(Zen): Frustrum culling.
-    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * HexMesh = &Grid->Chunks[i].HexMesh;
-        DrawHexMesh(Grid, HexMesh);
-    }
+    r64 BeforeDrawingTime = CrestCurrentTime();
     DrawFeatureSet(&Grid->FeatureSet);
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * WaterMesh = &Grid->Chunks[i].WaterMesh;
-        DrawWaterMesh(Grid, WaterMesh);
+        // if(Visible[i]) {
+            DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
+        // }
     }
+    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+        // if(Visible[i]) {
+            DrawWaterMesh(Grid, &Grid->Chunks[i].WaterMesh);
+        // }
+    }
+    r64 AfterDrawingTime = CrestCurrentTime();
+    sprintf(Buffer, "Drawing Terrain: %f", AfterDrawingTime - BeforeDrawingTime);
+    CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(200, 232, 128, 32), Buffer);
+
     //Units
     for(i32 i = 0; i < Player->UnitCount; ++i) {
         v3 Colour = Player->Units[i].Exhausted ? v3(0.f, 0.f, 0.f) : v3(0.3, 0.3, 0.7);

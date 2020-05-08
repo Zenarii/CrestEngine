@@ -77,7 +77,7 @@ typedef struct CrestUIWidget {
     CrestUIID id;
     CrestUIType Type;
     v4 rect;
-    char Text[32];
+    char * Text;
     CrestUITextFloat TextFloat;
 
     r32 Precedence;
@@ -87,7 +87,7 @@ typedef struct CrestUIWidget {
         b32 On; //ToggleButton
         struct {
             u8 Position;
-            char Buffer[32];
+            char Buffer[32]; //Used in saving and loading maps rn, should rework
         };
     };
 
@@ -142,4 +142,6 @@ typedef struct CrestUI {
     CrestUIID hot;
     CrestUIID active;
     CrestUIID keyfocus;
+
+    memory_arena TextArena;
 } CrestUI;

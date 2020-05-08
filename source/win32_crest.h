@@ -9,3 +9,6 @@ CrestMakeDirectory(const char * Path);
 
 internal char *
 CrestLoadLastModifiedFile(const char * Path);
+
+internal r64
+CrestCurrentTime();

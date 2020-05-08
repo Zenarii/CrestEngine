@@ -9,7 +9,7 @@ filled rectangles, reducing the number of draw calls
 #define MAX_RECTS 256
 //Note(Zen): max rects * (six vertices per rect)
 #define MAX_VERTICES_SIZE MAX_RECTS * 6
-
+#define MAX_TEXT_VERTICES_SIZE MAX_VERTICES_SIZE * 4
 
 
 typedef struct vertex {
@@ -44,7 +44,7 @@ typedef struct ui_renderer {
     stbtt_bakedchar CharacterData[96];
     u32 FontTex;
     i32 TextBufferIndex;
-    textured_vertex TextVertices[MAX_VERTICES_SIZE];
+    textured_vertex TextVertices[MAX_TEXT_VERTICES_SIZE];
     u32 TVAO, TVBO;
     CrestShader TextShader;
 } ui_renderer;

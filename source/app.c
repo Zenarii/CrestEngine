@@ -11,6 +11,7 @@
 #include "CMaths/Matrices.c"
 #include "CMaths/ProjectionMatrices.c"
 
+#include "memory_arena.c"
 #include "shader.c"
 #include "ui/ui_renderer.c"
 #include "ui/ui.c"
@@ -120,6 +121,7 @@ AppUpdate(Platform * platform) {
         App->Initialised = 1;
         CrestUIRendererInit(&App->UIRenderer);
         CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
+        CrestUIInit(&App->UI);
         C3DInit(&App->Renderer);
         App->Renderer.Textures[0] = CasLoadTexture("../assets/White.png", GL_LINEAR);
 

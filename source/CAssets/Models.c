@@ -103,12 +103,12 @@ CrestLoadAndParseMTLlib(char * FileName, i32 FileNameLength) {
             char Buffer [64] = "(MTL) Loading material: ";
             strncat(Buffer, WordStart, WordEnd-WordStart);
             strcat(Buffer, "\n");
-            OutputDebugStringA(Buffer);
+            CrestLog(Buffer);
 
             i32 Count = ++Result.MaterialsCount;
             //UNTESTED(Zen):
             if(Count >= 4) {
-                OutputDebugStringA("(MTL) Loaded too many materials! Overwriting the first material.\n");
+                CrestLog("(MTL) Loaded too many materials! Overwriting the first material.\n");
                 Count = 0;
             }
             strncpy(Result.Materials[Count].Name, WordStart, WordEnd-WordStart);
@@ -181,7 +181,7 @@ CrestLoadAndParseMTLlib(char * FileName, i32 FileNameLength) {
         else {
             char Out[64];
             sprintf(Out, "(MTL) Failed to read line: %d\n", LineNum);
-            OutputDebugStringA(Out);
+            CrestLog(Out);
         }
 
 
@@ -234,7 +234,7 @@ CrestParseOBJ(char * Data) {
             char Buffer [32] = "(OBJ) Loading object: ";
             strncat(Buffer, WordStart, WordEnd-WordStart);
             strcat(Buffer, "\n");
-            OutputDebugStringA(Buffer);
+            CrestLog(Buffer);
         }
         else if(CrestStringCompare(WordStart, "mtllib", WordLength) && WordLength == 6) {
             WordStart = ++WordEnd;
@@ -243,7 +243,7 @@ CrestParseOBJ(char * Data) {
             char Buffer [32] = "(OBJ) Loading mtllib: ";
             strncat(Buffer, WordStart, WordEnd-WordStart);
             strcat(Buffer, "\n");
-            OutputDebugStringA(Buffer);
+            CrestLog(Buffer);
 
             MaterialLibrary = CrestLoadAndParseMTLlib(WordStart, WordEnd-WordStart);
         }
@@ -258,7 +258,7 @@ CrestParseOBJ(char * Data) {
                     CurrentMaterialID = i;
                     char Buffer[32];
                     sprintf(Buffer, "(OBJ) using %dth material\n", i);
-                    OutputDebugStringA(Buffer);
+                    CrestLog(Buffer);
                 }
             }
         }
@@ -348,7 +348,7 @@ CrestParseOBJ(char * Data) {
         else {
             char Out[64] = {0};
             sprintf(Out, "(OBJ) Failed to read line: %d\n", LineNum);
-            OutputDebugStringA(Out);
+            CrestLog(Out);
         }
 
         LineStart = ++LineEnd;

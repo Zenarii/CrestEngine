@@ -79,6 +79,18 @@ CrestMakeDirectory(const char * Path) {
 }
 
 /*
+    Timing
+*/
+global LARGE_INTEGER Win32ClockFrequency;
+global LARGE_INTEGER Win32GameStartTime;
+internal r64
+CrestCurrentTime() {
+    LARGE_INTEGER Now;
+    QueryPerformanceCounter(&Now);
+    return ((r64)(Now.QuadPart - Win32GameStartTime.QuadPart))/((r64)Win32ClockFrequency.QuadPart);
+}
+
+/*
     Win32 Code
 */
 LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -196,11 +208,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
     //Note(Zen): Setup timing
     UINT DesiredSleepGranularity = 1;
     BOOL SetSleepGranular = (timeBeginPeriod(DesiredSleepGranularity) == TIMERR_NOERROR);
-    LARGE_INTEGER ClockFrequency;
-    QueryPerformanceFrequency(&ClockFrequency);
+    QueryPerformanceFrequency(&Win32ClockFrequency);
 
     LARGE_INTEGER StartTime = {0};
     QueryPerformanceCounter(&StartTime);
+    Win32GameStartTime = StartTime;
     while(!GlobalPlatform.ShouldQuit) {
         // Process window messages.
         MSG message;
@@ -235,7 +247,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
         LARGE_INTEGER EndTime;
         QueryPerformanceCounter(&EndTime);
 
-        r64 TimeTaken = ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)ClockFrequency.QuadPart);
+        r64 TimeTaken = ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)Win32ClockFrequency.QuadPart);
         GlobalPlatform.TimeTakenForFrame = TimeTaken;
         while (TimeTaken < 1.f/GlobalPlatform.TargetFPS) {
             if(SetSleepGranular) {
@@ -246,7 +258,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
             }
 
             QueryPerformanceCounter(&EndTime);
-            TimeTaken = ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)ClockFrequency.QuadPart);
+            TimeTaken = ((r64)(EndTime.QuadPart - StartTime.QuadPart))/((r64)Win32ClockFrequency.QuadPart);
         }
         GlobalPlatform.TimeTaken = TimeTaken;
         StartTime = EndTime;

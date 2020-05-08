@@ -19,6 +19,14 @@ internal b32
 CrestUIIDEquals(CrestUIID ID1, CrestUIID ID2) {
     return ((ID1.Primary == ID2.Primary) && (ID2.Secondary == ID1.Secondary));
 }
+
+internal void
+CrestUIInit(CrestUI * ui) {
+    size_t TextArenaMemorySize = 128;
+    unsigned char * TextArenaMemory = malloc(TextArenaMemorySize);
+    ArenaInit(&ui->TextArena, TextArenaMemory, TextArenaMemorySize);
+}
+
 //Note(Zen): Layout Control
 //~
 
@@ -233,6 +241,8 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
         }
     }
     CrestUIRender(Renderer);
+
+    ArenaFreeAll(&ui->TextArena);
 }
 
 internal b32
@@ -273,7 +283,8 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
     Widget->Type = CREST_UI_BUTTON;
     Widget->TextFloat = CREST_UI_CENTRE;
     Widget->rect = rect;
-    strcpy(Widget->Text, Text);
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {
         Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
@@ -331,7 +342,9 @@ CrestUIToggleButtonP(CrestUI * ui, CrestUIID ID, v4 rect, b32 On, char * Text) {
     Widget->TextFloat = CREST_UI_LEFT;
     Widget->rect = rect;
     Widget->On = On;
-    strcpy(Widget->Text, Text);
+
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {
         Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
@@ -390,7 +403,9 @@ CrestUISliderP(CrestUI * ui, CrestUIID ID, r32 value, v4 rect, char * Text) {
     Widget->TextFloat = CREST_UI_CENTRE;
     Widget->rect = rect;
     Widget->Value = value;
-    strcpy(Widget->Text, Text);
+
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {
         Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
@@ -449,7 +464,9 @@ CrestUISliderIntP(CrestUI * ui, CrestUIID ID, v4 rect, i32 Value, i32 Max, char 
     Widget->TextFloat = CREST_UI_CENTRE;
     Widget->rect = rect;
 
-    strcpy(Widget->Text, Text);
+
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {
         Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
@@ -518,7 +535,9 @@ CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, r32 Precedence, v4 rect, char * Text) 
     Widget->TextFloat = CREST_UI_LEFT;
     Widget->rect = v4(Position.x, Position.y, rect.width, rect.height);
     Widget->Precedence = Precedence;
-    strcpy(Widget->Text, Text);
+
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    memcpy(Widget->Text, Text, strlen(Text));
 
     return Position;
 }
@@ -530,7 +549,10 @@ CrestUITextLabelP(CrestUI * ui, CrestUIID ID, v4 rect, char * Text) {
     Widget->Type = CREST_UI_TEXTLABEL;
     Widget->TextFloat = CREST_UI_LEFT;
     Widget->rect = rect;
-    strcpy(Widget->Text, Text);
+
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text) + 1);
+    memcpy(Widget->Text, Text, strlen(Text));
+
     if(ui->PanelStackPosition) {
         Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;
     }
@@ -583,7 +605,10 @@ CrestUITextEditP(CrestUI * ui, CrestUIID ID, v4 rect, char * Text) {
     Widget->Type = CREST_UI_TEXT_EDIT;
     Widget->TextFloat = CREST_UI_LEFT;
     Widget->rect = rect;
-    strcpy(Widget->Text, Text);
+
+
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {
         Widget->Precedence = ui->PanelStack[ui->PanelStackPosition-1].Precedence;

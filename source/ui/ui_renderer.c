@@ -107,7 +107,7 @@ CrestPushText(ui_renderer * UIRenderer, v3 Position, const char * Text) {
         }
         ++Text;
     }
-    Assert(UIRenderer->TextBufferIndex < MAX_VERTICES_SIZE);
+    Assert(UIRenderer->TextBufferIndex < MAX_TEXT_VERTICES_SIZE);
 }
 
 internal void
