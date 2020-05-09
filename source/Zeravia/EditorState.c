@@ -61,8 +61,9 @@ doEditorUITerrainFeatures(CrestUI * ui, hex_edit_settings Settings) {
 internal hex_edit_settings
 doEditorUI(CrestUI * ui, hex_edit_settings Settings, r32 ScreenWidth) {
     CrestUIPushPanel(ui, v2(1.f, 1.f), -0.1f);
-    CrestUIPushRow(ui, v2(1.f, 1.f), v2(150, 32.f), EDIT_MODE_COUNT);
+    CrestUIPushRow(ui, v2(1.f, 1.f), v2(150, 32.f), EDIT_MODE_COUNT + 1);
     {
+        CrestUIButton(ui, GENERIC_ID(0), "A");
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Terrain") ? EDIT_MODE_TERRAIN : Settings.EditMode;
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Features") ? EDIT_MODE_TERRAIN_FEATURES : Settings.EditMode;
 

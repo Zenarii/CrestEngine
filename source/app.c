@@ -120,7 +120,7 @@ AppUpdate(Platform * platform) {
     if(!App->Initialised) {
         App->Initialised = 1;
         CrestUIRendererInit(&App->UIRenderer);
-        CrestUIRendererLoadFont(&App->UIRenderer, "../assets/LiberationMono-Regular.ttf");
+        CrestUIRendererLoadFont(&App->UIRenderer, "../assets/Roboto-Regular.ttf");
         CrestUIInit(&App->UI);
         C3DInit(&App->Renderer);
         App->Renderer.Textures[0] = CasLoadTexture("../assets/White.png", GL_LINEAR);
@@ -209,7 +209,9 @@ AppUpdate(Platform * platform) {
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
     }
     CrestUIPopRow(&App->UI);
-
+    //Issue is that it is both ascent and descent, just use ascent!!!
+    v2 Size = v2(App->UIRenderer.FontRect.width, App->UIRenderer.FontRect.height);
+    CrestPushFilledRect(&App->UIRenderer, v4(1.f, 0.f, 0.f, 1.f), v2(App->Mouse.Position.x - Size.x, App->Mouse.Position.y - Size.y), Size);
 
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
 

@@ -50,6 +50,7 @@ typedef union v4 {
     float elements[4];
 } v4;
 
+
 internal v4
 V4Init(r32 x, r32 y, r32 z, r32 w) {
     v4 v = {x,y,z,w};
@@ -57,6 +58,23 @@ V4Init(r32 x, r32 y, r32 z, r32 w) {
 }
 
 #define v4(x, y, z, w) V4Init(x, y, z, w)
+
+typedef union v4i {
+    struct {
+        struct {
+            i32 x, y;
+        };
+        union {
+            struct {
+                i32 z, w;
+            };
+            struct {
+                i32 width, height;
+            };
+        };
+    };
+    i32 elements[4];
+} v4i;
 
 typedef union v2 {
     struct {

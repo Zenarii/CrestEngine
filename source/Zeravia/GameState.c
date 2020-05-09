@@ -463,9 +463,7 @@ GameStateUpdate(app * App) {
     r64 BeforeDrawingTime = CrestCurrentTime();
     DrawFeatureSet(&Grid->FeatureSet);
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        // if(Visible[i]) {
-            DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
-        // }
+        DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
     }
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         // if(Visible[i]) {
@@ -493,6 +491,7 @@ GameStateUpdate(app * App) {
 
     //Note(Zen): Draw the Collision Shapes
     if(GameStateDebug.ShowCollisions) {
+        r64 BeforeDrawingColTime = CrestCurrentTime();
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         for(i32 x = 0; x < HEX_MAX_CHUNKS_WIDE; ++x) {
@@ -506,6 +505,9 @@ GameStateUpdate(app * App) {
         }
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        r64 AfterDrawingColTime = CrestCurrentTime();
+        sprintf(Buffer, "Drawing Collisions: %f", AfterDrawingColTime - BeforeDrawingColTime);
+        //CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(200, 200, 128, 32), Buffer);
     }
 }
 

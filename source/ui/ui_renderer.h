@@ -11,6 +11,7 @@ filled rectangles, reducing the number of draw calls
 #define MAX_VERTICES_SIZE MAX_RECTS * 6
 #define MAX_TEXT_VERTICES_SIZE MAX_VERTICES_SIZE * 4
 
+#define UI_FONT_HEIGHT 20.f
 
 typedef struct vertex {
     v3 position;
@@ -42,6 +43,9 @@ typedef struct ui_renderer {
 
     //Note(Zen): For text
     stbtt_bakedchar CharacterData[96];
+    stbtt_fontinfo Font;
+    v4 FontRect;
+    r32 FontScale;
     u32 FontTex;
     i32 TextBufferIndex;
     textured_vertex TextVertices[MAX_TEXT_VERTICES_SIZE];

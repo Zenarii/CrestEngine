@@ -175,11 +175,24 @@ internal void
 CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
     for(u32 i = 0; i < ui->Count; ++i) {
         CrestUIWidget * Widget = ui->Widgets + i;
-        //Note(Zen): 11px per char in LiberationMono font (ish)
-        v2 TextOffset = v2(-11.0f * ((r32)strlen(Widget->Text))/2.0f + 5.f,
-                           -10.0f);
+
+        v2 TextOffset = {0};
+        if(Widget->Text) {
+            TextOffset = v2(
+                0.f,
+                Widget->rect.height * 0.5f + Renderer->FontRect.height * 0.5f - 1.f//HARDCODE(Zen): Looks better as this
+            );
+        }
+
         if(Widget->TextFloat == CREST_UI_LEFT) {
-            TextOffset.x = -0.5f * Widget->rect.width;
+            TextOffset.x = DefaultStyle.Padding.x * 0.5f;
+        }
+
+        else if(Widget->TextFloat == CREST_UI_CENTRE) {
+            r32 Width = CrestGetStringWidthInPixels(Renderer, Widget->Text);
+
+            TextOffset.x = (Widget->rect.width) * 0.5f - Width * 0.5f;
+
         }
 
         switch (Widget->Type) {
@@ -189,7 +202,7 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
                 CrestPushFilledRectD(Renderer, colour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width, Widget->rect.height));
                 CrestPushBorder(Renderer, DefaultStyle.ButtonBorderColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
-                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+                CrestPushText(Renderer, v3(Widget->rect.x + TextOffset.x, Widget->rect.y + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_TOGGLE_BUTTON: {
@@ -203,7 +216,7 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
                 CrestPushFilledRectD(Renderer, colour, v3(CheckBoxPosition.x, CheckBoxPosition.y, Widget->Precedence - 0.02f), ToggleBoxSize);
                 CrestPushBorder(Renderer, DefaultStyle.ButtonBorderColour, v3(CheckBoxPosition.x, CheckBoxPosition.y, Widget->Precedence - 0.03f), ToggleBoxSize);
 
-                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x + 2.f, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+                CrestPushText(Renderer, v3(Widget->rect.x + TextOffset.x, Widget->rect.y +  TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_SLIDER: {
@@ -211,7 +224,7 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
                 CrestPushFilledRectD(Renderer, DefaultStyle.ButtonHotColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.02f), v2(Widget->rect.width * Widget->Value, Widget->rect.height));
                 CrestPushBorder(Renderer, DefaultStyle.ButtonBorderColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
 
-                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+                CrestPushText(Renderer, v3(Widget->rect.x + TextOffset.x, Widget->rect.y + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_HEADER: {
@@ -228,7 +241,7 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
             } break;
 
             case CREST_UI_TEXTLABEL: {
-                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + Widget->rect.height + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_TEXT_EDIT: {
@@ -283,7 +296,7 @@ CrestUIButtonP(CrestUI *ui, CrestUIID ID, v4 rect, char * Text) {
     Widget->Type = CREST_UI_BUTTON;
     Widget->TextFloat = CREST_UI_CENTRE;
     Widget->rect = rect;
-    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text) + 1);
     memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {
@@ -343,7 +356,7 @@ CrestUIToggleButtonP(CrestUI * ui, CrestUIID ID, v4 rect, b32 On, char * Text) {
     Widget->rect = rect;
     Widget->On = On;
 
-    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text) + 1);
     memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {
@@ -404,7 +417,7 @@ CrestUISliderP(CrestUI * ui, CrestUIID ID, r32 value, v4 rect, char * Text) {
     Widget->rect = rect;
     Widget->Value = value;
 
-    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text) + 1);
     memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {
@@ -465,7 +478,7 @@ CrestUISliderIntP(CrestUI * ui, CrestUIID ID, v4 rect, i32 Value, i32 Max, char 
     Widget->rect = rect;
 
 
-    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text) + 1);
     memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {
@@ -536,7 +549,7 @@ CrestUIDnDBoxP(CrestUI *ui, CrestUIID ID, r32 Precedence, v4 rect, char * Text) 
     Widget->rect = v4(Position.x, Position.y, rect.width, rect.height);
     Widget->Precedence = Precedence;
 
-    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text) + 1);
     memcpy(Widget->Text, Text, strlen(Text));
 
     return Position;
@@ -607,7 +620,7 @@ CrestUITextEditP(CrestUI * ui, CrestUIID ID, v4 rect, char * Text) {
     Widget->rect = rect;
 
 
-    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text));
+    Widget->Text = ArenaAlloc(&ui->TextArena, strlen(Text) + 1);
     memcpy(Widget->Text, Text, strlen(Text));
 
     if(ui->PanelStackPosition) {

@@ -66,8 +66,22 @@ internal void
 CrestUIRendererLoadFont(ui_renderer * UIRenderer, const char * FontPath) {
     char * TTFBuffer = CrestLoadFileAsString(FontPath);
     unsigned char TempBitmap[512*512];
-    stbtt_BakeFontBitmap(TTFBuffer, 0, 20.0, TempBitmap, 512, 512, 32, 96, UIRenderer->CharacterData);
+    stbtt_BakeFontBitmap(TTFBuffer, 0, UI_FONT_HEIGHT, TempBitmap, 512, 512, 32, 96, UIRenderer->CharacterData);
+    stbtt_InitFont(&UIRenderer->Font, TTFBuffer, stbtt_GetFontOffsetForIndex(TTFBuffer, 0));
 
+
+    //Note(Zen): Calculate Scale
+    int ascent, descent, lineGap;
+    stbtt_GetFontVMetrics(&UIRenderer->Font, &ascent, &descent, &lineGap);
+    r32 Scale = UI_FONT_HEIGHT / ascent * 0.5f;
+    UIRenderer->FontScale = Scale;
+
+    i32 x0, x1, y0, y1;
+    stbtt_GetFontBoundingBox(&UIRenderer->Font, &x0, &y0, &x1, &y1);
+    UIRenderer->FontRect.x = x0 * Scale;
+    UIRenderer->FontRect.y = y0 * Scale;
+    UIRenderer->FontRect.width = (x1 - x0) * Scale;
+    UIRenderer->FontRect.height = (y1 - y0) * Scale;
 
     glGenTextures(1, &UIRenderer->FontTex);
     glBindTexture(GL_TEXTURE_2D, UIRenderer->FontTex);
@@ -80,6 +94,21 @@ CrestUIRendererLoadFont(ui_renderer * UIRenderer, const char * FontPath) {
 
 
     free(TTFBuffer);
+}
+
+internal r32
+CrestGetStringWidthInPixels(ui_renderer * UIRenderer, const char * Text) {
+    r32 x = 0;
+    r32 y = 0;
+    stbtt_aligned_quad Quad;
+    while(*Text) {
+        if((*Text >= 32) && (*Text < 128)) {
+            stbtt_aligned_quad Quad;
+            stbtt_GetBakedQuad(UIRenderer->CharacterData, 512, 512, *Text-32, &x, &y, &Quad, 1);
+        }
+        ++Text;
+    }
+    return x;
 }
 
 internal void
