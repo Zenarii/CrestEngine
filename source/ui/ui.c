@@ -241,7 +241,7 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
             } break;
 
             case CREST_UI_TEXTLABEL: {
-                CrestPushText(Renderer, v3(Widget->rect.x + Widget->rect.width/2.0f + TextOffset.x, Widget->rect.y + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
+                CrestPushText(Renderer, v3(Widget->rect.x + TextOffset.x, Widget->rect.y + TextOffset.y, Widget->Precedence - 0.05f), Widget->Text);
             } break;
 
             case CREST_UI_TEXT_EDIT: {

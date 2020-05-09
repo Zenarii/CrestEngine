@@ -61,12 +61,10 @@ doEditorUITerrainFeatures(CrestUI * ui, hex_edit_settings Settings) {
 internal hex_edit_settings
 doEditorUI(CrestUI * ui, hex_edit_settings Settings, r32 ScreenWidth) {
     CrestUIPushPanel(ui, v2(1.f, 1.f), -0.1f);
-    CrestUIPushRow(ui, v2(1.f, 1.f), v2(150, 32.f), EDIT_MODE_COUNT + 1);
+    CrestUIPushRow(ui, v2(1.f, 1.f), v2(150, 32.f), EDIT_MODE_COUNT);
     {
-        CrestUIButton(ui, GENERIC_ID(0), "A");
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Terrain") ? EDIT_MODE_TERRAIN : Settings.EditMode;
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Features") ? EDIT_MODE_TERRAIN_FEATURES : Settings.EditMode;
-
 
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Save Map") ? EDIT_MODE_SAVING : Settings.EditMode;
         Settings.EditMode = CrestUIButton(ui, GENERIC_ID(0), "Load Map") ? EDIT_MODE_LOADING : Settings.EditMode;
@@ -279,14 +277,18 @@ EditorStateUpdate(app * App) {
     }
     else if(EditorState->Settings.EditMode == EDIT_MODE_SAVING) {
         CrestUIPushPanel(&App->UI, v2(App->ScreenWidth * 0.5f - 104.f, 200.f), -0.1f);
-        CrestUIPushRow(&App->UI, v2(App->ScreenWidth * 0.5f - 108.f, 200.f), v2(100.f, 32.f), 2);
+        CrestUIPushRow(&App->UI, v2(App->ScreenWidth * 0.5f - 104.f, 200.f), v2(100.f, 32.f), 2);
 
         static i32 FileNameCursor = 0;
         static char FileNameBuffer[32];
 
         i32 PutCharactersCursor = 0;
         while(App->PutCharacters[PutCharactersCursor] != 0) {
-            if(FileNameCursor < 32) {
+            if(App->PutCharacters[PutCharactersCursor] == '\b' && FileNameCursor > 0) {
+                FileNameBuffer[--FileNameCursor] = 0;
+                PutCharactersCursor++;
+            }
+            else if(FileNameCursor < 32) {
                 FileNameBuffer[FileNameCursor++] = App->PutCharacters[PutCharactersCursor++];
             }
         }
