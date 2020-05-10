@@ -168,6 +168,8 @@ GameStateUpdate(app * App) {
                 //Note(Zen): Generate the UI
                 i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
                 hex_attackable_units Attackable = HexGetAttackableUnits(GameState, Grid, Grid->Cells[CellIndex]);
+                //HARDCODE(Zen): unit move distance
+                hex_reachable_cells Reachable = HexGetReachableCells(GameState, Grid, Grid->Cells[CellIndex], 5);
                 {
                     v2 UIPosition = CrestProjectPoint(Unit.Position, View, Projection,
                                                       App->ScreenWidth, App->ScreenHeight);
@@ -184,7 +186,7 @@ GameStateUpdate(app * App) {
                                     };
                                 }
 
-                                if(!Unit.HasMoved) {
+                                if(!Unit.HasMoved && Reachable.Count) {
                                     if(CrestUIButton(&App->UI, GENERIC_ID(0), "Move")) {
                                         GameState->UnitSelected.HideUI = 1;
                                     }
@@ -272,14 +274,12 @@ GameStateUpdate(app * App) {
                 //Note(Zen): Show which hexes the selected unit can move to and attack
                 if(!Player->Units[Player->SelectedUnit].HasMoved) {
                     i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
-                    hex_reachable_cells Accessible = HexGetReachableCells(GameState, Grid, Grid->Cells[CellIndex], 5); //HARDCODE(Zen): The move distance should be given by the unit
-                    hex_attackable_cells Attackable = HexGetAttackableCells(Grid, &Accessible);
 
-                    for(i32 i = 0; i < Accessible.Count; ++i) {
-                        if(Accessible.Empty[i]) {
-                            C3DDrawCube(&App->Renderer, Grid->Cells[Accessible.Indices[i]].Position,
+                    for(i32 i = 0; i < Reachable.Count; ++i) {
+                        if(Reachable.Empty[i]) {
+                            C3DDrawCube(&App->Renderer, Grid->Cells[Reachable.Indices[i]].Position,
                                         v3(1.f, 1.f, 0.f), 0.15f);
-                            if(!App->UI.IsMouseOver && AppMouseJustDown(0) && (Accessible.Indices[i] == SelectedHexIndex)) {
+                            if(!App->UI.IsMouseOver && AppMouseJustDown(0) && (Reachable.Indices[i] == SelectedHexIndex)) {
                                 NextState = GAME_STATE_WATCH_MOVE;
                                 i32 StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
 
@@ -287,7 +287,7 @@ GameStateUpdate(app * App) {
                                 GameState->WatchMove.Current = GameState->WatchMove.Path.Count - 1;
 
                                 Player->Units[Player->SelectedUnit].HasMoved = 1;
-                                Player->Units[Player->SelectedUnit].CellIndex = Accessible.Indices[i];
+                                Player->Units[Player->SelectedUnit].CellIndex = Reachable.Indices[i];
 
                                 GameState->WatchMove.StateAfter = GAME_STATE_UNIT_SELECTED;
                                 GameState->WatchMove.SubStateAfter = GAME_UI_START;
@@ -295,26 +295,26 @@ GameStateUpdate(app * App) {
                             }
                         }
                     }
-
-                    for(i32 i = 0; i < Attackable.Count; ++i) {
-                        C3DDrawCube(&App->Renderer, Grid->Cells[Attackable.Indices[i]].Position,
+                    hex_attackable_cells AttackableCells = HexGetAttackableCells(Grid, &Reachable);
+                    for(i32 i = 0; i < AttackableCells.Count; ++i) {
+                        C3DDrawCube(&App->Renderer, Grid->Cells[AttackableCells.Indices[i]].Position,
                                     v3(1.f, 0.f, 0.f), 0.1f);
 
                     }
                     if(!App->UI.IsMouseOver && AppMouseJustDown(0)) {
-                        for(i32 i = 0; i < Attackable.Count; ++i) {
-                            if(SelectedHexIndex == Attackable.Indices[i]) {
+                        for(i32 i = 0; i < AttackableCells.Count; ++i) {
+                            if(SelectedHexIndex == AttackableCells.Indices[i]) {
                                 for(i32 j = 0; j < Enemy->UnitCount; ++j) {
                                     if(SelectedHexIndex == Enemy->Units[j].CellIndex) {
                                         NextState = GAME_STATE_WATCH_MOVE;
                                         i32 StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
 
 
-                                        GameState->WatchMove.Path = HexPathingDjikstra(GameState, Grid, Grid->Cells[StartIndex], Grid->Cells[Attackable.From[i]]);
+                                        GameState->WatchMove.Path = HexPathingDjikstra(GameState, Grid, Grid->Cells[StartIndex], Grid->Cells[AttackableCells.From[i]]);
                                         GameState->WatchMove.Current = GameState->WatchMove.Path.Count - 1;
 
                                         Player->Units[Player->SelectedUnit].HasMoved = 1;
-                                        Player->Units[Player->SelectedUnit].CellIndex = Attackable.From[i];
+                                        Player->Units[Player->SelectedUnit].CellIndex = AttackableCells.From[i];
 
                                         //TODO(Zen): Maybe choose target unit then watch unit move to attack.
                                         GameState->WatchMove.StateAfter = GAME_STATE_UNIT_SELECTED;
