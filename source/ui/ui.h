@@ -4,17 +4,11 @@
 #define GENERIC_ID(x) CrestUIIDInit(__LINE__ + UI_ID_OFFSET, x)
 
 /*
-TODO(Zen): Useful UI remaining
-text label (centre/right/left)
-text edit (?)
+TODO(Zen):
+Need to store the currently active text box, as well as the string it contains
+Need to be able to have multiple active(?)
 
-TODO(Zen): UI customisation
-easily use different styles (still render in a single call)
-padding in rows/columns
-
-TODO(Zen): Testing
-Test explicitly pushing multiple rows
-
+probably store the string in the memory arena
 */
 
 typedef struct CrestUIStyle {

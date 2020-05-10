@@ -177,7 +177,7 @@ typedef struct temporary_hex_mesh {
 typedef struct hex_grid hex_grid;
 struct hex_grid {
     b32 Initialised;
-
+    char MapName[32];
     u32 MeshShader, MeshTexture;
     u32 WaterShader, WaterTexture;
 

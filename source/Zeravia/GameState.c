@@ -11,7 +11,9 @@ GameStateInit(app * App) {
 
     //TEMP(Zen): Temporary Setup stuff, will eventually be moved to load from
     //scenarios for gameplay (4/20)
-    LoadGridFromMap(Grid, "gamestatetest", strlen("gamestatetest"));
+    if(LoadGridFromMap(Grid, "gamestatetest", strlen("gamestatetest"))) {
+        strcpy(Grid->MapName, "gamestatetest");
+    };
     Player->UnitCount = Player->ActiveUnits = 2;
     Player->Units[0].CellIndex = 28 * 4 + 5;
     Player->Units[0].Position = Grid->Cells[Player->Units[0].CellIndex].Position;

@@ -251,11 +251,20 @@ EditorStateUpdate(app * App) {
     camera * Camera = &App->EditorState.Camera;
     editor_state * EditorState = &App->EditorState;
     hex_grid * Grid = &App->Grid;
-    //TODO make this work if already have a file name
-    //if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) SaveGridAsMap(&Grid);
-    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) EditorState->Settings.EditMode = EDIT_MODE_SAVING;
+    //Note(Zen): Saving and loading keybinds
+    // if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S) && App->KeyDown[KEY_SHIFT]) {
+    //     EditorState->Settings.EditMode = EDIT_MODE_SAVING;
+    // }
+    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) {
+        if(*Grid->MapName) {
+            SaveGridAsMap(Grid, Grid->MapName, strlen(Grid->MapName));
+        }
+        else {
+            EditorState->Settings.EditMode = EDIT_MODE_SAVING;
+        }
+    }
     if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_O)) EditorState->Settings.EditMode = EDIT_MODE_LOADING;
-
+    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_N)) EditorState->Settings.EditMode = EDIT_MODE_NEW_MAP;
 
     static r32 TotalTime = 0.f;
     TotalTime += App->Delta;
@@ -291,12 +300,8 @@ EditorStateUpdate(app * App) {
             else if(FileNameCursor < 32) {
                 FileNameBuffer[FileNameCursor++] = App->PutCharacters[PutCharactersCursor++];
             }
+            else break;
         }
-        if(FileNameCursor == 31) {
-            memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
-            FileNameCursor = 0;
-        }
-
 
         CrestUITextLabel(&App->UI, GENERIC_ID(0), "Name:");
         CrestUITextLabel(&App->UI, GENERIC_ID(0), FileNameBuffer);
@@ -304,7 +309,7 @@ EditorStateUpdate(app * App) {
 
         if(CrestUIButton(&App->UI, GENERIC_ID(0), "Save")) {
             SaveGridAsMap(Grid, FileNameBuffer, FileNameCursor);
-
+            strcpy(Grid->MapName, FileNameBuffer);
             memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
             FileNameCursor = 0;
             EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
@@ -324,22 +329,22 @@ EditorStateUpdate(app * App) {
     }
     else if(EditorState->Settings.EditMode == EDIT_MODE_LOADING) {
         CrestUIPushPanel(&App->UI, v2(App->ScreenWidth * 0.5f - 104.f, 200.f), -0.1f);
-        CrestUIPushRow(&App->UI, v2(App->ScreenWidth * 0.5f - 108.f, 200.f), v2(100.f, 32.f), 2);
+        CrestUIPushRow(&App->UI, v2(App->ScreenWidth * 0.5f - 104.f, 200.f), v2(100.f, 32.f), 2);
 
         static i32 FileNameCursor = 0;
         static char FileNameBuffer[32];
 
         i32 PutCharactersCursor = 0;
         while(App->PutCharacters[PutCharactersCursor] != 0) {
-            if(FileNameCursor < 32) {
+            if(App->PutCharacters[PutCharactersCursor] == '\b' && FileNameCursor > 0) {
+                FileNameBuffer[--FileNameCursor] = 0;
+                PutCharactersCursor++;
+            }
+            else if(FileNameCursor < 32) {
                 FileNameBuffer[FileNameCursor++] = App->PutCharacters[PutCharactersCursor++];
             }
+            else break;
         }
-        if(FileNameCursor == 31) {
-            memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
-            FileNameCursor = 0;
-        }
-
 
         CrestUITextLabel(&App->UI, GENERIC_ID(0), "Name:");
         CrestUITextLabel(&App->UI, GENERIC_ID(0), FileNameBuffer);
@@ -347,6 +352,7 @@ EditorStateUpdate(app * App) {
 
         if(CrestUIButton(&App->UI, GENERIC_ID(0), "Load")) {
             LoadGridFromMap(Grid, FileNameBuffer, FileNameCursor);
+            strcpy(Grid->MapName, FileNameBuffer);
             ReloadGridVisuals(Grid);
             memset(FileNameBuffer, 0, sizeof(FileNameBuffer));
             FileNameCursor = 0;
@@ -369,10 +375,18 @@ EditorStateUpdate(app * App) {
         ResetCellsOnHexGrid(Grid);
         ReloadGridVisuals(Grid);
         EditorState->Settings.EditMode = EDIT_MODE_TERRAIN;
+        memset(Grid->MapName, 0, 32);
     }
 
     if(EditorStateDebug.ShowUI) {
         EditorState->Settings = doEditorUI(&App->UI, EditorState->Settings, App->ScreenWidth);
+        v4 MapNameRect = v4(0, App->ScreenHeight - 32, 128, 32);
+        if(*Grid->MapName) {
+            CrestUITextLabelP(&App->UI, GENERIC_ID(0), MapNameRect, Grid->MapName);
+        }
+        else {
+            CrestUITextLabelP(&App->UI, GENERIC_ID(0), MapNameRect, "Unsaved Map");
+        }
     }
     /*
         Set Uniforms

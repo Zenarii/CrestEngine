@@ -1084,7 +1084,7 @@ SaveGridAsMap(hex_grid * Grid, char * MapName, i32 MapNameLength) {
 }
 
 
-internal void
+internal b32
 LoadGridFromMap(hex_grid * Grid, char * MapName, i32 MapNameLength) {
     char FilePath[5 + 32 + 5] = "Maps/";
     strncat(FilePath, MapName, MapNameLength);
@@ -1093,7 +1093,7 @@ LoadGridFromMap(hex_grid * Grid, char * MapName, i32 MapNameLength) {
 
     //TODO(Zen): Log failure
     if(!Buffer) {
-        return;
+        return 0;
     }
     //skip version num
     Grid->Width = Buffer[4];
@@ -1135,4 +1135,5 @@ LoadGridFromMap(hex_grid * Grid, char * MapName, i32 MapNameLength) {
     }
 
     free(Buffer);
+    return 1; //Successfully loaded
 }
