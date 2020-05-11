@@ -117,7 +117,7 @@ EditCellTerrainFeatures(hex_cell * Cell, hex_feature_set * FeatureSet, hex_edit_
     if(Settings.EditFeature) {
         if((Settings.FeatureDensity != Cell->FeatureDensity) || (Settings.EditFeature != Cell->FeatureType)) {
             ClearFeaturesFromCell(FeatureSet, Cell);
-            AddFeaturesToCell(FeatureSet, Cell, Settings.EditFeature, Settings.FeatureDensity); //hardcode(Zen): always trees rn
+            AddFeaturesToCell(FeatureSet, Cell, Settings.EditFeature, Settings.FeatureDensity);
         }
     }
     else {
@@ -252,10 +252,11 @@ EditorStateUpdate(app * App) {
     editor_state * EditorState = &App->EditorState;
     hex_grid * Grid = &App->Grid;
     //Note(Zen): Saving and loading keybinds
-    // if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S) && App->KeyDown[KEY_SHIFT]) {
-    //     EditorState->Settings.EditMode = EDIT_MODE_SAVING;
-    // }
-    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) {
+
+    if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S) && App->KeyDown[KEY_SHIFT]) {
+        EditorState->Settings.EditMode = EDIT_MODE_SAVING;
+    }
+    else if(App->KeyDown[KEY_CTRL] && AppKeyJustDown(KEY_S)) {
         if(*Grid->MapName) {
             SaveGridAsMap(Grid, Grid->MapName, strlen(Grid->MapName));
         }

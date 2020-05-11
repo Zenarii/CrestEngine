@@ -117,6 +117,7 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         if(KeyCode == VK_CONTROL) KeyIndex = KEY_CTRL;
         if(KeyCode == VK_TAB) KeyIndex = KEY_TAB;
         if(KeyCode == VK_RETURN) KeyIndex = KEY_RETURN;
+        if(KeyCode == VK_SHIFT) KeyIndex = KEY_SHIFT;
 
         if(KeyCode >= VK_F1 && KeyCode <= VK_F12) KeyIndex = KEY_F1 + (KeyCode - VK_F1);
 
