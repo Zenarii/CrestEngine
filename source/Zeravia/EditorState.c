@@ -23,8 +23,10 @@ internal hex_edit_settings
 doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
     Settings.EditColour = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditColour, "Colour:");
     if(Settings.EditColour) {
-        #define HexColour(name, upper_name, r, g, b) Settings.ColourIndex = CrestUIToggleButton(ui, GENERIC_ID(EDITOR_COLOUR_##upper_name), \
-                                Settings.ColourIndex == EDITOR_COLOUR_##upper_name, #name) ? EDITOR_COLOUR_##upper_name : Settings.ColourIndex;
+        #define HexColour(name, upper_name, r, g, b) Settings.ColourIndex = \
+                                CrestUIToggleButton(ui, GENERIC_ID(EDITOR_COLOUR_##upper_name), \
+                                Settings.ColourIndex == EDITOR_COLOUR_##upper_name, #name) \
+                                ? EDITOR_COLOUR_##upper_name : Settings.ColourIndex;
         #include "HexColours.inc"
         CrestUITextLabel(ui, GENERIC_ID(0), "");
     }
@@ -280,7 +282,7 @@ EditorStateUpdate(app * App) {
     if(EditorState->Settings.EditMode < EDIT_MODE_SAVING) {
         doCamera(Camera, App);
 
-        //Edit Debug View
+        //Note(Zen): Edit Debug View
         EditorStateDebug.ShowUI ^= AppKeyJustDown(KEY_F1);
         EditorStateDebug.ShowCollisions ^= AppKeyJustDown(KEY_F11);
         EditorStateDebug.ShowLargeCollisions ^= AppKeyJustDown(KEY_F12);

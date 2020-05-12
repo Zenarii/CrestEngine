@@ -14,11 +14,26 @@ GameStateInit(app * App) {
     if(LoadGridFromMap(Grid, "gamestatetest", strlen("gamestatetest"))) {
         strcpy(Grid->MapName, "gamestatetest");
     };
+    item Sword = {
+        .Name = "Iron Sword",
+        .Type = ITEM_TYPE_WEAPON,
+        .Damage = 9,
+    };
+    item Bow = {
+        .Name = "Iron Bow",
+        .Type = ITEM_TYPE_WEAPON,
+        .Damage = 8,
+    };
+
     Player->UnitCount = Player->ActiveUnits = 2;
     Player->Units[0].CellIndex = 28 * 4 + 5;
     Player->Units[0].Position = Grid->Cells[Player->Units[0].CellIndex].Position;
     Player->Units[1].CellIndex = 34;
     Player->Units[1].Position = Grid->Cells[Player->Units[1].CellIndex].Position;
+
+    Player->Inventory[0].Items[0] = Sword; Player->Inventory[0].ItemCount = 1;
+    Player->Inventory[1].Items[0] = Sword; Player->Inventory[1].ItemCount = 2;
+    Player->Inventory[1].Items[1] = Bow;
 
     Enemy->UnitCount = 2;
     Enemy->Units[0].CellIndex = 32;
@@ -170,13 +185,14 @@ GameStateUpdate(app * App) {
                 hex_attackable_units Attackable = HexGetAttackableUnits(GameState, Grid, Grid->Cells[CellIndex]);
                 //HARDCODE(Zen): unit move distance
                 hex_reachable_cells Reachable = HexGetReachableCells(GameState, Grid, Grid->Cells[CellIndex], 5);
+
                 {
                     v2 UIPosition = CrestProjectPoint(Unit.Position, View, Projection,
                                                       App->ScreenWidth, App->ScreenHeight);
-
+                    UIPosition.x += 32;
                     if(!GameState->UnitSelected.HideUI) {
                         CrestUIPushPanel(&App->UI, UIPosition, -0.1f);
-                        CrestUIPushRow(&App->UI, UIPosition, v2(64, 32), 1);
+                        CrestUIPushRow(&App->UI, UIPosition, v2(100, 32), 1);
 
                         switch(GameState->UnitSelected.UIState) {
                             case GAME_UI_START: {
@@ -192,6 +208,12 @@ GameStateUpdate(app * App) {
                                     }
                                 }
 
+                                if(Player->Inventory[Player->SelectedUnit].ItemCount) {
+                                    if(CrestUIButton(&App->UI, GENERIC_ID(0), "Inventory")) {
+                                        GameState->UnitSelected.UIState = GAME_UI_INVENTORY;
+                                    }
+                                }
+
                                 if(CrestUIButton(&App->UI, GENERIC_ID(0), "Wait")) {
                                     Player->Units[Player->SelectedUnit].Exhausted = 1;
                                     NextState = GAME_STATE_OVERVIEW;
@@ -204,6 +226,14 @@ GameStateUpdate(app * App) {
                                 CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
                             } break;
 
+                            case GAME_UI_INVENTORY: {
+                                for(i32 i = 0; i < Player->Inventory[Player->SelectedUnit].ItemCount; ++i) {
+                                    CrestUIButton(&App->UI, GENERIC_ID(i), Player->Inventory[Player->SelectedUnit].Items[i].Name);
+                                }
+                                // for(i32 i = Player->Inventory[Player->SelectedUnit].ItemCount; i < MAX_ITEMS; ++i) {
+                                //     CrestUITextLabel(&App->UI, GENERIC_ID(0), "");
+                                // }
+                            } break;
                         }
 
 
@@ -276,10 +306,10 @@ GameStateUpdate(app * App) {
                     i32 CellIndex = Player->Units[Player->SelectedUnit].CellIndex;
 
                     for(i32 i = 0; i < Reachable.Count; ++i) {
-                        if(Reachable.Empty[i]) {
+                        if(Reachable.Empty[i] && Reachable.Indices[i] != CellIndex) {
                             C3DDrawCube(&App->Renderer, Grid->Cells[Reachable.Indices[i]].Position,
                                         v3(1.f, 1.f, 0.f), 0.15f);
-                            if(!App->UI.IsMouseOver && AppMouseJustDown(0) && (Reachable.Indices[i] == SelectedHexIndex)) {
+                            if(!App->UI.IsMouseOver && AppMouseJustDown(0) && (Reachable.Indices[i] == SelectedHexIndex) ) {
                                 NextState = GAME_STATE_WATCH_MOVE;
                                 i32 StartIndex = Player->Units[Player->SelectedUnit].CellIndex;
 

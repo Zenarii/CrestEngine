@@ -19,6 +19,7 @@ enum {
 enum {
     GAME_UI_START,
     GAME_UI_CHOOSE_TARGET,
+    GAME_UI_INVENTORY
 };
 
 typedef struct game_state game_state;
@@ -50,6 +51,7 @@ struct game_state {
         u32 SelectedUnit;
         u32 UnitCount;
         unit Units[MAX_PLAYER_UNITS];
+        inventory Inventory[MAX_PLAYER_UNITS];
     } Player;
 
     struct enemy_info {

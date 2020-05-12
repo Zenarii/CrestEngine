@@ -207,7 +207,9 @@ HexGetReachableCells(game_state * GameState, hex_grid * Grid, hex_cell StartCell
             }
         }
     }
-
+    Result.Indices[Result.Count] = StartCell.Index;
+    Result.Empty[Result.Count] = 1;
+    Result.Count++;
     return Result;
 }
 
@@ -246,7 +248,7 @@ HexGetAttackableCells(hex_grid * Grid, hex_reachable_cells * Reachable) {
                 b32 VisitedCell = Visited[Cell.Neighbours[Direction]->Index];
                 b32 MayAttackCell = CanAttackCell(Grid, Cell, Neighbour);
 
-                if(!VisitedCell && MayAttackCell) {
+                if(!VisitedCell && MayAttackCell && Reachable->Empty[i]) {
                     Result.From[Result.Count] = Cell.Index;
                     Result.Indices[Result.Count] = Cell.Neighbours[Direction]->Index;
                     Result.Count++;
