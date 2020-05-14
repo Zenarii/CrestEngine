@@ -41,7 +41,9 @@ CrestLoadFileAsString(const char* Path) {
     else {
         DWORD error = GetLastError();
         //TODO(Zen): Read file and log issue
-        OutputDebugStringA("Failed To load file");
+        char output[128];
+        sprintf(output, "Failed to load file: %s\n", Path);
+        OutputDebugStringA(output);
         return 0;
     }
     CloseHandle(FileHandle);

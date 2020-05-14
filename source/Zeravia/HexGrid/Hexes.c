@@ -15,6 +15,9 @@ HexGridInit(hex_grid * Grid) {
         glUniform1iv(Location, 16, samplers);
         Grid->WaterTexture = CasLoadTexture("../assets/NoiseTexture.png", GL_LINEAR);
 
+        Grid->ReflectionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 0);
+        Grid->RefractionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 1);
+
         Grid->Initialised = 1;
     }
 

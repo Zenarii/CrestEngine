@@ -489,24 +489,37 @@ GameStateUpdate(app * App) {
     /*
         Draw Everything
     */
-    char Buffer[256];
+
+    // 1) Draw reflection and refraction textures
+    // 2) Bind the main framebuffer and draw (with water shader taking in the new textures)
+    // 3) Afterwards draw the UI to a seperate FBO then output to 0
+    // 4) Maybe blur behind UI by taking nearby background where depth != starting depth
+    //TODO(Zen): Multiple clipping planes for the refractive stuff one per water height
+    //Bind FrameBuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, Grid->ReflectionFBO.Fbo);
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.f);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     //Terrain
-    r64 BeforeDrawingTime = CrestCurrentTime();
     DrawFeatureSet(&Grid->FeatureSet);
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
     }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    DrawFeatureSet(&Grid->FeatureSet);
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        // if(Visible[i]) {
-            DrawWaterMesh(Grid, &Grid->Chunks[i].WaterMesh);
-        // }
+        DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
     }
-    r64 AfterDrawingTime = CrestCurrentTime();
-    sprintf(Buffer, "Drawing Terrain: %f", AfterDrawingTime - BeforeDrawingTime);
-    CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(200, 232, 128, 32), Buffer);
+    //TEMP FOR FUN
+    Grid->WaterTexture = Grid->ReflectionFBO.Texture;
+    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+        DrawWaterMesh(Grid, &Grid->Chunks[i].WaterMesh);
+    }
 
     //Units
+    /*
     for(i32 i = 0; i < Player->UnitCount; ++i) {
         v3 Colour = Player->Units[i].Exhausted ? v3(0.f, 0.f, 0.f) : v3(0.3, 0.3, 0.7);
         C3DDrawCube(&App->Renderer, Player->Units[i].Position, Colour, 0.2f);
@@ -515,14 +528,16 @@ GameStateUpdate(app * App) {
         v3 Colour = Enemy->Units[i].Exhausted ? v3(0.f, 0.f, 0.f) : v3(1, 0.3, 0.4);
         C3DDrawCube(&App->Renderer, Enemy->Units[i].Position, Colour, 0.2f);
     }
-
-
-    CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
-    CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
-    CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
+    */
 
     //Note(Zen): Draw the Collision Shapes
+    #if 0
     if(GameStateDebug.ShowCollisions) {
+        CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
+        CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
+        CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
+
+
         r64 BeforeDrawingColTime = CrestCurrentTime();
         C3DFlush(&App->Renderer);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -541,6 +556,7 @@ GameStateUpdate(app * App) {
         sprintf(Buffer, "Drawing Collisions: %f", AfterDrawingColTime - BeforeDrawingColTime);
         //CrestUITextLabelP(&App->UI, GENERIC_ID(0), v4(200, 200, 128, 32), Buffer);
     }
+    #endif
 }
 
 internal void
