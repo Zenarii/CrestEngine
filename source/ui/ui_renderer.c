@@ -113,7 +113,8 @@ CrestGetStringWidthInPixels(ui_renderer * UIRenderer, const char * Text) {
 
 internal void
 CrestPushText(ui_renderer * UIRenderer, v3 Position, const char * Text) {
-    //glEnable(GL_TEXTURE_2D);
+
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, UIRenderer->FontTex);
 
     float x = Position.x;

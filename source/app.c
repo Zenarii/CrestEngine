@@ -128,9 +128,13 @@ AppResize(r32 Width, r32 Height) {
     App->ScreenWidth = Width;
     App->ScreenHeight = Height;
 
-    //TODO(ZEN): MAKE IT RECREATE ALL ACTIVE FRAMEBUFFERS
-    // CrestDeleteFramebuffer(App->FBO);
-    // App->FBO = CrestCreateFramebuffer(Width, Height);
+    //Note(Zen): There is likely a better way to do this with
+    //arbitary framebuffers, rather than having to add framebuffers here
+    //like some sort of tagging system idk
+    CrestDeleteFramebuffer(App->Grid.RefractionFBO);
+    App->Grid.RefractionFBO = CrestCreateFramebuffer(Width, Height, 1);
+    CrestDeleteFramebuffer(App->Grid.ReflectionFBO);
+    App->Grid.ReflectionFBO = CrestCreateFramebuffer(Width, Height, 0);
 }
 
 
@@ -138,8 +142,6 @@ internal b32
 AppKeyJustDown(i32 Key) {
     return (App->KeyDown[Key] && !App->KeyWasDown[Key]);
 }
-
-
 
 internal b32
 AppMouseJustDown(i32 Button) {
@@ -199,7 +201,7 @@ AppUpdate(Platform * platform) {
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(CLEAR_COLOUR);
         platform->TargetFPS = 120.0f;
 
         HexGridInit(&App->Grid);
@@ -298,7 +300,7 @@ AppUpdate(Platform * platform) {
     // glBindVertexArray(App->ScreenRect.VAO);
     // glBindTexture(GL_TEXTURE_2D, App->Grid.MeshFBO.Texture);
     // glDrawArrays(GL_TRIANGLES, 0, 6);
-    
+
     //TODO(Zen): I Bookmarked the SO post, which will hopefully work uwu
     //Note(Zen): Actually just try followeing that thin matrix opengl water tut
     //    Should just have the soln in it

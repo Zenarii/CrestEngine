@@ -494,26 +494,67 @@ GameStateUpdate(app * App) {
     // 2) Bind the main framebuffer and draw (with water shader taking in the new textures)
     // 3) Afterwards draw the UI to a seperate FBO then output to 0
     // 4) Maybe blur behind UI by taking nearby background where depth != starting depth
-    //TODO(Zen): Multiple clipping planes for the refractive stuff one per water height
-    //Bind FrameBuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, Grid->ReflectionFBO.Fbo);
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.f);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-    //Terrain
-    DrawFeatureSet(&Grid->FeatureSet);
-    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
+    glEnable(GL_CLIP_DISTANCE0);
+
+    //Note(Zen): Draw to the refraction texture
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, Grid->RefractionFBO.Fbo);
+        glClearColor(CLEAR_COLOUR);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, -1, 0, HEX_WATER_LEVEL));
+        CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
+        CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
+
+        //Note(Zen): Don't draw the feature set as no features can appear underwater right now
+        for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+            DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
+        }
     }
 
+    //Note(Zen): Draw to reflection texture
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, Grid->ReflectionFBO.Fbo);
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(CLEAR_COLOUR);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL));
+        CrestShaderSetV4(Grid->FeatureSet.Shader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL));
+
+        camera ReflectionCamera = *Camera;
+        ReflectionCamera.Rotation *= -1;
+        ReflectionCamera.Position.y += 2.f * (HEX_WATER_LEVEL - ReflectionCamera.Position.y);
+
+        matrix ReflectionViewMatrix = ViewMatrixFromCamera(&ReflectionCamera);
+        CrestShaderSetMatrix(Grid->MeshShader, "View", &ReflectionViewMatrix);
+        CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(&ReflectionCamera));
+        CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &ReflectionViewMatrix);
+        CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", GetCameraLocation(&ReflectionCamera));
+
+        //Draw reflected meshes
+        DrawFeatureSet(&Grid->FeatureSet);
+        for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+            DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
+        }
+    }
+
+    CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
+    CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
+    CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", GetCameraLocation(Camera));
+    CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &View);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    //Note(Zen): Some drivers ignore disabling the clipping plane
+    glDisable(GL_CLIP_DISTANCE0);
+    CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, 0, 0, 0));
+    CrestShaderSetV4(Grid->FeatureSet.Shader, "ClippingPlane", v4(0, 0, 0, 0));
+
     DrawFeatureSet(&Grid->FeatureSet);
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
     }
-    //TEMP FOR FUN
-    Grid->WaterTexture = Grid->ReflectionFBO.Texture;
+
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         DrawWaterMesh(Grid, &Grid->Chunks[i].WaterMesh);
     }

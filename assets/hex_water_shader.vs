@@ -11,18 +11,20 @@ out vec3 Colour;
 out vec2 TextureCoord;
 out float TextureID;
 out vec3 FragPos;
-out vec2 WorldPos;
+out vec4 ClipSpace;
+
 
 uniform mat4 Projection;
 uniform mat4 Model;
 uniform mat4 View;
 uniform float Time;
 
+//TODO(Zen): Remove unnecessary variables such as Texture coord and ID from this shader
+
 void main() {
     vec3 Position = inPosition;
-    WorldPos = inPosition.xz;
-    Position.y += 0.05 * sin(Position.x + Position.y + Time) * (1-inTextureCoord.y);
-    gl_Position = Projection * View * Model * vec4(Position, 1.0);
+    ClipSpace = Projection * View * Model * vec4(Position, 1.0);
+    gl_Position = ClipSpace;
 
     FragPos = vec3(Model * vec4(inPosition, 1.0));
     Colour = inColour;

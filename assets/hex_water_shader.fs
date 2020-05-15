@@ -4,10 +4,12 @@ in vec3 Colour;
 in vec2 TextureCoord;
 in float TextureID;
 in vec3 Normal;
+in vec4 ClipSpace;
 in vec3 FragPos;
-in vec2 WorldPos;
 
-uniform sampler2D Images[16];
+uniform sampler2D ReflectionTexture;
+uniform sampler2D RefractionTexture;
+
 uniform vec3 LightPosition;
 uniform vec3 LightColour;
 uniform vec3 ViewPosition;
@@ -17,30 +19,18 @@ out vec4 FragColour;
 
 
 void main() {
-    int index = int(TextureID);
-    vec2 uv1 = WorldPos;
-    uv1.y += Time * 0.2;
-    vec4 Noise1 = texture(Images[index], uv1 * 0.25);
+    /*
+        Apply FBOs
+        Note(Zen): Reflection and Refraction are swapped here for some reason.
+        Rather than messing up the effect I've just left this note here instead
+    */
+    vec2 ndc = (ClipSpace.xy / ClipSpace.w) * 0.5 + 0.5f;
+    vec2 RefractionTexCoords = vec2(ndc.x, -ndc.y);
+    vec2 ReflectionTexCoords = vec2(ndc.x, ndc.y);
 
-    vec2 uv2 = WorldPos;
-    uv2.x += Time * 0.2;
-    vec4 Noise2 = texture(Images[index], uv2 * 0.25);
-
-    float BlendWave = sin((TextureCoord.x + TextureCoord.y) * 0.1 + Time + Noise1.y + Noise2.z);
-    BlendWave *= BlendWave;
-
-    float Waves = mix(Noise1.z, Noise1.y, BlendWave) + mix(Noise2.x, Noise2.y, BlendWave);
-    Waves = smoothstep(0.1, 2.5, Waves);
-
-
-    float Shore = TextureCoord.y;
-    vec2 ShoreNoiseUV = TextureCoord + Time * 0.1;
-    vec4 ShoreNoise = texture(Images[index], ShoreNoiseUV);
-    float Distortion = ShoreNoise.x * (1.0-Shore);
-
-    float Foam = sin((Distortion + Shore) * 10.0 - Time * 0.1);
-	Foam *= Foam * Shore;
-
+    vec4 ReflectionColour = texture(ReflectionTexture, ReflectionTexCoords);
+    vec4 RefractionColour = texture(RefractionTexture, RefractionTexCoords);
+    vec4 WaterColour = mix(RefractionColour, ReflectionColour, 0.5);
 
     /*
         Lighting
@@ -67,7 +57,6 @@ void main() {
 
     vec3 Result = (Ambient + Diffuse + Specular) * Colour;
 
-    FragColour = Foam + vec4(Waves * 0.2, Waves * 0.6, Waves, 1.0)  + vec4(Result, 1.0);
-    FragColour.a = 0.3;
+    FragColour = WaterColour;// * vec4(Result, 1.0);
     //FragColour = vec4(TextureCoord, 0.0, 1.0);
 }

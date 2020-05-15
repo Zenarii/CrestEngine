@@ -89,3 +89,10 @@ CrestShaderSetV3(CrestShader Shader, const char * UniformName, v3 Vector) {
     i32 Location = glGetUniformLocation(Shader, UniformName);
     glUniform3f(Location, Vector.x, Vector.y, Vector.z);
 }
+
+internal void
+CrestShaderSetV4(CrestShader Shader, const char * UniformName, v4 Vector) {
+    glUseProgram(Shader);
+    i32 Location = glGetUniformLocation(Shader, UniformName);
+    glUniform4f(Location, Vector.x, Vector.y, Vector.z, Vector.w);
+}

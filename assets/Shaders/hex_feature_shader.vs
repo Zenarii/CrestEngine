@@ -7,12 +7,17 @@ layout (location = 3) in mat4 InstanceModel;
 
 uniform mat4 Projection;
 uniform mat4 View;
+uniform vec4 ClippingPlane;
 
 out vec3 FragPos;
 out vec3 Normal;
 flat out int MaterialID;
 
 void main() {
+    vec4 WorldPosition = InstanceModel * vec4(inPosition, 1.0);
+
+    gl_ClipDistance[0] = dot(WorldPosition, ClippingPlane);
+
     gl_Position = Projection * View * InstanceModel * vec4(inPosition, 1.0);
     FragPos = vec3(InstanceModel * vec4(inPosition, 1.0));
     MaterialID = inMaterialID;

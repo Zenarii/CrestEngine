@@ -10,10 +10,9 @@ HexGridInit(hex_grid * Grid) {
         Grid->MeshTexture = CasLoadTexture("../assets/White.png", GL_LINEAR);
 
         Grid->WaterShader = CrestShaderInit("../assets/hex_water_shader.vs", "../assets/hex_water_shader.fs");
-        glUseProgram(Grid->WaterShader);
-        Location = glGetUniformLocation(Grid->WaterShader, "Images");
-        glUniform1iv(Location, 16, samplers);
-        Grid->WaterTexture = CasLoadTexture("../assets/NoiseTexture.png", GL_LINEAR);
+
+        CrestShaderSetInt(Grid->WaterShader, "ReflectionTexture", 0);
+        CrestShaderSetInt(Grid->WaterShader, "ReflectionTexture", 1);
 
         Grid->ReflectionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 0);
         Grid->RefractionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 1);
@@ -26,13 +25,6 @@ HexGridInit(hex_grid * Grid) {
 
     InitFeatureSet(&Grid->FeatureSet);
 }
-
-
-
-
-
-
-
 
 internal hex_cell
 CreateCell(int x, int z) {
@@ -180,7 +172,10 @@ internal void
 DrawWaterMesh(hex_grid * Grid, hex_mesh * Mesh) {
     glUseProgram(Grid->WaterShader);
 
-    glBindTextureUnit(0, Grid->WaterTexture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, Grid->ReflectionFBO.Texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, Grid->RefractionFBO.Texture);
 
     glBindVertexArray(Mesh->VAO);
     glDrawArrays(GL_TRIANGLES, 0, Mesh->VerticesCount);

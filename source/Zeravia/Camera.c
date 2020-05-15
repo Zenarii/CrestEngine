@@ -22,6 +22,8 @@ ViewMatrixFromCamera(camera * Camera) {
     return CrestM4MultM4(CameraSpace, WorldSpace);
 }
 
+
+
 internal void
 doCamera(camera * Camera, app * App) {
     //Note(Zen): Zoom

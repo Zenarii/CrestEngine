@@ -64,7 +64,7 @@ GetNextDelim(char * WordStart, char Delim) {
 internal char *
 GetNextWord(char * WordStart) {
     char * WordEnd = WordStart;
-    while(*WordEnd != ' ' && *WordEnd != '\n') ++WordEnd;
+    while(*WordEnd != ' ' && *WordEnd != '\n' && *WordEnd != '\0') ++WordEnd;
     return WordEnd;
 }
 
