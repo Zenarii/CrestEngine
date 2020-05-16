@@ -13,6 +13,9 @@ HexGridInit(hex_grid * Grid) {
 
         CrestShaderSetInt(Grid->WaterShader, "ReflectionTexture", 0);
         CrestShaderSetInt(Grid->WaterShader, "ReflectionTexture", 1);
+        CrestShaderSetInt(Grid->WaterShader, "DistortionTexture", 2);
+
+        Grid->WaterDistortionTexture = CasLoadTexture("../assets/Textures/WaterDuDv.png", GL_LINEAR);
 
         Grid->ReflectionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 0);
         Grid->RefractionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 1);
@@ -169,14 +172,19 @@ DrawHexMesh(hex_grid * Grid, hex_mesh * Mesh) {
 }
 
 internal void
-DrawWaterMesh(hex_grid * Grid, hex_mesh * Mesh) {
+PreDrawWaterMesh(hex_grid * Grid) {
     glUseProgram(Grid->WaterShader);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, Grid->ReflectionFBO.Texture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, Grid->RefractionFBO.Texture);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, Grid->WaterDistortionTexture);
+}
 
+internal void
+DrawWaterMesh(hex_grid * Grid, hex_mesh * Mesh) {
     glBindVertexArray(Mesh->VAO);
     glDrawArrays(GL_TRIANGLES, 0, Mesh->VerticesCount);
 }
@@ -826,6 +834,7 @@ TriangulateWaterCell(temporary_hex_mesh * Mesh, hex_cell Cell) {
     }
 }
 
+//TODO(Zen): No longer need to send in texture coordinates
 internal void
 TriangulateWaterMesh(hex_grid * Grid, hex_grid_chunk * Chunk) {
     //this will be the chunk's mesh later on

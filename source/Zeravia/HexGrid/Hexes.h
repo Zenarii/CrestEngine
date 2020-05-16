@@ -19,7 +19,7 @@ const global v3 HexCorners[] = {
 #define HEX_CHUNK_WIDTH 7
 #define HEX_CHUNK_HEIGHT 5
 
-#define HEX_SOLID_FACTOR 0.7f
+#define HEX_SOLID_FACTOR 0.8f
 #define HEX_BLEND_FACTOR (1.f - HEX_SOLID_FACTOR)
 #define HEX_NUDGE_STRENGTH 0.2f
 #define HEX_ELEVATION_NUDGE_STRENGTH 0.15f
@@ -182,7 +182,7 @@ struct hex_grid {
     u32 MeshShader, MeshTexture;
     fbo RefractionFBO;
     fbo ReflectionFBO;
-    u32 WaterShader, WaterTexture;
+    u32 WaterShader, WaterTexture, WaterDistortionTexture;
     i32 Width, Height; //In cells
     hex_cell Cells[HEX_MAX_CHUNKS * HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT];
     hex_grid_chunk Chunks[HEX_MAX_CHUNKS];

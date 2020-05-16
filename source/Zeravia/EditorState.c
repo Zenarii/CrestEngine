@@ -41,9 +41,9 @@ doEditorUITerrain(CrestUI * ui, hex_edit_settings Settings) {
         Water Editing
     */
     Settings.EditWater = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.EditWater, "Water:");
-    if(Settings.EditWater) Settings.WaterLevel = CrestUISliderInt(ui, GENERIC_ID(0), Settings.WaterLevel, HEX_MAX_ELEVATION, "Water Level");
-
-
+    if(Settings.EditWater) {
+        Settings.AddWater = CrestUIToggleButton(ui, GENERIC_ID(0), Settings.AddWater, Settings.AddWater ? "Add" : "Remove");
+    }
     Settings.BrushSize = 0;//CrestUISliderInt(ui, GENERIC_ID(0), Settings.BrushSize, 4, "BrushSize");
 
     return Settings;
@@ -105,8 +105,15 @@ EditCellTerrain(hex_cell * Cell, hex_edit_settings Settings) {
         Result |= (EDITSTATE_EDITED_COLLISIONS | EDITSTATE_EDITED_MESH
                    | EDITSTATE_EDITED_WATER | EDITSTATE_EDITED_FEATURES);
     }
-    if(Settings.EditWater && Settings.WaterLevel != Cell->WaterLevel) {
-        Cell->WaterLevel = Settings.WaterLevel;
+
+    if(Settings.EditWater && !Cell->WaterLevel && Settings.AddWater) {
+        //HARDCODE(Zen): Due to the clipping planes involved with editing the water
+        //looks like can only have a single water level, which I've decided to place at 2
+        Cell->WaterLevel = 2;//Settings.WaterLevel;
+        Result |= EDITSTATE_EDITED_WATER;
+    }
+    else if(Settings.EditWater && Cell->WaterLevel && !Settings.AddWater) {
+        Cell->WaterLevel = 0;//Settings.WaterLevel;
         Result |= EDITSTATE_EDITED_WATER;
     }
     return Result;

@@ -43,7 +43,7 @@ struct hex_edit_settings {
     i32 Elevation;
 
     b32 EditWater;
-    i32 WaterLevel;
+    b32 AddWater;
     //EDIT_MODE_TERRAIN_FEATURES
     hex_feature_type EditFeature;
     i32 FeatureDensity;

@@ -502,7 +502,7 @@ GameStateUpdate(app * App) {
         glBindFramebuffer(GL_FRAMEBUFFER, Grid->RefractionFBO.Fbo);
         glClearColor(CLEAR_COLOUR);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, -1, 0, HEX_WATER_LEVEL));
+        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, -1, 0, HEX_WATER_LEVEL + 0.1));
         CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
         CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
 
@@ -551,13 +551,14 @@ GameStateUpdate(app * App) {
     CrestShaderSetV4(Grid->FeatureSet.Shader, "ClippingPlane", v4(0, 0, 0, 0));
 
     DrawFeatureSet(&Grid->FeatureSet);
+    PreDrawWaterMesh(Grid);
+    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+        DrawWaterMesh(Grid, &Grid->Chunks[i].WaterMesh);
+    }
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
     }
 
-    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        DrawWaterMesh(Grid, &Grid->Chunks[i].WaterMesh);
-    }
 
     //Units
     /*

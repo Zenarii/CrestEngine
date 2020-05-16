@@ -131,6 +131,7 @@ AppResize(r32 Width, r32 Height) {
     //Note(Zen): There is likely a better way to do this with
     //arbitary framebuffers, rather than having to add framebuffers here
     //like some sort of tagging system idk
+    //
     CrestDeleteFramebuffer(App->Grid.RefractionFBO);
     App->Grid.RefractionFBO = CrestCreateFramebuffer(Width, Height, 1);
     CrestDeleteFramebuffer(App->Grid.ReflectionFBO);
@@ -218,6 +219,8 @@ AppUpdate(Platform * platform) {
 
         App->UIRenderer.Width = platform->ScreenWidth;
         App->UIRenderer.Height = platform->ScreenHeight;
+        App->ScreenWidth = platform->ScreenWidth;
+        App->ScreenHeight = platform->ScreenHeight;
 
         App->Delta = platform->TimeTaken; //1.f / platform->TargetFPS;
         App->TotalTime += App->Delta;
@@ -274,37 +277,22 @@ AppUpdate(Platform * platform) {
     C3DFlush(&App->Renderer);
 
 
-    // #define APP_FPS_PANEL_WIDTH 200
-    // CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 16.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
-    // {
-    //     char Buffer[32];
-    //     sprintf(Buffer, "Time for frame:%2.fms", platform->TimeTakenForFrame * 1000.f);
-    //     CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
-    //     sprintf(Buffer, "Time passed: %2.fms", platform->TimeTaken * 1000.f);
-    //     CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
-    //     sprintf(Buffer, "FPS: %3.f/s", 1.f/App->Delta);
-    //     CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
-    // }
-    // CrestUIPopRow(&App->UI);
+    #define APP_FPS_PANEL_WIDTH 200
+    CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 16.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
+    {
+        char Buffer[32];
+        sprintf(Buffer, "Time for frame:%2.fms", platform->TimeTakenForFrame * 1000.f);
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
+        sprintf(Buffer, "Time passed: %2.fms", platform->TimeTaken * 1000.f);
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
+        sprintf(Buffer, "FPS: %3.f/s", 1.f/App->Delta);
+        CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
+    }
+    CrestUIPopRow(&App->UI);
 
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
 
     AppClearChars();
-
-    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // glClearColor(1.f, 1.f, 0.f, 1.f);
-    // glDisable(GL_DEPTH_TEST);
-    // glClear(GL_COLOR_BUFFER_BIT);
-    // glUseProgram(App->ScreenRect.Shader);
-    // CrestShaderSetFloat(App->ScreenRect.Shader, "time", App->TotalTime);
-    // glBindVertexArray(App->ScreenRect.VAO);
-    // glBindTexture(GL_TEXTURE_2D, App->Grid.MeshFBO.Texture);
-    // glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    //TODO(Zen): I Bookmarked the SO post, which will hopefully work uwu
-    //Note(Zen): Actually just try followeing that thin matrix opengl water tut
-    //    Should just have the soln in it
-    glEnable(GL_DEPTH_TEST);
 
     return AppShouldQuit;
 }
