@@ -279,13 +279,17 @@ EditorStateUpdate(app * App) {
     static r32 TotalTime = 0.f;
     TotalTime += App->Delta;
 
-
     matrix IdentityMatrix = {
         1.f, 0.f, 0.f, 0.f,
         0.f, 1.f, 0.f, 0.f,
         0.f, 0.f, 1.f, 0.f,
         0.f, 0.f, 0.f, 1.f
     };
+
+    r32 Ratio = App->ScreenWidth / App->ScreenHeight;
+    matrix Projection = CrestMatrixPerspective(PI * 0.5f, Ratio, 0.1f, 100.f);
+    matrix View = ViewMatrixFromCamera(Camera);
+    matrix Model = IdentityMatrix;
     if(EditorState->Settings.EditMode < EDIT_MODE_SAVING) {
         doCamera(Camera, App);
 
@@ -398,50 +402,7 @@ EditorStateUpdate(app * App) {
             CrestUITextLabelP(&App->UI, GENERIC_ID(0), MapNameRect, "Unsaved Map");
         }
     }
-    /*
-        Set Uniforms
-    */
-    r32 Ratio = App->ScreenWidth / App->ScreenHeight;
-    matrix Projection = CrestMatrixPerspective(PI * 0.5f, Ratio, 0.1f, 100.f);
-    matrix View = ViewMatrixFromCamera(Camera);
-    matrix Model = IdentityMatrix;
 
-    CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
-    CrestShaderSetMatrix(Grid->MeshShader, "Model", &Model);
-    CrestShaderSetMatrix(Grid->MeshShader, "Projection", &Projection);
-
-    CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
-    CrestShaderSetV3(Grid->MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(Grid->MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
-
-    CrestShaderSetMatrix(Grid->WaterShader, "View", &View);
-    CrestShaderSetMatrix(Grid->WaterShader, "Model", &Model);
-    CrestShaderSetMatrix(Grid->WaterShader, "Projection", &Projection);
-
-    CrestShaderSetV3(Grid->WaterShader, "ViewPosition", GetCameraLocation(Camera));
-    CrestShaderSetV3(Grid->WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(Grid->WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
-    CrestShaderSetFloat(Grid->WaterShader, "Time", App->TotalTime);
-
-
-    CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &View);
-    CrestShaderSetMatrix(Grid->FeatureSet.Shader, "Projection", &Projection);
-    CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
-    CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
-    CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", GetCameraLocation(Camera));
-    /*
-        Draw Meshes
-    */
-
-    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * HexMesh = &Grid->Chunks[i].HexMesh;
-        DrawHexMesh(Grid, HexMesh);
-    }
-    DrawFeatureSet(&Grid->FeatureSet);
-    for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
-        hex_mesh * WaterMesh = &Grid->Chunks[i].WaterMesh;
-        DrawWaterMesh(Grid, WaterMesh);
-    }
 
     //Note(Zen): Get RayCast
     v4 RayClip = v4(0, 0, -1.f, 1.f);
@@ -478,6 +439,105 @@ EditorStateUpdate(app * App) {
         }
         EditStateEndOfCollisions:;
     }
+
+
+        /*
+            Set Uniforms
+        */
+
+        {
+            v3 CameraLocation = GetCameraLocation(Camera);
+            CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
+            CrestShaderSetMatrix(Grid->MeshShader, "Model", &Model);
+            CrestShaderSetMatrix(Grid->MeshShader, "Projection", &Projection);
+
+            CrestShaderSetV3(Grid->MeshShader, "ViewPosition", CameraLocation);
+            CrestShaderSetV3(Grid->MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
+            CrestShaderSetV3(Grid->MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
+
+            CrestShaderSetMatrix(Grid->WaterShader, "View", &View);
+            CrestShaderSetMatrix(Grid->WaterShader, "Model", &Model);
+            CrestShaderSetMatrix(Grid->WaterShader, "Projection", &Projection);
+
+            CrestShaderSetV3(Grid->WaterShader, "ViewPosition", CameraLocation);
+            CrestShaderSetV3(Grid->WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
+            CrestShaderSetV3(Grid->WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
+            CrestShaderSetFloat(Grid->WaterShader, "Time", App->TotalTime);
+
+            CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &View);
+            CrestShaderSetMatrix(Grid->FeatureSet.Shader, "Projection", &Projection);
+            CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
+            CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
+            CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", CameraLocation);
+        }
+
+
+        glEnable(GL_CLIP_DISTANCE0);
+
+        //Note(Zen): Draw to the refraction texture
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, Grid->RefractionFBO.Fbo);
+            glClearColor(CLEAR_COLOUR);
+            glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+            CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, -1, 0, HEX_WATER_LEVEL + 0.1f));
+            CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
+            CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
+
+            //Note(Zen): Don't draw the feature set as no features can appear underwater right now
+            PreDrawHexMesh(Grid);
+            for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+                DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
+            }
+        }
+
+        //Note(Zen): Draw to reflection texture
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, Grid->ReflectionFBO.Fbo);
+            glEnable(GL_DEPTH_TEST);
+            glClearColor(CLEAR_COLOUR);
+            glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+            CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL + 0.01f));
+            CrestShaderSetV4(Grid->FeatureSet.Shader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL + 0.01f));
+
+            camera ReflectionCamera = *Camera;
+            ReflectionCamera.Rotation *= -1;
+            ReflectionCamera.Position.y += 2.f * (HEX_WATER_LEVEL - ReflectionCamera.Position.y);
+
+            matrix ReflectionViewMatrix = ViewMatrixFromCamera(&ReflectionCamera);
+            CrestShaderSetMatrix(Grid->MeshShader, "View", &ReflectionViewMatrix);
+            CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(&ReflectionCamera));
+            CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &ReflectionViewMatrix);
+            CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", GetCameraLocation(&ReflectionCamera));
+
+            //Draw reflected meshes
+            DrawFeatureSet(&Grid->FeatureSet);
+            PreDrawHexMesh(Grid);
+            for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+                DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
+            }
+        }
+
+        CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
+        CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
+        CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", GetCameraLocation(Camera));
+        CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &View);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        //Note(Zen): Some drivers ignore disabling the clipping plane
+        glDisable(GL_CLIP_DISTANCE0);
+        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, 0, 0, 0));
+        CrestShaderSetV4(Grid->FeatureSet.Shader, "ClippingPlane", v4(0, 0, 0, 0));
+
+        DrawFeatureSet(&Grid->FeatureSet);
+        PreDrawWaterMesh(Grid);
+        for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+            DrawWaterMesh(Grid, &Grid->Chunks[i].WaterMesh);
+        }
+        PreDrawHexMesh(Grid);
+        for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
+            DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
+        }
 
 
     CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);

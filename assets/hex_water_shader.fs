@@ -11,6 +11,8 @@ in vec3 ToCameraVector;
 uniform sampler2D ReflectionTexture;
 uniform sampler2D RefractionTexture;
 uniform sampler2D DistortionTexture;
+uniform sampler2D NormalMap;
+uniform sampler2D DepthMap;
 
 uniform vec3 LightPosition;
 uniform vec3 LightColour;
@@ -21,8 +23,11 @@ out vec4 FragColour;
 
 //TODO(Zen): Tweak these variables and the distortion sampling to improve
 //    the look of the water
-const float DistortionFactor = 0.005f;
-const float WaveSpeed = 0.1f;
+const float DistortionFactor = 0.008;
+const float WaveSpeed = 0.05;
+const float SpecularExponent = 20.0;
+const float Reflectivity = 0.6;
+const vec3 FoamColour = vec3(0.1, 0.1, 0.1);
 
 void main() {
 
@@ -31,53 +36,48 @@ void main() {
     float RefractiveFactor = dot(ViewVec, vec3(0.0, 1.0, 0.0));
     RefractiveFactor = pow(RefractiveFactor, 3);
 
+
     /*
-        Apply FBOs
         Note(Zen): Reflection and Refraction are swapped here for some reason.
-        Rather than messing up the effect I've just left this note here instead
+        Rather than changing these and messing up the effect I've just left this note here instead
     */
     vec2 ndc = (ClipSpace.xy / ClipSpace.w) * 0.5 + 0.5f;
     vec2 RefractionTexCoords = vec2(ndc.x, -ndc.y);
     vec2 ReflectionTexCoords = vec2(ndc.x, ndc.y);
     float MoveFactor = WaveSpeed * Time;
-    vec2 Distortion1 = DistortionFactor * (texture(DistortionTexture, vec2(TextureCoord.x + MoveFactor, TextureCoord.y)).rg * 2.0 - 1.0);
-    vec2 Distortion2 = DistortionFactor * (texture(DistortionTexture, vec2(-TextureCoord.x, TextureCoord.y + MoveFactor)).rg * 2.0 - 1.0);
 
-    vec2 TotalDistortion = (Distortion2 + Distortion1) * ;
+
+    float Near = 0.1f;
+    float Far = 100.f;
+    float FloorDepth = texture(DepthMap, ndc).r;
+    float FloorDistance = 2.0 * Near * Far / (Far + Near - (2.0 * FloorDepth - 1.0) * (Far - Near));
+    float WaterDepth = gl_FragCoord.z;
+    float WaterDistance = 2.0 * Near * Far / (Far + Near - (2.0 * WaterDepth - 1.0) * (Far - Near));
+    float FinalDepth = FloorDistance - WaterDistance;
+
+    vec2 DistortedUvs = texture(DistortionTexture, vec2(TextureCoord.x + MoveFactor, TextureCoord.y)).rg*0.1;
+	DistortedUvs = TextureCoord + vec2(DistortedUvs.x, DistortedUvs.y + MoveFactor);
+	vec2 TotalDistortion = (texture(DistortionTexture, DistortedUvs).rg * 2.0 - 1.0) * DistortionFactor * clamp(FinalDepth * 2.0, 0.0, 1.0);
 
     vec4 ReflectionColour = texture(ReflectionTexture, ReflectionTexCoords + TotalDistortion);
-    ReflectionColour = clamp(ReflectionColour, 0.0, 1.0);
+    ReflectionColour = clamp(ReflectionColour, 0.001, 0.999);
     vec4 RefractionColour = texture(RefractionTexture, RefractionTexCoords + TotalDistortion);
-    RefractionColour = clamp(RefractionColour, 0.0, 1.0);
+    RefractionColour = clamp(RefractionColour, 0.001, 0.999);
 
     vec4 WaterColour = mix(RefractionColour, ReflectionColour, RefractiveFactor);
 
-    // /*
-    //     Lighting
-    // */
-    //
-    //
-    // //Ambient
-    // float AmbientStrength = 0.3;
-    // vec3 Ambient = LightColour * AmbientStrength;
-    //
-    // //Diffuse
-    // vec3 Norm = normalize(Normal);
+    vec4 NormalMapColour = texture(NormalMap, DistortedUvs);
+    vec3 NormalMapV = vec3(NormalMapColour.r * 2.0 - 1.0, NormalMapColour.b, NormalMapColour.g * 2.0 - 1.0);
+    NormalMapV = normalize(NormalMapV);
+
     // vec3 LightDirection = normalize(LightPosition - FragPos);
-    //
-    // float Diff = max(dot(Norm, LightDirection), 0.0);
-    // vec3 Diffuse = Diff * LightColour;
-    //
-    // //Specular
-    // float SpecularStrength = 0.3;
-    // vec3 ViewDirection = normalize(ViewPosition - FragPos);
-    // vec3 ReflectDirection = reflect(-LightDirection, Norm);
-    // float Spec = pow(max(dot(ViewDirection, ReflectDirection), 0.0), 8);
-    // vec3 Specular = SpecularStrength * Spec * LightColour;
-    //
-    // vec3 Result = (Ambient + Diffuse + Specular) * Colour;
+    // vec3 ReflectedLight = reflect(-normalize(LightDirection), NormalMapV);
+	// float Specular = max(dot(ReflectedLight, ViewVec), 0.0);
+	// Specular = pow(Specular, SpecularExponent);
+	// vec3 specularHighlights = LightColour * Specular * Reflectivity;
 
+    FragColour = mix(WaterColour, vec4(0.0, 0.3, 0.5, 1.0), 0.2) ;//+ vec4(specularHighlights, 0.f);
+    //FragColour = vec4(FloorDistance, FloorDistance, FloorDistance, 1.0);
+    //FragColour = vec4(FloorDepth, FloorDepth, FloorDepth, 1.0);
 
-    FragColour = mix(WaterColour, vec4(0.0, 0.3, 0.5, 1.0), 0.2);
-    //FragColour = vec4(TextureCoord, 0.0, 1.0);
 }

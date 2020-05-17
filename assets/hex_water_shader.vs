@@ -28,7 +28,7 @@ void main() {
     gl_Position = ClipSpace;
     FragPos = vec3(Model * vec4(inPosition, 1.0));
     Colour = inColour;
-    TextureCoord = vec2(Position.x/2.0 + 0.5, Position.y/2.0 + 0.5);
+    TextureCoord = vec2(Position.x/2.0 + 0.5, Position.z/2.0 + 0.5);
 
     TextureID = inTextureID;
     ToCameraVector = ViewPosition - Position;

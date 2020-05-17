@@ -191,7 +191,7 @@ AppUpdate(Platform * platform) {
         App->ScreenHeight = platform->ScreenHeight;
 
         CrestUIRendererInit(&App->UIRenderer);
-        CrestUIRendererLoadFont(&App->UIRenderer, "../assets/Roboto-Regular.ttf");
+        CrestUIRendererLoadFont(&App->UIRenderer, "../assets/Fonts/Roboto-Bold.ttf");
         CrestUIInit(&App->UI);
         C3DInit(&App->Renderer);
         App->Renderer.Textures[0] = CasLoadTexture("../assets/White.png", GL_LINEAR);

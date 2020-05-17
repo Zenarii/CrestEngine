@@ -118,10 +118,6 @@ GameStateUpdate(app * App) {
                 }
             }
         }
-        //TODO(Zen): Remove this when necessary
-        if(HasCollided) {
-            C3DDrawCube(&App->Renderer, CollisionPoint, v3(1.f, 1.f, 1.f), 0.1f);
-        }
         SelectedHexIndex = GetCellIndex(SelectedHex);
     }
 
@@ -484,6 +480,7 @@ GameStateUpdate(app * App) {
         CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
         CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
         CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", CameraLocation);
+
     }
 
     /*
@@ -502,11 +499,12 @@ GameStateUpdate(app * App) {
         glBindFramebuffer(GL_FRAMEBUFFER, Grid->RefractionFBO.Fbo);
         glClearColor(CLEAR_COLOUR);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, -1, 0, HEX_WATER_LEVEL + 0.1));
+        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, -1, 0, HEX_WATER_LEVEL + 0.1f));
         CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
         CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
 
         //Note(Zen): Don't draw the feature set as no features can appear underwater right now
+        PreDrawHexMesh(Grid);
         for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
             DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
         }
@@ -519,8 +517,8 @@ GameStateUpdate(app * App) {
         glClearColor(CLEAR_COLOUR);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL));
-        CrestShaderSetV4(Grid->FeatureSet.Shader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL));
+        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL + 0.01f));
+        CrestShaderSetV4(Grid->FeatureSet.Shader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL + 0.01f));
 
         camera ReflectionCamera = *Camera;
         ReflectionCamera.Rotation *= -1;
@@ -534,6 +532,7 @@ GameStateUpdate(app * App) {
 
         //Draw reflected meshes
         DrawFeatureSet(&Grid->FeatureSet);
+        PreDrawHexMesh(Grid);
         for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
             DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
         }
@@ -555,6 +554,7 @@ GameStateUpdate(app * App) {
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         DrawWaterMesh(Grid, &Grid->Chunks[i].WaterMesh);
     }
+    PreDrawHexMesh(Grid);
     for(i32 i = 0; i < HEX_MAX_CHUNKS; ++i) {
         DrawHexMesh(Grid, &Grid->Chunks[i].HexMesh);
     }
