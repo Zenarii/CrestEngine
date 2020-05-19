@@ -147,6 +147,9 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         i32 width = ClientRect.right - ClientRect.left;
         i32 height = ClientRect.bottom - ClientRect.top;
         Win32OpenGLResize(width, height);
+        if(App && App->Initialised) {
+            AppResize(width, height);
+        }
         GlobalPlatform.ScreenWidth = (r32)width;
         GlobalPlatform.ScreenHeight = (r32)height;
     }

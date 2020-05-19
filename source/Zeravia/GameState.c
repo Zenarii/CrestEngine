@@ -214,12 +214,25 @@ GameStateUpdate(app * App) {
                                     Player->Units[Player->SelectedUnit].Exhausted = 1;
                                     NextState = GAME_STATE_OVERVIEW;
                                 }
+                                //Note(Zen): Go back
+                                if((AppKeyJustDown(KEY_ESC) || AppMouseJustDown(1)) && !Player->Units[Player->SelectedUnit].Exhausted) {
+                                    NextState = GAME_STATE_OVERVIEW;
+                                    Player->Units[Player->SelectedUnit].CellIndex = GameState->UnitSelected.StartIndex;
+                                    Player->Units[Player->SelectedUnit].Position = Grid->Cells[Player->Units[Player->SelectedUnit].CellIndex].Position;
+
+                                    Player->Units[Player->SelectedUnit].HasMoved = 0;
+                                }
                             } break;
 
                             case GAME_UI_CHOOSE_TARGET: {
                                 char Buffer[32] = {0};
                                 sprintf(Buffer, "%d/%d", GameState->UnitSelected.CurrentTarget+1, Attackable.Count);
                                 CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
+
+                                //Note(Zen): Go back
+                                if((AppKeyJustDown(KEY_ESC) || App->Mouse.RightDown)) {
+                                    GameState->UnitSelected.UIState = GAME_UI_START;
+                                }
                             } break;
 
                             case GAME_UI_INVENTORY: {
@@ -227,10 +240,10 @@ GameStateUpdate(app * App) {
                                 for(i32 i = 0; i < Player->Inventory[Player->SelectedUnit].ItemCount; ++i) {
                                     CrestUIButton(&App->UI, GENERIC_ID(i), Player->Inventory[Player->SelectedUnit].Items[i].Name);
                                 }
-                                // for(i32 i = Player->Inventory[Player->SelectedUnit].ItemCount; i < MAX_ITEMS; ++i) {
-                                //     CrestUITextLabel(&App->UI, GENERIC_ID(0), "");
-                                // }
 
+                                if(AppMouseJustDown(1) || AppKeyJustDown(KEY_ESC)) {
+                                    GameState->UnitSelected.UIState = GAME_UI_START;
+                                }
                             } break;
                         }
 
@@ -372,13 +385,7 @@ GameStateUpdate(app * App) {
                     }
                 }
 
-                if((AppKeyJustDown(KEY_ESC) || App->Mouse.RightDown) && !Player->Units[Player->SelectedUnit].Exhausted) {
-                    NextState = GAME_STATE_OVERVIEW;
-                    Player->Units[Player->SelectedUnit].CellIndex = GameState->UnitSelected.StartIndex;
-                    Player->Units[Player->SelectedUnit].Position = Grid->Cells[Player->Units[Player->SelectedUnit].CellIndex].Position;
 
-                    Player->Units[Player->SelectedUnit].HasMoved = 0;
-                }
 
                 //Note(Zen): Clear info if necessary
                 if(NextState != GAME_STATE_UNIT_SELECTED || ClearState) {
