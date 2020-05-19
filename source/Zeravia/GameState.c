@@ -223,12 +223,14 @@ GameStateUpdate(app * App) {
                             } break;
 
                             case GAME_UI_INVENTORY: {
+                                //TODO(Zen): Custom UI widget for inventory items
                                 for(i32 i = 0; i < Player->Inventory[Player->SelectedUnit].ItemCount; ++i) {
                                     CrestUIButton(&App->UI, GENERIC_ID(i), Player->Inventory[Player->SelectedUnit].Items[i].Name);
                                 }
                                 // for(i32 i = Player->Inventory[Player->SelectedUnit].ItemCount; i < MAX_ITEMS; ++i) {
                                 //     CrestUITextLabel(&App->UI, GENERIC_ID(0), "");
                                 // }
+
                             } break;
                         }
 
@@ -411,7 +413,12 @@ GameStateUpdate(app * App) {
                 }
 
                 Camera->TargetPosition = Player->Units[Player->SelectedUnit].Position;
-                if(AppKeyJustDown(KEY_ESC)) NextState = GAME_STATE_OVERVIEW;
+                //TODO(Zen): Change to the space key
+                if(AppKeyJustDown(KEY_P)) {
+                    NextState = GAME_STATE_UNIT_SELECTED;
+                    Player->Units[Player->SelectedUnit].Position = Grid->Cells[Path.Indices[0]].Position;
+                    Camera->TargetPosition = Grid->Cells[Path.Indices[0]].Position;
+                }
 
                 if(NextState == GAME_STATE_UNIT_SELECTED) {
                     GameState->UnitSelected.UIState = GameState->WatchMove.SubStateAfter;
@@ -451,7 +458,7 @@ GameStateUpdate(app * App) {
         GameState->IsPlayerTurn = 1;
         GameState->CurrentState = GAME_STATE_NEW_TURN;
     }
-
+    EndOfStateSpecific:;
     /*
         Set Uniforms
     */
@@ -560,8 +567,11 @@ GameStateUpdate(app * App) {
     }
 
 
+    CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
+    CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
+    CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
+
     //Units
-    /*
     for(i32 i = 0; i < Player->UnitCount; ++i) {
         v3 Colour = Player->Units[i].Exhausted ? v3(0.f, 0.f, 0.f) : v3(0.3, 0.3, 0.7);
         C3DDrawCube(&App->Renderer, Player->Units[i].Position, Colour, 0.2f);
@@ -570,14 +580,10 @@ GameStateUpdate(app * App) {
         v3 Colour = Enemy->Units[i].Exhausted ? v3(0.f, 0.f, 0.f) : v3(1, 0.3, 0.4);
         C3DDrawCube(&App->Renderer, Enemy->Units[i].Position, Colour, 0.2f);
     }
-    */
 
     //Note(Zen): Draw the Collision Shapes
     #if 0
     if(GameStateDebug.ShowCollisions) {
-        CrestShaderSetMatrix(App->Renderer.Shader, "View", &View);
-        CrestShaderSetMatrix(App->Renderer.Shader, "Model", &Model);
-        CrestShaderSetMatrix(App->Renderer.Shader, "Projection", &Projection);
 
 
         r64 BeforeDrawingColTime = CrestCurrentTime();
