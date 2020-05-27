@@ -1,6 +1,6 @@
 typedef unsigned int CrestShader;
 
-CrestShader CrestShaderInit(const char* VertexPath, const char* FragmentPath) {
+CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath) {
     CrestShader Result = 0;
     //NOTE(Zen): load the shaders from their path
     char * VertexSource = CrestLoadFileAsString(VertexPath);

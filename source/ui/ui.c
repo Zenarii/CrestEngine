@@ -236,7 +236,7 @@ CrestUIEndFrame(CrestUI *ui, ui_renderer * Renderer) {
             } break;
 
             case CREST_UI_PANEL: {
-                CrestPushTransparentRect(Renderer, DefaultStyle.PanelColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.01f), v2(Widget->rect.width, Widget->rect.height));
+                CrestPushTransparentRect(Renderer, DefaultStyle.PanelColour, v3(Widget->rect.x, Widget->rect.y - 1, Widget->Precedence - 0.01f), v2(Widget->rect.width, Widget->rect.height + 1));
                 CrestPushBorder(Renderer, DefaultStyle.HeaderBorderColour, v3(Widget->rect.x, Widget->rect.y, Widget->Precedence - 0.03f), v2(Widget->rect.width, Widget->rect.height));
             } break;
 

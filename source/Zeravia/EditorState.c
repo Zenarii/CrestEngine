@@ -2,6 +2,8 @@
 
 internal void
 EditorStateInit(app * App) {
+    LoadAllResources(APP_STATE_EDITOR);
+
     editor_state * State = &App->EditorState;
     State->Camera = CameraInit();
 
@@ -447,28 +449,29 @@ EditorStateUpdate(app * App) {
 
         {
             v3 CameraLocation = GetCameraLocation(Camera);
-            CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
-            CrestShaderSetMatrix(Grid->MeshShader, "Model", &Model);
-            CrestShaderSetMatrix(Grid->MeshShader, "Projection", &Projection);
+            CrestShaderSetMatrix(Grid->MeshShader->ShaderID, "View", &View);
+            CrestShaderSetMatrix(Grid->MeshShader->ShaderID, "Model", &Model);
+            CrestShaderSetMatrix(Grid->MeshShader->ShaderID, "Projection", &Projection);
 
-            CrestShaderSetV3(Grid->MeshShader, "ViewPosition", CameraLocation);
-            CrestShaderSetV3(Grid->MeshShader, "LightColour", v3(1.f, 1.f, 1.f));
-            CrestShaderSetV3(Grid->MeshShader, "LightPosition", v3(3.f, 8.f, 3.f));
+            CrestShaderSetV3(Grid->MeshShader->ShaderID, "ViewPosition", CameraLocation);
+            CrestShaderSetV3(Grid->MeshShader->ShaderID, "LightColour", v3(1.f, 1.f, 1.f));
+            CrestShaderSetV3(Grid->MeshShader->ShaderID, "LightPosition", v3(3.f, 8.f, 3.f));
 
-            CrestShaderSetMatrix(Grid->WaterShader, "View", &View);
-            CrestShaderSetMatrix(Grid->WaterShader, "Model", &Model);
-            CrestShaderSetMatrix(Grid->WaterShader, "Projection", &Projection);
+            CrestShaderSetMatrix(Grid->WaterShader->ShaderID, "View", &View);
+            CrestShaderSetMatrix(Grid->WaterShader->ShaderID, "Model", &Model);
+            CrestShaderSetMatrix(Grid->WaterShader->ShaderID, "Projection", &Projection);
 
-            CrestShaderSetV3(Grid->WaterShader, "ViewPosition", CameraLocation);
-            CrestShaderSetV3(Grid->WaterShader, "LightColour", v3(1.f, 1.f, 1.f));
-            CrestShaderSetV3(Grid->WaterShader, "LightPosition", v3(3.f, 8.f, 3.f));
-            CrestShaderSetFloat(Grid->WaterShader, "Time", App->TotalTime);
+            CrestShaderSetV3(Grid->WaterShader->ShaderID, "ViewPosition", CameraLocation);
+            CrestShaderSetV3(Grid->WaterShader->ShaderID, "LightColour", v3(1.f, 1.f, 1.f));
+            CrestShaderSetV3(Grid->WaterShader->ShaderID, "LightPosition", v3(3.f, 8.f, 3.f));
+            CrestShaderSetFloat(Grid->WaterShader->ShaderID, "Time", App->TotalTime);
 
-            CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &View);
-            CrestShaderSetMatrix(Grid->FeatureSet.Shader, "Projection", &Projection);
-            CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Colour", v3(1.f, 1.f, 1.f));
-            CrestShaderSetV3(Grid->FeatureSet.Shader, "Light.Position", v3(3.f, 8.f, 3.f));
-            CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", CameraLocation);
+            CrestShaderSetMatrix(Grid->FeatureSet.Shader->ShaderID, "View", &View);
+            CrestShaderSetMatrix(Grid->FeatureSet.Shader->ShaderID, "Projection", &Projection);
+            CrestShaderSetV3(Grid->FeatureSet.Shader->ShaderID, "Light.Colour", v3(1.f, 1.f, 1.f));
+            CrestShaderSetV3(Grid->FeatureSet.Shader->ShaderID, "Light.Position", v3(3.f, 8.f, 3.f));
+            CrestShaderSetV3(Grid->FeatureSet.Shader->ShaderID, "ViewPosition", CameraLocation);
+
         }
 
 
@@ -479,9 +482,9 @@ EditorStateUpdate(app * App) {
             glBindFramebuffer(GL_FRAMEBUFFER, Grid->RefractionFBO.Fbo);
             glClearColor(CLEAR_COLOUR);
             glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-            CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, -1, 0, HEX_WATER_LEVEL + 0.1f));
-            CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
-            CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
+            CrestShaderSetV4(Grid->MeshShader->ShaderID, "ClippingPlane", v4(0, -1, 0, HEX_WATER_LEVEL + 0.1f));
+            CrestShaderSetMatrix(Grid->MeshShader->ShaderID, "View", &View);
+            CrestShaderSetV3(Grid->MeshShader->ShaderID, "ViewPosition", GetCameraLocation(Camera));
 
             //Note(Zen): Don't draw the feature set as no features can appear underwater right now
             PreDrawHexMesh(Grid);
@@ -497,18 +500,18 @@ EditorStateUpdate(app * App) {
             glClearColor(CLEAR_COLOUR);
             glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-            CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL + 0.01f));
-            CrestShaderSetV4(Grid->FeatureSet.Shader, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL + 0.01f));
+            CrestShaderSetV4(Grid->MeshShader->ShaderID, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL + 0.01f));
+            CrestShaderSetV4(Grid->FeatureSet.Shader->ShaderID, "ClippingPlane", v4(0, 1, 0, -HEX_WATER_LEVEL + 0.01f));
 
             camera ReflectionCamera = *Camera;
             ReflectionCamera.Rotation *= -1;
             ReflectionCamera.Position.y += 2.f * (HEX_WATER_LEVEL - ReflectionCamera.Position.y);
 
             matrix ReflectionViewMatrix = ViewMatrixFromCamera(&ReflectionCamera);
-            CrestShaderSetMatrix(Grid->MeshShader, "View", &ReflectionViewMatrix);
-            CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(&ReflectionCamera));
-            CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &ReflectionViewMatrix);
-            CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", GetCameraLocation(&ReflectionCamera));
+            CrestShaderSetMatrix(Grid->MeshShader->ShaderID, "View", &ReflectionViewMatrix);
+            CrestShaderSetV3(Grid->MeshShader->ShaderID, "ViewPosition", GetCameraLocation(&ReflectionCamera));
+            CrestShaderSetMatrix(Grid->FeatureSet.Shader->ShaderID, "View", &ReflectionViewMatrix);
+            CrestShaderSetV3(Grid->FeatureSet.Shader->ShaderID, "ViewPosition", GetCameraLocation(&ReflectionCamera));
 
             //Draw reflected meshes
             DrawFeatureSet(&Grid->FeatureSet);
@@ -518,16 +521,16 @@ EditorStateUpdate(app * App) {
             }
         }
 
-        CrestShaderSetMatrix(Grid->MeshShader, "View", &View);
-        CrestShaderSetV3(Grid->MeshShader, "ViewPosition", GetCameraLocation(Camera));
-        CrestShaderSetV3(Grid->FeatureSet.Shader, "ViewPosition", GetCameraLocation(Camera));
-        CrestShaderSetMatrix(Grid->FeatureSet.Shader, "View", &View);
+        CrestShaderSetMatrix(Grid->MeshShader->ShaderID, "View", &View);
+        CrestShaderSetV3(Grid->MeshShader->ShaderID, "ViewPosition", GetCameraLocation(Camera));
+        CrestShaderSetV3(Grid->FeatureSet.Shader->ShaderID, "ViewPosition", GetCameraLocation(Camera));
+        CrestShaderSetMatrix(Grid->FeatureSet.Shader->ShaderID, "View", &View);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         //Note(Zen): Some drivers ignore disabling the clipping plane
         glDisable(GL_CLIP_DISTANCE0);
-        CrestShaderSetV4(Grid->MeshShader, "ClippingPlane", v4(0, 0, 0, 0));
-        CrestShaderSetV4(Grid->FeatureSet.Shader, "ClippingPlane", v4(0, 0, 0, 0));
+        CrestShaderSetV4(Grid->MeshShader->ShaderID, "ClippingPlane", v4(0, 0, 0, 0));
+        CrestShaderSetV4(Grid->FeatureSet.Shader->ShaderID, "ClippingPlane", v4(0, 0, 0, 0));
 
         DrawFeatureSet(&Grid->FeatureSet);
         PreDrawWaterMesh(Grid);

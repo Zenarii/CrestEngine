@@ -1,21 +1,22 @@
 internal void
 HexGridInit(hex_grid * Grid) {
-    {
-        Grid->MeshShader = CrestShaderInit("../assets/hex_shader.vs", "../assets/hex_shader.fs");
-        glUseProgram(Grid->MeshShader);
-        i32 Location = glGetUniformLocation(Grid->MeshShader, "Images");
+    if(!Grid->Initialised){
+        Grid->MeshShader = &App->Shaders.Terrain;
+        glUseProgram(Grid->MeshShader->ShaderID);
+        i32 Location = glGetUniformLocation(Grid->MeshShader->ShaderID, "Images");
         int samplers[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
         glUniform1iv(Location, 16, samplers);
 
         Grid->MeshTexture = CasLoadTexture("../assets/White.png", GL_LINEAR);
 
-        Grid->WaterShader = CrestShaderInit("../assets/hex_water_shader.vs", "../assets/hex_water_shader.fs");
+        Assert(App->Shaders.Water.Loaded);
+        Grid->WaterShader = &App->Shaders.Water;
 
-        CrestShaderSetInt(Grid->WaterShader, "ReflectionTexture", 0);
-        CrestShaderSetInt(Grid->WaterShader, "ReflectionTexture", 1);
-        CrestShaderSetInt(Grid->WaterShader, "DistortionTexture", 2);
-        CrestShaderSetInt(Grid->WaterShader, "NormalMap", 3);
-        CrestShaderSetInt(Grid->WaterShader, "DepthMap", 4);
+        CrestShaderSetInt(Grid->WaterShader->ShaderID, "ReflectionTexture", 0);
+        CrestShaderSetInt(Grid->WaterShader->ShaderID, "ReflectionTexture", 1);
+        CrestShaderSetInt(Grid->WaterShader->ShaderID, "DistortionTexture", 2);
+        CrestShaderSetInt(Grid->WaterShader->ShaderID, "NormalMap", 3);
+        CrestShaderSetInt(Grid->WaterShader->ShaderID, "DepthMap", 4);
 
         Grid->WaterDistortionTexture = CasLoadTexture("../assets/Textures/WaterDuDv.png", GL_LINEAR);
         Grid->WaterNormalMap = CasLoadTexture("../assets/Textures/WaterNormalMap.png", GL_LINEAR);
@@ -23,13 +24,12 @@ HexGridInit(hex_grid * Grid) {
         Grid->RefractionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 1);
         Grid->ReflectionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 0);
 
+        Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
+        Grid->Height = HEX_CHUNK_HEIGHT * HEX_MAX_CHUNKS_HIGH;
+        InitFeatureSet(&Grid->FeatureSet);
+
         Grid->Initialised = 1;
     }
-
-    Grid->Width = HEX_MAX_WIDTH_IN_CELLS;
-    Grid->Height = HEX_CHUNK_HEIGHT * HEX_MAX_CHUNKS_HIGH;
-
-    InitFeatureSet(&Grid->FeatureSet);
 }
 
 internal hex_cell
@@ -165,7 +165,7 @@ CreateTriangle(v3 v0, v3 v1, v3 v2) {
 */
 internal void
 PreDrawHexMesh(hex_grid * Grid) {
-    glUseProgram(Grid->MeshShader);
+    glUseProgram(Grid->MeshShader->ShaderID);
     glBindTextureUnit(0, Grid->MeshTexture);
 }
 
@@ -177,7 +177,7 @@ DrawHexMesh(hex_grid * Grid, hex_mesh * Mesh) {
 
 internal void
 PreDrawWaterMesh(hex_grid * Grid) {
-    glUseProgram(Grid->WaterShader);
+    glUseProgram(Grid->WaterShader->ShaderID);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, Grid->ReflectionFBO.Texture);

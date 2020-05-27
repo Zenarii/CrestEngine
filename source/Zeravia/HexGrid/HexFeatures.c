@@ -57,20 +57,18 @@ InitFeatureSet(hex_feature_set * Result) {
         glVertexAttribDivisor(5+1, 1);
 
     }
-    Result->Shader = CrestShaderInit("../assets/Shaders/hex_feature_shader.vs",
-                                    "../assets/Shaders/hex_feature_shader.fs");
+    Result->Shader = &App->Shaders.Feature;
 
     for(i32 i = 0; i < (HEX_FEATURE_COUNT - 1) * 4; ++i) {
         char UniformName[32];
         sprintf(UniformName, "Material[%d].Ambient", i);
-        CrestShaderSetV3(Result->Shader, UniformName, Materials[i].Ambient);
+        CrestShaderSetV3(Result->Shader->ShaderID, UniformName, Materials[i].Ambient);
         sprintf(UniformName, "Material[%d].Diffuse", i);
-        CrestShaderSetV3(Result->Shader, UniformName, Materials[i].Diffuse);
+        CrestShaderSetV3(Result->Shader->ShaderID, UniformName, Materials[i].Diffuse);
         sprintf(UniformName, "Material[%d].Specular", i);
-        CrestShaderSetV3(Result->Shader, UniformName, Materials[i].Specular);
+        CrestShaderSetV3(Result->Shader->ShaderID, UniformName, Materials[i].Specular);
         sprintf(UniformName, "Material[%d].Shininess", i);
-        CrestShaderSetFloat(Result->Shader, UniformName, Materials[i].Shininess);
-
+        CrestShaderSetFloat(Result->Shader->ShaderID, UniformName, Materials[i].Shininess);
     }
 
 }
@@ -163,7 +161,7 @@ ClearFeaturesFromCell(hex_feature_set * Set, hex_cell * Cell) {
 
 internal void
 DrawFeatureSet(hex_feature_set * FeatureSet) {
-    glUseProgram(FeatureSet->Shader);
+    glUseProgram(FeatureSet->Shader->ShaderID);
     for(i32 i = 1; i < HEX_FEATURE_COUNT; ++i) {
         glBindVertexArray(FeatureSet->VAOs[i]);
         glDrawArraysInstanced(GL_TRIANGLES, 0, FeatureSet->Features[i].MeshVertices, MAX_FEATURE_SET_SIZE);

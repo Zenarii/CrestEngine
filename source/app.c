@@ -1,3 +1,4 @@
+
 #include "debug.c"
 
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -23,6 +24,8 @@
 
 #include "CRandom/Random.c"
 #include "CRandom/Noise.c"
+
+#include "resource.h"
 
 #include "Zeravia/Zeravia.h"
 
@@ -61,7 +64,7 @@ ScreenRectInit() {
     glEnableVertexAttribArray(1);
 
 
-    u32 Shader = CrestShaderInit("../assets/Shaders/quad_shader.vs",
+    u32 Shader = CrestLoadShader("../assets/Shaders/quad_shader.vs",
                                  "../assets/Shaders/quad_shader.fs");
 
     glUseProgram(Shader);
@@ -75,7 +78,12 @@ ScreenRectInit() {
     return ScreenRect;
 }
 
-typedef struct app {
+
+#define APP_STATE_EDITOR (1<<0)
+#define APP_STATE_GAME (1<<2)
+
+typedef struct app app;
+struct app {
     b32 Initialised;
     r64 Delta;
     r32 TotalTime;
@@ -100,19 +108,31 @@ typedef struct app {
     ui_renderer UIRenderer;
 
     C3DRenderer Renderer;
+    fbo FBO;
+    screen_rect ScreenRect;
 
+    //Note(Zen): Resources
+    struct {
+        union {
+            struct {
+                #define INCLUDE_SHADERS
+                #define APP_RESOURCE(Name, Path, States) resource Name;
+                #include "app_resources.h"
+            } Shaders;
+            //TODO(Zen): Array
+        };
+    };
+
+    //Note(Zen): Game stuff
     hex_grid Grid;
     editor_state EditorState;
     game_state GameState;
-
-    fbo FBO;
-    screen_rect ScreenRect;
-} app;
+};
 
 global app * App;
 
 #include "Zeravia/Zeravia.c"
-
+#include "resource.c"
 
 #define UI_ID_OFFSET 20
 enum Textures {
@@ -205,12 +225,13 @@ AppUpdate(Platform * platform) {
         glClearColor(CLEAR_COLOUR);
         platform->TargetFPS = 120.0f;
 
-        HexGridInit(&App->Grid);
         EditorStateInit(App);
         GameStateInit(App);
-
+        HexGridInit(&App->Grid);
 
         App->ScreenRect = ScreenRectInit();
+
+        LabelResources(App);
     }
 
     //Note(Zen): Per-Frame initialisation

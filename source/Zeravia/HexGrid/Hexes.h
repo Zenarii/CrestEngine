@@ -179,10 +179,12 @@ typedef struct hex_grid hex_grid;
 struct hex_grid {
     b32 Initialised;
     char MapName[32];
-    u32 MeshShader, MeshTexture;
+    resource * MeshShader;
+    u32 MeshTexture;
     fbo RefractionFBO;
     fbo ReflectionFBO;
-    u32 WaterShader, WaterTexture, WaterDistortionTexture, WaterNormalMap;
+    resource * WaterShader;
+    u32 WaterTexture, WaterDistortionTexture, WaterNormalMap;
     i32 Width, Height; //In cells
     hex_cell Cells[HEX_MAX_CHUNKS * HEX_CHUNK_WIDTH * HEX_CHUNK_HEIGHT];
     hex_grid_chunk Chunks[HEX_MAX_CHUNKS];

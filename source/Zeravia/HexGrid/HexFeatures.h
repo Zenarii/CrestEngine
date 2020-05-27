@@ -27,7 +27,7 @@ struct hex_feature {
 
 typedef struct hex_feature_set hex_feature_set;
 struct hex_feature_set {
-    u32 Shader;
+    resource * Shader;
     u32 VAOs[HEX_FEATURE_COUNT];
     u32 VBOs[HEX_FEATURE_COUNT];
     u32 InstancedVBOs[HEX_FEATURE_COUNT];
