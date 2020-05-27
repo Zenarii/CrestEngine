@@ -60,9 +60,9 @@ void main() {
 	vec2 TotalDistortion = (texture(DistortionTexture, DistortedUvs).rg * 2.0 - 1.0) * DistortionFactor * clamp(FinalDepth * 2.0, 0.0, 1.0);
 
     vec4 ReflectionColour = texture(ReflectionTexture, ReflectionTexCoords + TotalDistortion);
-    ReflectionColour = clamp(ReflectionColour, 0.001, 0.999);
+    ReflectionColour = clamp(ReflectionColour, 0.1, 0.9);
     vec4 RefractionColour = texture(RefractionTexture, RefractionTexCoords + TotalDistortion);
-    RefractionColour = clamp(RefractionColour, 0.001, 0.999);
+    RefractionColour = clamp(RefractionColour, 0.1, 0.9);
 
     vec4 WaterColour = mix(RefractionColour, ReflectionColour, RefractiveFactor);
 
