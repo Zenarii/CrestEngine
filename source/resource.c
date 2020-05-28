@@ -14,6 +14,8 @@ LoadAllResources(u32 State) {
 internal void
 LabelResources(app * App) {
     #define INCLUDE_SHADERS
-    #define APP_RESOURCE(Name, Path, States) App->Shaders.##Name##.rType = RESOURCE_SHADER;
+    #define APP_RESOURCE(Name, _Path, States) \
+        App->Shaders.##Name##.rType = RESOURCE_SHADER; \
+        App->Shaders.##Name##.Path = _Path;
     #include "app_resources.h"
 }

@@ -19,10 +19,8 @@ CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath) {
     if(!Success) {
         glGetShaderInfoLog(Vertex, 512, 0, InfoLog);
 
-        CrestLog("\nFailed to compile vertex shader:");
-        CrestLog(VertexPath);
-        CrestLog("\n");
-        CrestLog(InfoLog);
+        CrestErrorF("\nFailed to compile vertex shader: %s\n", VertexPath);
+        CrestError(InfoLog);
     }
 
     //Note(Zen): Compile Fragment Shader
@@ -34,10 +32,8 @@ CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath) {
     if(!Success) {
         glGetShaderInfoLog(Fragment, 512, 0, InfoLog);
 
-        CrestLog("\nFailed to compile Fragment shader: ");
-        CrestLog(FragmentPath);
-        CrestLog("\n");
-        CrestLog(InfoLog);
+        CrestErrorF("\nFailed to compile fragment shader: %s\n", FragmentPath);
+        CrestError(InfoLog);
     }
 
     //Note(Zen): Link Shader Program
@@ -49,8 +45,8 @@ CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath) {
     glGetProgramiv(Result, GL_LINK_STATUS, &Success);
     if(!Success) {
         glGetProgramInfoLog(Result, 512, 0, InfoLog);
-        CrestLog("\nFailed to link shader Program: ");
-        CrestLog(InfoLog);
+        CrestError("\nFailed to link shader Program: ");
+        CrestError(InfoLog);
     }
 
     //Note(Zen): delete shaders to reduce memory footprint

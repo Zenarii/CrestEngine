@@ -11,7 +11,6 @@ in vec3 ToCameraVector;
 uniform sampler2D ReflectionTexture;
 uniform sampler2D RefractionTexture;
 uniform sampler2D DistortionTexture;
-uniform sampler2D NormalMap;
 uniform sampler2D DepthMap;
 
 uniform vec3 LightPosition;
@@ -66,18 +65,14 @@ void main() {
 
     vec4 WaterColour = mix(RefractionColour, ReflectionColour, RefractiveFactor);
 
-    vec4 NormalMapColour = texture(NormalMap, DistortedUvs);
-    vec3 NormalMapV = vec3(NormalMapColour.r * 2.0 - 1.0, NormalMapColour.b, NormalMapColour.g * 2.0 - 1.0);
-    NormalMapV = normalize(NormalMapV);
-
     // vec3 LightDirection = normalize(LightPosition - FragPos);
     // vec3 ReflectedLight = reflect(-normalize(LightDirection), NormalMapV);
 	// float Specular = max(dot(ReflectedLight, ViewVec), 0.0);
 	// Specular = pow(Specular, SpecularExponent);
 	// vec3 specularHighlights = LightColour * Specular * Reflectivity;
 
-    FragColour = mix(WaterColour, vec4(0.0, 0.3, 0.5, 1.0), 0.2) ;//+ vec4(specularHighlights, 0.f);
-    //FragColour = vec4(FloorDistance, FloorDistance, FloorDistance, 1.0);
+    //FragColour = mix(WaterColour, vec4(0.0, 0.3, 0.5, 1.0), 0.2);
+    FragColour = vec4(FloorDistance, FloorDistance, FloorDistance, 1.0);
     //FragColour = vec4(FloorDepth, FloorDepth, FloorDepth, 1.0);
 
 }

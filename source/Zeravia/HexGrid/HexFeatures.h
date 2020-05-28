@@ -15,7 +15,7 @@ enum hex_feature_type {
 //Note(Zen): This assumes that a features .obj file name is
 //the same as used in the HexFeatures.inc file
 global char * HexFeaturePaths[] = {
-    #define HexFeature(Name) "../assets/FeatureModels/" #Name ".obj",
+    #define HexFeature(Name) "assets/FeatureModels/" #Name ".obj",
     #include "HexFeatures.inc"
 };
 

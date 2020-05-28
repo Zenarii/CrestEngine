@@ -5,7 +5,7 @@
     APP_RESOURCE(Name, Path, States)
 */
 
-#define SHADER_PATH "../assets/shaders/"
+#define SHADER_PATH "assets/shaders/"
 
 #ifdef INCLUDE_SHADERS
 APP_RESOURCE(Water, SHADER_PATH "hex_water_shader", APP_STATE_GAME | APP_STATE_EDITOR)

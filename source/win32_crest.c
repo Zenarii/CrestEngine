@@ -5,6 +5,7 @@
 #include <malloc.h>
 #include <windows.h>
 #include <timeapi.h>
+#include <fileapi.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,11 +19,12 @@
 #include "app.c"
 
 global Platform GlobalPlatform;
+global char GlobalExecutableDirectory[256];
 global b32 OpenGLHasLoaded;
-
 /*
     File IO
 */
+
 
 internal char *
 CrestLoadFileAsString(const char* Path) {
@@ -185,6 +187,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
         goto quit;
     }
 
+    //Get executable directory
+    {
+        GetCurrentDirectory(256, GlobalExecutableDirectory);
+        OutputDebugStringA("Executable Directory is: ");
+        OutputDebugStringA(GlobalExecutableDirectory);
+        OutputDebugStringA("\n");
+    }
 
     ShowWindow(window, commandShow);
     UpdateWindow(window);
@@ -269,9 +278,43 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
         GlobalPlatform.TimeTaken = TimeTaken;
         StartTime = EndTime;
 
-
         //Clear MouseScroll
         GlobalPlatform.MouseScroll = 0;
+
+        //Note(Zen): Hacky to make sure it works
+        static b32 run = 0;
+        HANDLE ChangeHandle = {0};
+        if(!run) {
+            ChangeHandle = FindFirstChangeNotificationA(
+                GlobalExecutableDirectory,
+                TRUE,
+                FILE_NOTIFY_CHANGE_LAST_WRITE
+            );
+            if(ChangeHandle == INVALID_HANDLE_VALUE || ChangeHandle == 0) {
+                CrestErrorF("Change Handle Is Invalid. Last Error was: %d\n", GetLastError());
+            }
+            run = 1;
+        }
+        DWORD WaitStatus = WaitForSingleObject(ChangeHandle, 0);
+        switch (WaitStatus) {
+            case WAIT_OBJECT_0: {
+                char FileName [256] = {0};
+                FILE_NOTIFY_INFORMATION ChangedFileInfo[16] = {0};
+                DWORD BytesReturned = 0;
+                BOOL Success = ReadDirectoryChangesW(ChangeHandle, ChangedFileInfo, sizeof(ChangedFileInfo), TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE, &BytesReturned, 0, 0);
+                if(!Success) CrestImportantF("Failed to read file change.\n");
+                else CrestImportantF("File changed read successful\n");
+
+                for(int i = 0; i < 1; ++i) {
+                    wcstombs(FileName, ChangedFileInfo[i].FileName, 256);
+                    CrestImportantF("File Edited: %s\n", FileName);
+                }
+                FindNextChangeNotification(ChangeHandle);
+            } break;
+            case WAIT_TIMEOUT: {
+                //Do nothing
+            } break;
+        }
     }
 
     quit:;

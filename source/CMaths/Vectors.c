@@ -26,8 +26,10 @@ CrestV3Add(v3 a, v3 b) {
 
 internal v3
 CrestV3Sub(v3 a, v3 b) {
-    v3 Result = v3(a.x - b.x, a.y - b.y, a.z - b.z);
-    return Result;
+    a.x -= b.x;
+    a.y -= b.y;
+    a.z -= b.z;
+    return a;
 }
 
 internal r32

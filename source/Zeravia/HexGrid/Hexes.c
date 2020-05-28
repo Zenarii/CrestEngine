@@ -7,7 +7,7 @@ HexGridInit(hex_grid * Grid) {
         int samplers[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
         glUniform1iv(Location, 16, samplers);
 
-        Grid->MeshTexture = CasLoadTexture("../assets/White.png", GL_LINEAR);
+        Grid->MeshTexture = CasLoadTexture("assets/White.png", GL_LINEAR);
 
         Assert(App->Shaders.Water.Loaded);
         Grid->WaterShader = &App->Shaders.Water;
@@ -15,11 +15,9 @@ HexGridInit(hex_grid * Grid) {
         CrestShaderSetInt(Grid->WaterShader->ShaderID, "ReflectionTexture", 0);
         CrestShaderSetInt(Grid->WaterShader->ShaderID, "ReflectionTexture", 1);
         CrestShaderSetInt(Grid->WaterShader->ShaderID, "DistortionTexture", 2);
-        CrestShaderSetInt(Grid->WaterShader->ShaderID, "NormalMap", 3);
-        CrestShaderSetInt(Grid->WaterShader->ShaderID, "DepthMap", 4);
+        CrestShaderSetInt(Grid->WaterShader->ShaderID, "DepthMap", 3);
 
-        Grid->WaterDistortionTexture = CasLoadTexture("../assets/Textures/WaterDuDv.png", GL_LINEAR);
-        Grid->WaterNormalMap = CasLoadTexture("../assets/Textures/WaterNormalMap.png", GL_LINEAR);
+        Grid->WaterDistortionTexture = CasLoadTexture("assets/Textures/WaterDuDv.png", GL_LINEAR);
 
         Grid->RefractionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 1);
         Grid->ReflectionFBO = CrestCreateFramebuffer(App->ScreenWidth, App->ScreenHeight, 0);
@@ -186,8 +184,6 @@ PreDrawWaterMesh(hex_grid * Grid) {
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, Grid->WaterDistortionTexture);
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, Grid->WaterNormalMap);
-    glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, Grid->RefractionFBO.DepthTexture);
 }
 

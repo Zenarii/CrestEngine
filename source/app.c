@@ -1,4 +1,5 @@
-
+//TODO(Zenarii): Unit UI should remain in the same place.
+//maybe use trig to project to a position x distance away based on camera rotation
 #include "debug.c"
 
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -28,7 +29,6 @@
 #include "resource.h"
 
 #include "Zeravia/Zeravia.h"
-
 
 typedef struct screen_rect screen_rect;
 struct screen_rect {
@@ -64,8 +64,8 @@ ScreenRectInit() {
     glEnableVertexAttribArray(1);
 
 
-    u32 Shader = CrestLoadShader("../assets/Shaders/quad_shader.vs",
-                                 "../assets/Shaders/quad_shader.fs");
+    u32 Shader = CrestLoadShader("assets/Shaders/quad_shader.vs",
+                                 "assets/Shaders/quad_shader.fs");
 
     glUseProgram(Shader);
     CrestShaderSetInt(Shader, "ScreenTexture", 0);
@@ -211,10 +211,10 @@ AppUpdate(Platform * platform) {
         App->ScreenHeight = platform->ScreenHeight;
 
         CrestUIRendererInit(&App->UIRenderer);
-        CrestUIRendererLoadFont(&App->UIRenderer, "../assets/Fonts/Roboto-Bold.ttf");
+        CrestUIRendererLoadFont(&App->UIRenderer, "assets/Fonts/Roboto-Bold.ttf");
         CrestUIInit(&App->UI);
         C3DInit(&App->Renderer);
-        App->Renderer.Textures[0] = CasLoadTexture("../assets/White.png", GL_LINEAR);
+        App->Renderer.Textures[0] = CasLoadTexture("assets/White.png", GL_LINEAR);
 
 
         App->Renderer.ActiveTextures = TEXTURE_COUNT;
@@ -232,6 +232,8 @@ AppUpdate(Platform * platform) {
         App->ScreenRect = ScreenRectInit();
 
         LabelResources(App);
+
+
     }
 
     //Note(Zen): Per-Frame initialisation
@@ -302,7 +304,7 @@ AppUpdate(Platform * platform) {
     CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 16.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
     {
         char Buffer[32];
-        sprintf(Buffer, "Time for frame:%2.fms", platform->TimeTakenForFrame * 1000.f);
+        sprintf(Buffer, "Time for frame: %4.fms", platform->TimeTakenForFrame * 1000.f);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
         sprintf(Buffer, "Time passed: %2.fms", platform->TimeTaken * 1000.f);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
@@ -314,6 +316,10 @@ AppUpdate(Platform * platform) {
     CrestUIEndFrame(&App->UI, &App->UIRenderer);
 
     AppClearChars();
+
+
+
+
 
     return AppShouldQuit;
 }

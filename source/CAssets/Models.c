@@ -73,7 +73,7 @@ CrestLoadAndParseMTLlib(char * FileName, i32 FileNameLength) {
     material_library Result = {0};
     Result.MaterialsCount = -1;
     //HARDCODE(Zen): Path to the models
-    char FilePath[64] = "../assets/FeatureModels/";
+    char FilePath[64] = "assets/FeatureModels/";
     strncat(FilePath, FileName, FileNameLength);
     char * Data = CrestLoadFileAsString(FilePath);
 
@@ -103,12 +103,12 @@ CrestLoadAndParseMTLlib(char * FileName, i32 FileNameLength) {
             char Buffer [64] = "(MTL) Loading material: ";
             strncat(Buffer, WordStart, WordEnd-WordStart);
             strcat(Buffer, "\n");
-            CrestLog(Buffer);
+            CrestTrace(Buffer);
 
             i32 Count = ++Result.MaterialsCount;
             //UNTESTED(Zen):
             if(Count >= 4) {
-                CrestLog("(MTL) Loaded too many materials! Overwriting the first material.\n");
+                CrestTrace("(MTL) Loaded too many materials! Overwriting the first material.\n");
                 Count = 0;
             }
             strncpy(Result.Materials[Count].Name, WordStart, WordEnd-WordStart);
@@ -179,9 +179,7 @@ CrestLoadAndParseMTLlib(char * FileName, i32 FileNameLength) {
         //but don't want to see that in Debug Output
         else if(CrestStringCompare(WordStart, "Ni", WordLength) || CrestStringCompare(WordStart, "d", WordLength)) {}
         else {
-            char Out[64];
-            sprintf(Out, "(MTL) Failed to read line: %d\n", LineNum);
-            CrestLog(Out);
+            CrestTraceF("(MTL) Failed to read line: %d\n", LineNum);
         }
 
 
@@ -231,10 +229,10 @@ CrestParseOBJ(char * Data) {
             WordStart = ++WordEnd;
             WordEnd = GetNextWord(WordStart);
 
-            char Buffer [32] = "(OBJ) Loading object: ";
+            char Buffer [64] = "(OBJ) Loading object: ";
             strncat(Buffer, WordStart, WordEnd-WordStart);
             strcat(Buffer, "\n");
-            CrestLog(Buffer);
+            CrestInfo(Buffer);
         }
         else if(CrestStringCompare(WordStart, "mtllib", WordLength) && WordLength == 6) {
             WordStart = ++WordEnd;
@@ -243,7 +241,7 @@ CrestParseOBJ(char * Data) {
             char Buffer [32] = "(OBJ) Loading mtllib: ";
             strncat(Buffer, WordStart, WordEnd-WordStart);
             strcat(Buffer, "\n");
-            CrestLog(Buffer);
+            CrestTrace(Buffer);
 
             MaterialLibrary = CrestLoadAndParseMTLlib(WordStart, WordEnd-WordStart);
         }
@@ -258,7 +256,7 @@ CrestParseOBJ(char * Data) {
                     CurrentMaterialID = i;
                     char Buffer[32];
                     sprintf(Buffer, "(OBJ) using %dth material\n", i);
-                    CrestLog(Buffer);
+                    CrestTrace(Buffer);
                 }
             }
         }
@@ -346,9 +344,9 @@ CrestParseOBJ(char * Data) {
             }
         }
         else {
-            char Out[64] = {0};
-            sprintf(Out, "(OBJ) Failed to read line: %d\n", LineNum);
-            CrestLog(Out);
+
+            CrestTraceF("(OBJ) Failed to read line: %d\n", LineNum);
+
         }
 
         LineStart = ++LineEnd;
@@ -364,5 +362,6 @@ CrestParseOBJ(char * Data) {
     for(i32 i = 0; i < 4; ++i) {
         Result.Materials[i] = MaterialLibrary.Materials[i].Material;
     }
+
     return Result;
 }
