@@ -25,8 +25,10 @@ MakeRaycastFromMouse(camera * Camera, app * App, matrix View, matrix Projection)
 
     return MakeRaycast(Camera, Mouse, View, Projection);
 }
-
-
+//Note(Zen): Only works when first setting a variable
+#define InlineV3Sub(v1, v2) {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z}
+#define InlineV3Cross(a, b) {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x}
+#define InlineV3Dot(a, b) (a.x * b.x + a.y * b.y + a.z * b.z)
 
 internal collision_result
 RayTriangleIntersect(v3 RayOrigin, v3 RayDirection, collision_triangle * Triangle) {
@@ -37,28 +39,27 @@ RayTriangleIntersect(v3 RayOrigin, v3 RayDirection, collision_triangle * Triangl
     v3 V1 = Triangle->Vertex1;
     v3 V2 = Triangle->Vertex2;
 
-    v3 Edge1, Edge2, h, s, q; //Yeah idk what these are meant to correspond to
     r32 a, f, u, v;
-    Edge1 = CrestV3Sub(V1, V0);
-    Edge2= CrestV3Sub(V2, V0);
+    v3 Edge1 = InlineV3Sub(V1, V0);
+    v3 Edge2 = InlineV3Sub(V2, V0);
 
-    h = CrestV3Cross(RayDirection, Edge2);
-    a = CrestV3Dot(Edge1, h);
+    v3 h = InlineV3Cross(RayDirection, Edge2);
+    a = InlineV3Dot(Edge1, h);
     //Note(Zen): Means the triangle is parallel to the ray
     if(a > -EPSILON && a < EPSILON) return Result;
 
     f = 1.f/a;
-    s = CrestV3Sub(RayOrigin, V0);
-    u = f * CrestV3Dot(s, h);
+    v3 s = InlineV3Sub(RayOrigin, V0);
+    u = f * InlineV3Dot(s, h);
 
     if(u < 0.f || u > 1.f) return Result;
 
-    q = CrestV3Cross(s, Edge1);
-    v = f * CrestV3Dot(RayDirection, q);
+    v3 q = InlineV3Cross(s, Edge1);
+    v = f * InlineV3Dot(RayDirection, q);
 
     if(v < 0.f || (u + v) > 1.f) return Result;
 
-    r32 t = f * CrestV3Dot(Edge2, q);
+    r32 t = f * InlineV3Dot(Edge2, q);
     if (t > EPSILON) {
         Result.DidIntersect = 1;
         v3 RayLength = v3(RayDirection.x * t, RayDirection.y * t, RayDirection.z * t);
