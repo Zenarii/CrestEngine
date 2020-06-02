@@ -21,7 +21,7 @@
 global Platform GlobalPlatform;
 global char GlobalExecutableDirectory[256];
 global b32 OpenGLHasLoaded;
-
+global b32 FileWatcherThreadHasLoaded;
 
 
 /*
@@ -104,8 +104,26 @@ DWORD WINAPI
 Win32FileWatcherProc(LPVOID Paramaters) {
     OutputDebugStringA("[Threading] Starting file watcher.\n");
 
-    //HANDLE Directory = CreateFileA("assets", FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, 0);
+    HDC DeviceContext = *(HDC *)Paramaters;
 
+    //Note(Zen) Load OpenGL Context for this thread
+    int ContextAttributes[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+        0
+    };
+
+    wglMakeCurrent(DeviceContext, GlobalOpenGLContext);
+    HGLRC FileWatcherContext = wglCreateContextAttribsARB(DeviceContext, GlobalOpenGLContext, ContextAttributes);
+    wglMakeCurrent(DeviceContext, FileWatcherContext);
+
+    if(!FileWatcherContext) {
+        OutputDebugStringA("Failed to load OpenGL context for file watcher thread");
+    }
+
+    FileWatcherThreadHasLoaded = 1;
+
+    //Note(Zen): Watch all files and subfolders from the exe.
     HANDLE Directory = CreateFileA(".", FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, 0);
 
     DWORD BytesRead = 0;
@@ -120,7 +138,6 @@ Win32FileWatcherProc(LPVOID Paramaters) {
         if(Success && BytesRead) {
             char FileName[256] = {0};
             wcstombs(FileName, ChangedFileInfo->FileName, ChangedFileInfo->FileNameLength);
-
 
             if(FileName) {
                 char Output[256] = {0};
@@ -260,7 +277,15 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
     OpenGLHasLoaded = Win32OpenGLInit(DeviceContext);
     Win32OpenGlLoadAllFunctions();
 
-    CreateThread(0, 0, Win32FileWatcherProc, 0, 0, 0);
+
+    //Note(Zen): Load the file watcher proc.
+    wglMakeCurrent(DeviceContext, 0);
+    CreateThread(0, 0, Win32FileWatcherProc, &DeviceContext, 0, 0);
+    //Note(Zen): wait for new thread to create own OpenGL Context.
+    while(!FileWatcherThreadHasLoaded);
+    wglMakeCurrent(DeviceContext, GlobalOpenGLContext);
+    OutputDebugStringA("[Threading] Loaded Win32 Threads.\n");
+
 
     //Note(Zen): Setup timing
     UINT DesiredSleepGranularity = 1;
