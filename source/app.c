@@ -65,7 +65,7 @@ ScreenRectInit() {
 
 
     u32 Shader = CrestLoadShader("assets/Shaders/quad_shader.vs",
-                                 "assets/Shaders/quad_shader.fs");
+                                 "assets/Shaders/quad_shader.fs", 0);
 
     glUseProgram(Shader);
     CrestShaderSetInt(Shader, "ScreenTexture", 0);
@@ -225,9 +225,10 @@ AppUpdate(Platform * platform) {
         glClearColor(CLEAR_COLOUR);
         platform->TargetFPS = 120.0f;
 
-        EditorStateInit(App);
-        GameStateInit(App);
+        LoadAllResources(APP_STATE_GAME);
         HexGridInit(&App->Grid);
+        GameStateInit(App);
+        EditorStateInit(App);
 
         App->ScreenRect = ScreenRectInit();
 
@@ -301,12 +302,12 @@ AppUpdate(Platform * platform) {
 
 
     #define APP_FPS_PANEL_WIDTH 200
-    CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 16.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
+    CrestUIPushRow(&App->UI, v2(App->ScreenWidth - APP_FPS_PANEL_WIDTH - 32.f, 0), v2(APP_FPS_PANEL_WIDTH, 32), 1);
     {
-        char Buffer[32];
-        sprintf(Buffer, "Time for frame: %4.fms", platform->TimeTakenForFrame * 1000.f);
+        char Buffer[64];
+        sprintf(Buffer, "Time for frame: %fms", platform->TimeTakenForFrame * 1000.f);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
-        sprintf(Buffer, "Time passed: %2.fms", platform->TimeTaken * 1000.f);
+        sprintf(Buffer, "Time passed: %fms", platform->TimeTaken * 1000.f);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);
         sprintf(Buffer, "FPS: %3.f/s", 1.f/App->Delta);
         CrestUITextLabel(&App->UI, GENERIC_ID(0), Buffer);

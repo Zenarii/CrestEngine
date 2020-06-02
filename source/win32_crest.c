@@ -21,10 +21,12 @@
 global Platform GlobalPlatform;
 global char GlobalExecutableDirectory[256];
 global b32 OpenGLHasLoaded;
+
+
+
 /*
     File IO
 */
-
 
 internal char *
 CrestLoadFileAsString(const char* Path) {
@@ -95,6 +97,47 @@ CrestCurrentTime() {
 }
 
 /*
+    Threads
+*/
+
+DWORD WINAPI
+Win32FileWatcherProc(LPVOID Paramaters) {
+    OutputDebugStringA("[Threading] Starting file watcher.\n");
+
+    //HANDLE Directory = CreateFileA("assets", FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, 0);
+
+    HANDLE Directory = CreateFileA(".", FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, 0);
+
+    DWORD BytesRead = 0;
+    //Note(Zen): This functions as a single FILE_NOTIFY_INFORMATION struct.
+    //    Due to needing a buffer to store the file name string need something larger than a single
+    //    FNI struct, and using a char buffer doesn't seem to work, likely due to the pointer in the struct.
+    //    Since I don't want to malloc here, this works as a solution.
+    FILE_NOTIFY_INFORMATION ChangedFileInfo[16] = {0};
+    for(;;) {
+        BOOL Success = ReadDirectoryChangesW(Directory, ChangedFileInfo, sizeof(ChangedFileInfo), TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE, &BytesRead, 0, 0);
+
+        if(Success && BytesRead) {
+            char FileName[256] = {0};
+            wcstombs(FileName, ChangedFileInfo->FileName, ChangedFileInfo->FileNameLength);
+
+
+            if(FileName) {
+                char Output[256] = {0};
+                sprintf(Output, "[File Watcher] Reloading file %s\n", FileName);
+                OutputDebugStringA(Output);
+                AppReloadResource(FileName);
+            }
+        }
+        else {
+            OutputDebugStringA("[File Watcher] ReadDirectoryChangesW failed!\n");
+        }
+    }
+    OutputDebugStringA("[Threading] Closing file watcher.\n");
+    return 0;
+}
+
+/*
     Win32 Code
 */
 LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -103,7 +146,6 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
         // If we receive the destroy message, then quit the program.
         PostQuitMessage(0);
     }
-
     else if ((message == WM_KEYDOWN) || (message == WM_KEYUP)) {
         b32 IsDown = (message == WM_KEYDOWN);
         u32 KeyCode = wParam;
@@ -141,7 +183,7 @@ LRESULT CALLBACK Win32WindowProcedure(HWND window, UINT message, WPARAM wParam, 
     else if(message == WM_MOUSEWHEEL) {
         i32 MouseDelta = GET_WHEEL_DELTA_WPARAM(wParam);
         //Note(Zen): Get Mouse Scroll between 0 and 1
-        GlobalPlatform.MouseScroll = MouseDelta /120.f;
+        GlobalPlatform.MouseScroll = MouseDelta / 120.f;
     }
     else if (message == WM_SIZE) {
         RECT ClientRect = {0};
@@ -218,7 +260,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
     OpenGLHasLoaded = Win32OpenGLInit(DeviceContext);
     Win32OpenGlLoadAllFunctions();
 
-
+    CreateThread(0, 0, Win32FileWatcherProc, 0, 0, 0);
 
     //Note(Zen): Setup timing
     UINT DesiredSleepGranularity = 1;
@@ -280,41 +322,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE previousInstance,
 
         //Clear MouseScroll
         GlobalPlatform.MouseScroll = 0;
-
-        //Note(Zen): Hacky to make sure it works
-        static b32 run = 0;
-        HANDLE ChangeHandle = {0};
-        if(!run) {
-            ChangeHandle = FindFirstChangeNotificationA(
-                GlobalExecutableDirectory,
-                TRUE,
-                FILE_NOTIFY_CHANGE_LAST_WRITE
-            );
-            if(ChangeHandle == INVALID_HANDLE_VALUE || ChangeHandle == 0) {
-                CrestErrorF("Change Handle Is Invalid. Last Error was: %d\n", GetLastError());
-            }
-            run = 1;
-        }
-        DWORD WaitStatus = WaitForSingleObject(ChangeHandle, 0);
-        switch (WaitStatus) {
-            case WAIT_OBJECT_0: {
-                char FileName [256] = {0};
-                FILE_NOTIFY_INFORMATION ChangedFileInfo[16] = {0};
-                DWORD BytesReturned = 0;
-                BOOL Success = ReadDirectoryChangesW(ChangeHandle, ChangedFileInfo, sizeof(ChangedFileInfo), TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE, &BytesReturned, 0, 0);
-                if(!Success) CrestImportantF("Failed to read file change.\n");
-                else CrestImportantF("File changed read successful\n");
-
-                for(int i = 0; i < 1; ++i) {
-                    wcstombs(FileName, ChangedFileInfo[i].FileName, 256);
-                    CrestImportantF("File Edited: %s\n", FileName);
-                }
-                FindNextChangeNotification(ChangeHandle);
-            } break;
-            case WAIT_TIMEOUT: {
-                //Do nothing
-            } break;
-        }
     }
 
     quit:;

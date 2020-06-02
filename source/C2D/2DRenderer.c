@@ -34,7 +34,7 @@ internal void
 C2DInit(C2DRenderer * Renderer) {
     //TODO(Zen): Must move these files
     Renderer->Shader = CrestLoadShader("../assets/vertex_shader.vs",
-                                       "../assets/fragment_shader.fs");
+                                       "../assets/fragment_shader.fs", 0);
 
     {
         glGenVertexArrays(1, &Renderer->VAO);

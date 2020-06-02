@@ -16,8 +16,8 @@ CrestTVertexInit(v3 position, v2 texcoord) {
 
 internal void
 CrestUIRendererInit(ui_renderer * UIRenderer) {
-    UIRenderer->shader = CrestLoadShader("assets/ui_vertexshader.vs", "assets/ui_fragmentshader.fs");
-    UIRenderer->TextShader = CrestLoadShader("assets/ui_text_vertexshader.vs", "assets/ui_text_fragmentshader.fs");
+    UIRenderer->shader = CrestLoadShader("assets/ui_vertexshader.vs", "assets/ui_fragmentshader.fs", 0);
+    UIRenderer->TextShader = CrestLoadShader("assets/ui_text_vertexshader.vs", "assets/ui_text_fragmentshader.fs", 0);
     //Note(Zen): Setup the shape drawing stuff
 
     {

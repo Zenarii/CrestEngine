@@ -18,7 +18,7 @@ uniform vec3 LightColour;
 uniform vec3 ViewPosition;
 uniform float Time;
 
-out vec4 FragColour;
+out vec3 FragColour;
 
 //TODO(Zen): Tweak these variables and the distortion sampling to improve
 //    the look of the water
@@ -71,8 +71,8 @@ void main() {
 	// Specular = pow(Specular, SpecularExponent);
 	// vec3 specularHighlights = LightColour * Specular * Reflectivity;
 
-    //FragColour = mix(WaterColour, vec4(0.0, 0.3, 0.5, 1.0), 0.2);
-    FragColour = vec4(FloorDistance, FloorDistance, FloorDistance, 1.0);
+    FragColour = mix(WaterColour, vec4(0.0, 0.3, 0.5, 1.0), 0.2);
+    //FragColour = vec4(0.5, 0.5, 0.5, 1.0);
+    //FragColour = vec4(FloorDistance, FloorDistance, FloorDistance, 1.0);
     //FragColour = vec4(FloorDepth, FloorDepth, FloorDepth, 1.0);
-
 }

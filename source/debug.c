@@ -23,8 +23,8 @@ enum crest_log_type {
 #define CrestInfo(Out) CrestLog(CREST_LOG_INFO, Out)
 #define CrestInfoF(...) CrestLogF(CREST_LOG_INFO, __VA_ARGS__)
 
-#define CrestWarn(Out) CrestLog(CREST_LOG_WARN, Out)
-#define CrestWarnF(...) CrestLogF(CREST_LOG_WARN, __VA_ARGS__)
+#define CrestWarn(Out) CrestLog(CREST_LOG_WARNING, Out)
+#define CrestWarnF(...) CrestLogF(CREST_LOG_WARNING, __VA_ARGS__)
 
 #define CrestError(Out) CrestLog(CREST_LOG_ERROR, Out)
 #define CrestErrorF(...) CrestLogF(CREST_LOG_ERROR, __VA_ARGS__)

@@ -5,8 +5,7 @@ FeatureIndexFromCell(hex_cell Cell, hex_direction Direction) {
 
 internal void
 InitFeatureSet(hex_feature_set * Result) {
-    //load each mesh from a set of paths
-    //then put into a vbo
+    //Note(Zen): load each mesh from a set of path then put into a vbo
     glGenVertexArrays(HEX_FEATURE_COUNT, Result->VAOs);
     glGenBuffers(HEX_FEATURE_COUNT, Result->VBOs);
     glGenBuffers(HEX_FEATURE_COUNT, Result->InstancedVBOs);
@@ -15,6 +14,7 @@ InitFeatureSet(hex_feature_set * Result) {
 
     for(int i = 1; i < HEX_FEATURE_COUNT; ++i) {
         char * ObjData = CrestLoadFileAsString(HexFeaturePaths[i]);
+        Assert(ObjData != NULL);
         parsed_obj_format Obj = CrestParseOBJ(ObjData);
         Result->Features[i].MeshVertices = Obj.Mesh.VerticesCount;
 

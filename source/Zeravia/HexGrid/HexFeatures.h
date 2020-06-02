@@ -4,6 +4,8 @@
 #define FEATURES_NOISE_SCALE 8.f
 #define FEATURES_NUDGE_STRENGTH 0.1f
 
+#define FEATURE_PATH "assets/feature_models/"
+
 typedef enum hex_feature_type hex_feature_type;
 enum hex_feature_type {
     #define HexFeature(Name) HEX_FEATURE_##Name,
@@ -15,7 +17,7 @@ enum hex_feature_type {
 //Note(Zen): This assumes that a features .obj file name is
 //the same as used in the HexFeatures.inc file
 global char * HexFeaturePaths[] = {
-    #define HexFeature(Name) "assets/FeatureModels/" #Name ".obj",
+    #define HexFeature(Name) FEATURE_PATH #Name ".obj",
     #include "HexFeatures.inc"
 };
 

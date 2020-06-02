@@ -73,7 +73,7 @@ CrestLoadAndParseMTLlib(char * FileName, i32 FileNameLength) {
     material_library Result = {0};
     Result.MaterialsCount = -1;
     //HARDCODE(Zen): Path to the models
-    char FilePath[64] = "assets/FeatureModels/";
+    char FilePath[64] = "assets/feature_models/";
     strncat(FilePath, FileName, FileNameLength);
     char * Data = CrestLoadFileAsString(FilePath);
 
@@ -208,6 +208,7 @@ CrestParseOBJ(char * Data) {
 
     char * LineStart = Data;
     char * LineEnd = Data;
+
 
     i32 LineNum = 0;
 

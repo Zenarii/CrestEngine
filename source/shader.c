@@ -1,6 +1,6 @@
 typedef unsigned int CrestShader;
 
-CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath) {
+CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath, b32 * DidError) {
     CrestShader Result = 0;
     //NOTE(Zen): load the shaders from their path
     char * VertexSource = CrestLoadFileAsString(VertexPath);
@@ -8,6 +8,7 @@ CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath) {
 
     unsigned int Vertex, Fragment;
     int Success;
+    b32 ErroredAtLeastOnce = 0;
     char InfoLog[512];
 
     //Note(Zen): Compile Vertex Shader
@@ -21,6 +22,7 @@ CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath) {
 
         CrestErrorF("\nFailed to compile vertex shader: %s\n", VertexPath);
         CrestError(InfoLog);
+        ErroredAtLeastOnce = 1;
     }
 
     //Note(Zen): Compile Fragment Shader
@@ -34,6 +36,7 @@ CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath) {
 
         CrestErrorF("\nFailed to compile fragment shader: %s\n", FragmentPath);
         CrestError(InfoLog);
+        ErroredAtLeastOnce = 1;
     }
 
     //Note(Zen): Link Shader Program
@@ -47,6 +50,11 @@ CrestShader CrestLoadShader(const char* VertexPath, const char* FragmentPath) {
         glGetProgramInfoLog(Result, 512, 0, InfoLog);
         CrestError("\nFailed to link shader Program: ");
         CrestError(InfoLog);
+        ErroredAtLeastOnce = 1;
+    }
+
+    if(DidError) {
+        *DidError = ErroredAtLeastOnce;
     }
 
     //Note(Zen): delete shaders to reduce memory footprint

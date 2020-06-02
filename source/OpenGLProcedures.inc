@@ -41,4 +41,5 @@ OpenGLProc(Uniform1i, UNIFORM1I)
 OpenGLProc(DeleteFramebuffers, DELETEFRAMEBUFFERS)
 OpenGLProc(DeleteRenderbuffers, DELETERENDERBUFFERS)
 OpenGLProc(Uniform4f, UNIFORM4F)
+OpenGLProc(DeleteProgram, DELETEPROGRAM)
 #undef OpenGLProc

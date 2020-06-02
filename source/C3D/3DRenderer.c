@@ -34,7 +34,7 @@ struct C3DRenderer {
 internal void
 C3DInit(C3DRenderer * Renderer) {
     Renderer->Shader = CrestLoadShader("assets/3D_vertex_shader.vs",
-                                       "assets/3D_fragment_shader.fs");
+                                       "assets/3D_fragment_shader.fs", 0);
 
     {
         glGenVertexArrays(1, &Renderer->VAO);

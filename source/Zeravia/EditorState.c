@@ -13,8 +13,7 @@ EditorStateInit(app * App) {
     if(!CrestDoesFileExist("Maps")) {
         CrestMakeDirectory("Maps");
     }
-
-    ResetCellsOnHexGrid(Grid);
+    if(!Grid->MapName) ResetCellsOnHexGrid(Grid);
     ReloadGridVisuals(Grid);
 
     EditorStateDebug.ShowUI = 1;
